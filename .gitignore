@@ -1,0 +1,48 @@
+# --- Scrapy Specifics ---
+*.json
+*.jsonl
+*.csv
+*.xml
+
+# Scrapy temporary crawl directories
+.scrapy/
+crawls/
+
+# --- Python Environment & Build ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+ENV/
+env/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Log files ---
+*.log
+ghostdriver.log
+
+# --- OS & IDE Specifics ---
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
