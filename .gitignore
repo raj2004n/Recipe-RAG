@@ -1,53 +1,48 @@
-# --- OS Metadata ---
-.DS_Store
-Thumbs.db
-desktop.ini
+# --- Scrapy Specifics ---
+*.json
+*.jsonl
+*.csv
+*.xml
 
-# --- Text Editor / IDE Config ---
-.vscode/
-.idea/
-*.swp
-*.swo
-*.sublime-project
-*.sublime-workspace
+# Scrapy temporary crawl directories
+.scrapy/
+crawls/
 
-# --- Node / JavaScript ---
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# --- Python ---
+# --- Python Environment & Build ---
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
+.env
+.venv
 venv/
 ENV/
-.env
-
-# --- Compiled Code & Build Outputs ---
+env/
+develop-eggs/
 dist/
-build/
-out/
-bin/
-obj/
-*.exe
-*.dll
-*.so
-*.dylib
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# --- Logs and Databases ---
+# --- Log files ---
 *.log
-*.sqlite
-*.db
+ghostdriver.log
 
-# --- Environment Secrets (CRITICAL) ---
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.pem
-*.key
+# --- OS & IDE Specifics ---
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
