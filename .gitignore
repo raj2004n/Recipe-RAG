@@ -4,6 +4,8 @@
 *.csv
 *.xml
 
+*.csv#
+
 # Scrapy temporary crawl directories
 .scrapy/
 crawls/
