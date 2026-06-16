@@ -277,5 +277,5 @@ def preprocess(input_path: str, output_path: str) -> None:
 if __name__ == "__main__":
     preprocess(
         input_path="data/raw/recipes.json",
-        output_path="data/preprocessed/cleaned_recipes.json"
+        output_path="data/processed/cleaned_recipes.json"
     )

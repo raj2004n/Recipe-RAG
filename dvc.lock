@@ -1,0 +1,18 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/data/preprocess.py
+    deps:
+    - path: data/raw/recipes.json
+      hash: md5
+      md5: 5f422a4713c8e584529800fb3718a4d9
+      size: 6431682
+    - path: src/data/preprocess.py
+      hash: md5
+      md5: 2668d1a0b4d57571ff122914ca28acb2
+      size: 9551
+    outs:
+    - path: data/processed/cleaned_recipes.json
+      hash: md5
+      md5: 4226a9ad9103ad8f199a8916b67c9aa2
+      size: 10399202
