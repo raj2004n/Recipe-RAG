@@ -1,50 +1,68 @@
-# --- Scrapy Specifics ---
-*.json
-*.jsonl
-*.csv
-*.xml
+# .gitignore
 
-*.csv#
-
-# Scrapy temporary crawl directories
-.scrapy/
-crawls/
-
-# --- Python Environment & Build ---
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-.env
-.venv
-venv/
-ENV/
-env/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
+*.so
 *.egg-info/
-.installed.cfg
+dist/
+build/
+eggs/
 *.egg
+.env
+venv/
+env/
+.venv
 
-# --- Log files ---
-*.log
-ghostdriver.log
+# Web Crawler
+recipe_crawler/**/__pycache__/
+recipe_crawler/*.log
+recipe_crawler/crawled_data/
+recipe_crawler/.scrapy/
+*.pyc
 
-# --- OS & IDE Specifics ---
-.DS_Store
-.idea/
+# Data files (tracked by DVC, not Git)
+data/raw/*.csv
+data/raw/*.json
+data/processed/*.csv
+data/processed/*.json
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Model files (tracked by DVC, not Git)
+models/*.bin
+models/*.pkl
+models/*.pt
+models/*.h5
+models/*.safetensors
+models/embedding_model/
+!models/.gitkeep
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+.idea/
 *.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# DVC
+.dvc/tmp/
+.dvc/cache/
+*.dvc.tmp
+
+# Logs
+*.log
+logs/
