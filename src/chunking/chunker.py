@@ -4,15 +4,21 @@ class Chunker:
     def __init__(self, config_path: str):
         with open(config_path) as f:
             config = yaml.safe_load(f)
-        
         self.strategy = config["chunking"]["strategy"]
 
     def chunk(self, recipe: dict) -> list[dict]:
-        if self.strategy == "every field":
-            return self._every_field_chunker(recipe)
+        if self.strategy == "whole recipe":
+            text = self._recipe_to_text(recipe)
+            return [{
+                "text": text,
+                "metadata": {
+                    "recipe_name": recipe.get("recipe_name", "Unknown"),
+                    "servings": recipe.get("servings")
+                }
+            }]
     
     # semantic chunknig
-    def _every_field_chunker(self, recipe: dict) -> list[dict]:
+    def _recipe_to_text(self, recipe: dict) -> list[dict]:
         lines = []
 
         # header
@@ -40,7 +46,7 @@ class Chunker:
                 if ing.get("notes"):
                     line += f" ({ing['notes']})"
                 if ing.get("alt_amount"):
-                    line += f" ({ing['alt_amount']}) {ing['alt_unit']}" # of alt amount, then alt unit exists
+                    line += f" or ({ing['alt_amount']}) {ing['alt_unit']}" # of alt amount, then alt unit exists
                 
                 lines.append(f" - {line}")
             
