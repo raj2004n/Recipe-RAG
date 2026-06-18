@@ -2,16 +2,19 @@ import faiss
 import numpy as np
 
 class Indexer:
-    def __init__(self, dimension: int, index_type: str = "Flat"):
+    def __init__(self, dimension: int, index_type: str = "FlatIP"):
         self.dimension = dimension
         self.index_type = index_type
         self.index = self._create_index()
     
     def _create_index(self) -> faiss.Index:
-        if self.index_type == "Flat":
+        """ Create a new index of the specified type. """
+        if self.index_type == "FlatIP":
             return faiss.IndexFlatIP(self.dimension)
         
     def add(self, vectors: np.ndarray, ids: np.ndarray):
+        """ Add vectors to the index. """
+        # numpy defualt is float64, but faiss requires float32
         vectors = vectors.astype("float32")
 
         if ids is not None:
