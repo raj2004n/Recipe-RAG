@@ -1,0 +1,41 @@
+import faiss
+import numpy as np
+
+class Indexer:
+    def __init__(self, dimension: int, index_type: str = "Flat"):
+        self.dimension = dimension
+        self.index_type = index_type
+        self.index = self._create_index()
+    
+    def _create_index(self) -> faiss.Index:
+        if self.index_type == "Flat":
+            return faiss.IndexFlatIP(self.dimension)
+        
+    def add(self, vectors: np.ndarray, ids: np.ndarray):
+        vectors = vectors.astype("float32")
+
+        if ids is not None:
+            if not isinstance(self.index, faiss.IndexIDMap):
+                self.index = faiss.IndexIDMap(self.index)
+            self.index.add_with_ids(vectors, ids)
+        else:
+            self.index.add(vectors)
+        
+    def search(self, query_vectors: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+        """ Search for the k nearest neighbors of the query vectors. """
+        query_vectors = query_vectors.astype("float32")
+
+        if len(query_vectors.shape) == 1:
+            query_vectors = query_vectors.reshape(1, -1)
+        
+        scores, indices = self.index.search(query_vectors, k)
+        return scores, indices
+
+    def save(self, path: str):
+        """ Save the index to disk. """
+        faiss.write_index(self.index, path)
+
+    def load(self, path: str):
+        """ Load the index from disk. """
+        self.index = faiss.read_index(path)
+        
