@@ -1,7 +1,7 @@
 import yaml
 
-class RecipeChunker:
-    def __init__(self, config_path):
+class Chunker:
+    def __init__(self, config_path: str):
         with open(config_path) as f:
             config = yaml.safe_load(f)
         
