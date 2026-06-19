@@ -41,7 +41,7 @@ def build_retriever(config_path: str):
     # build retriever
     retriever = Retriever(
         encoder=encoder,
-        indexer=indexer,
+        index=indexer,
         chunks=chunks,
         config_path=config_path
     )
