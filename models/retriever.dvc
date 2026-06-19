@@ -1,0 +1,6 @@
+outs:
+- md5: a2a8107fe4a5fa5c27caa5a9fd18931d.dir
+  size: 7760821
+  nfiles: 2
+  hash: md5
+  path: retriever

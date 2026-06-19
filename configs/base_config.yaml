@@ -1,0 +1,9 @@
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2
+  batch_size: 32
+  normalize_embeddings: true
+chunking:
+  strategy: whole recipe
+retrieval:
+  top_k: 10
+  score_threshold: 0.5
