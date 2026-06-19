@@ -111,19 +111,18 @@ ANSWER:"""
         print(f"Saved retriever to {path}")
     
     @classmethod
-    def load(cls, path: str, encoder, indexer, config_path: str):
+    def load(cls, path: str, encoder, index, config: dict):
         """ Load a saved retriever. """
         # Load chunks
         with open(os.path.join(path, "chunks.json"), "r") as f:
             chunks = json.load(f)
         
         # Load index
-        indexer.load(os.path.join(path, "index.faiss"))
+        index.load(os.path.join(path, "index.faiss"))
         
         return cls(
             encoder=encoder,
-            indexer=indexer,
+            index=index,
             chunks=chunks,
-            config_path=config_path,
-            index_path=path
+            config=config,
         )
