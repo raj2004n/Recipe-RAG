@@ -1,6 +1,5 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
-import yaml
 
 class Encoder:
     def __init__(self, config: dict):

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 #TODO: Implement logger
 #TODO: Implement MLFlow for tracking
 #TODO: Create DVC pipeline
+#TODO: Choose to pass config or config path, and keep it consistent
 
 # config path
 config_path = "configs/base_config.yaml"
@@ -32,7 +33,7 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
         chunks.extend(recipe_chunks)
     
     # load encoder
-    encoder = Encoder(config_path)
+    encoder = Encoder(config)
     
     # encode documents
     texts = [c["text"] for c in chunks]
