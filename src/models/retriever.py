@@ -11,9 +11,7 @@ class RetrievalResult:
     score: float
 
 class Retriever:
-    def __init__(self, encoder, index, chunks: list[dict], config_path: str):
-        with open(config_path) as f:
-            config = yaml.safe_load(f)
+    def __init__(self, encoder, index, chunks: list[dict], config: dict):
         
         self.encoder = encoder
         self.index = index
@@ -26,9 +24,9 @@ class Retriever:
             chunk_id = chunk.get("metadata", {}).get("id") or chunk.get("id") or str(i)
             self._chunk_id_to_idx[chunk_id] = i
     
-    def retrieve(self, query: str) -> list[RetrievalResult]:
+    def retrieve(self, query: str, top_k : int = None) -> list[RetrievalResult]:
         
-        top_k = self.top_k
+        top_k = top_k or self.top_k
         
         # encode query
         query_vector = self.encoder.encode_query(query)
@@ -58,54 +56,28 @@ class Retriever:
         
         return results
 
-    def retrieve_batch(self, queries: list[str], top_k: int = 10) -> list[list[RetrievalResult]]:
-        """ Retrieve multiple queries in batch. """
-
-        query_vectors = []
-        for query in queries:
-            qv= self.encoder.encode_query(query)
-            query_vectors.append(qv)
-        
-        query_vectors = np.array(query_vectors).astype("float32")
-        scores_batch , indices_batch = self.index.search(query_vectors, top_k)
-
-        all_results = []
-        for scores, indices in zip(scores_batch, indices_batch):
-            results = []
-            for score, idx in zip(scores, indices):
-                if idx == -1 or idx >= len(self.chunks):
-                    continue
-                
-                if self.score_threshold and score < self.score_threshold:
-                    continue
-                
-                chunk = self.chunks[idx]
-                
-                results.append(RetrievalResult(
-                    chunk = chunk,
-                    score = float(score),
-                ))
-            
-            all_results.append(results)
-        
-        return all_results
-
     def retrieve_as_text(self, query: str, top_k: int = None) -> list[str]:
         """ Retrieve and return chunk texts directly. """
         results = self.retrieve(query, top_k)
         return [r.chunk["text"] for r in results]
     
-    def format_for_llm(self, query: str, top_k: int = None, system_prompt: str = None) -> str:
+    def format_for_llm(self, query: str, top_k: int = None, system_prompt: str = None, max_context_lenght: int = 1500) -> str:
         """ Build a prompt-ready context string. """
         results = self.retrieve(query, top_k)
         
         context_parts = []
+        current_length = 0
+
         for i, result in enumerate(results, 1):
             meta = result.chunk.get("metadata", {})
             recipe_name = meta.get("recipe_name", f"Document {i}")
-            context_parts.append(
-                f"[Recipe {i}: {recipe_name}]\n{result.chunk['text']}"
-            )
+            chunk_text = f"[Recipe {i}: {recipe_name}]\n{result.chunk['text']}"
+  
+            if current_length + len(chunk_text) > max_context_lenght:
+                break
+        
+            context_parts.append(chunk_text)
+            current_length += len(chunk_text)
         
         context = "\n\n---\n\n".join(context_parts)
         
@@ -116,9 +88,8 @@ class Retriever:
                 "If the recipes don't contain enough information, say so honestly. "
                 "Always mention which recipe(s) you're referencing."
             )
-        
         return f"""{system_prompt}
-
+    
 RECIPES:
 {context}
 
