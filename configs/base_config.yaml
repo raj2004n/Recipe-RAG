@@ -2,10 +2,21 @@ embedding:
   model: sentence-transformers/all-MiniLM-L6-v2
   batch_size: 32
   normalize_embeddings: true
+
 chunking:
   strategy: whole recipe
+
+index:
+  type: FlatIP
+  
 retrieval:
   top_k: 10
   score_threshold: 0.5
-index:
-  type: FlatIP
+
+
+generator:
+  model_name: microsoft/phi-2
+  max_new_tokens: 512
+  max_input_length: 2048
+  max_context_length: 1500
+  epochs: 3
