@@ -3,10 +3,7 @@ import numpy as np
 import yaml
 
 class Encoder:
-    def __init__(self, config_path: str):
-        with open(config_path) as f:
-            config = yaml.safe_load(f)
-        
+    def __init__(self, config: dict):
         self.model = SentenceTransformer(config["embedding"]["model"])
         self.batch_size = config["embedding"]["batch_size"]
         self.normalize_embeddings = config["embedding"]["normalize_embeddings"]
