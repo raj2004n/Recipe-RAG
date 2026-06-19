@@ -7,3 +7,5 @@ chunking:
 retrieval:
   top_k: 10
   score_threshold: 0.5
+index:
+  type: FlatIP
