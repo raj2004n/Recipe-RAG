@@ -63,7 +63,9 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
 
 def build_generator(config: dict, retriever: Retriever, recipes: list) -> Generator:
     model_name = config["generator"]["model_name"]
-    return Generator(model_name)
+    generator = Generator(model_name)
+    generator.save("models/generator")
+    return generator
 
 
 def build_rag(config_path: str = "configs/base_config.yaml"):
