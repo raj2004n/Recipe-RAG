@@ -8,6 +8,7 @@ chunking:
 
 index:
   type: FlatIP
+  dimension: 384 # for all-MiniLM-L6-v2
   
 retrieval:
   top_k: 10
