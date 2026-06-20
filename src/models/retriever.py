@@ -90,8 +90,7 @@ class Retriever:
             )
         return f"""{system_prompt}
     
-RECIPES:
-{context}
+RECIPES: {context}
 
 USER QUESTION: {query}
 
