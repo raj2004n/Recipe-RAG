@@ -1,7 +1,8 @@
 # src/models/generator.py
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, PeftModel
+import os
 
 class Generator:
     def __init__(self, model_name: str = "microsoft/phi-2"):
@@ -49,4 +50,28 @@ class Generator:
             response = response.split("ANSWER:")[-1].strip()
         
         return response
+
+    # save the LoRA model
+    def save(self, save_path: str):
+        os.makedirs(save_path, exist_ok=True)
+        self.model.save_pretrained(save_path)
+        self.tokenizer.save_pretrained(save_path)
     
+    def load(self, model_name: str, lora_path: str):
+        # load tokenizer
+        if os.path.exists(os.path.join(lora_path, "tokenizer_config.json")):
+            self.tokenizer = AutoTokenizer.from_pretrained(lora_path)
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # load base model
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            device_map="auto"
+        )
+        
+        # load LoRA adapters
+        self.model = PeftModel.from_pretrained(self.model, lora_path)
