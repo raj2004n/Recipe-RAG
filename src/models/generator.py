@@ -5,9 +5,12 @@ from peft import LoraConfig, get_peft_model, PeftModel
 import os
 
 class Generator:
-    def __init__(self, model_name: str = "microsoft/phi-2"):
+    def __init__(self, model_name: str = "microsoft/phi-2", adapter_path: str = None):
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name
+        )
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         # load base model
@@ -16,18 +19,13 @@ class Generator:
             torch_dtype=torch.float16,
             device_map="auto"
         )
+
+        if adapter_path is not None:
+            self.model = PeftModel.from_pretrained(
+                self.model, 
+                adapter_path
+            )
         
-        # add LoRA for fine tuning
-        lora_config = LoraConfig(
-            r=16,
-            lora_alpha=32,
-            target_modules=["q_proj", "v_proj"],
-            lora_dropout=0.1,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
-        self.model = get_peft_model(self.model, lora_config)
-    
     def generate(self, prompt: str, max_new_tokens: int = None) -> str:
         """ Generate recipe response from prompt """
         max_new_tokens = 512 # hard coded for now
@@ -50,28 +48,3 @@ class Generator:
             response = response.split("ANSWER:")[-1].strip()
         
         return response
-
-    # save the LoRA model
-    def save(self, save_path: str):
-        os.makedirs(save_path, exist_ok=True)
-        self.model.save_pretrained(save_path)
-        self.tokenizer.save_pretrained(save_path)
-    
-    def load(self, model_name: str, lora_path: str):
-        # load tokenizer
-        if os.path.exists(os.path.join(lora_path, "tokenizer_config.json")):
-            self.tokenizer = AutoTokenizer.from_pretrained(lora_path)
-        else:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-        
-        # load base model
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16,
-            device_map="auto"
-        )
-        
-        # load LoRA adapters
-        self.model = PeftModel.from_pretrained(self.model, lora_path)
