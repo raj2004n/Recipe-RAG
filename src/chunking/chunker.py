@@ -1,9 +1,7 @@
 import yaml
 
 class Chunker:
-    def __init__(self, config_path: str):
-        with open(config_path) as f:
-            config = yaml.safe_load(f)
+    def __init__(self, config: dict):
         self.strategy = config["chunking"]["strategy"]
 
     def chunk(self, recipe: dict) -> list[dict]:
@@ -22,7 +20,7 @@ class Chunker:
         lines = []
 
         # header
-        lines.append(f"Recipe: {recipe.get('recipe_name', 'Unknown')}") # what does this do?
+        lines.append(f"Recipe: {recipe.get('recipe_name', 'Unknown')}")
 
         # sevings
         servings = recipe.get("servings", 1)
