@@ -8,7 +8,7 @@ from src.chunking.chunker import Chunker
 from src.models.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
-# TODO: Add logging
+#TODO: Add logging
 #TODO: Implement MLFlow for tracking
 #TODO: Create DVC pipeline
 #TODO: Choose to pass config or config path, and keep it consistent
@@ -78,7 +78,7 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
 def build_generator(config: dict, retriever: Retriever, recipes: list) -> Generator:
     model_name = config["generator"]["model_name"]
     generator = Generator(model_name)
-    generator.save("models/generator")
+    # removed generator.save("models/generator"), pretrained model is loaded so no need to save
     return generator
 
 
@@ -111,8 +111,8 @@ if __name__ == "__main__":
     pipeline = build_rag()
     
     # testing, remove later
-    #print("Testing RAG Pipeline:")
+    print("Testing RAG Pipeline:")
     
-    #result = pipeline.query("How do I make chicken curry?")
-    #print(f"\nQuestion: {result['question']}")
-    #print(f"\nAnswer: {result['answer']}")
+    result = pipeline.query("How do I make chicken curry?")
+    print(f"\nQuestion: {result['question']}")
+    print(f"\nAnswer: {result['answer']}")
