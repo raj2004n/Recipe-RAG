@@ -1,59 +1,26 @@
-# .github/workflows/data_quality.yml
 name: Data Quality Checks
 
 on:
   push:
-    paths:
-      - 'data/**'
-      - 'src/data/**'
-      - 'src/**/*.py'
-  pull_request:
     branches: [main]
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
-  validate:
+  build:
     runs-on: ubuntu-latest
+  
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12.3'
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
       
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      
-      - name: Install dependencies
-        run: |
-          pip install pandas pyyaml
-      
-      - name: Validate processed data exists
-        run: |
-          python -c "
-          import pandas as pd
-          import json
-          from pathlib import Path
-          
-          # Check processed data exists
-          assert Path('data/processed/cleaned_recipes.json').exists(), 'Processed data missing!'
-          
-          # Load and validate
-          with open('data/processed/cleaned_recipes.json') as f:
-              recipes = json.load(f)
-          
-          assert len(recipes) > 0, 'No recipes found!'
-          print(f'✅ {len(recipes)} recipes validated')
-          
-          # Check a recipe has required fields
-          r = recipes[0]
-          assert 'title' in r, 'Missing title'
-          assert 'ingredients' in r, 'Missing ingredients'
-          assert 'instructions' in r, 'Missing instructions'
-          print('Recipe structure valid')
-          "
-      
-      - name: Check preprocessing script syntax
-        run: |
-          python -m py_compile src/data/preprocess.py
-          echo "preprocess.py syntax valid"
+    - name: Run data Quality Check
+      run: pytest tests/data_quality.py
