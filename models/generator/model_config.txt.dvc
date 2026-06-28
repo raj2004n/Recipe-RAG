@@ -1,5 +1,0 @@
-outs:
-- md5: 50d1e73c9f2a54fad787916bae929412
-  size: 15
-  hash: md5
-  path: model_config.txt
