@@ -68,3 +68,7 @@ Thumbs.db
 logs/
 
 *.json
+
+#MlFlow
+mlruns/
+mlartifacts/
