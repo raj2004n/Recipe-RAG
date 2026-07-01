@@ -266,6 +266,10 @@ def preprocess(input_path: str, output_path: str) -> None:
     
     logger.info("Cleaned valid recipes.")
 
+    # assign recipe ids to valid recipes
+    for recipe_id, recipe in enumerate(valid_recipes):
+        recipe["recipe_id"] = recipe_id
+
     # save
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(f"{output_path}", "w") as f:
