@@ -2,7 +2,30 @@ stages:
   preprocess:
     cmd: python src/data/preprocess.py
     deps:
+    - scripts/preprocess.py
     - data/raw/recipes.json
-    - src/data/preprocess.py
     outs:
     - data/processed/cleaned_recipes.json
+
+  build_rag:
+    cmd: python -m scripts.build_rag
+    deps:
+    - scripts/build_rag.py
+    - data/processed/cleaned_recipes.json
+    - configs/base_config.yaml
+    - src/chunking/chunker.py
+    - src/models/encoder.py
+    - src/models/generator.py
+    - src/models/indexer.py
+    - src/models/retriever.py
+    outs:
+    - models/retriever
+  
+  generate_eval_dataset:
+    cmd: python -m scripts.generate_eval_dataset
+    deps:
+    - scripts/generate_eval_dataset.py
+    - data/processed/cleaned_recipes.json
+    outs:
+    - data/evaluation/evaluation_dataset.json
+
