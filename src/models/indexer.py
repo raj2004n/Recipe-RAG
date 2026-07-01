@@ -18,6 +18,7 @@ class Indexer:
         vectors = vectors.astype("float32")
 
         if ids is not None:
+            ids = np.asarray(ids, dtype=np.int64)
             if not isinstance(self.index, faiss.IndexIDMap):
                 self.index = faiss.IndexIDMap(self.index)
             self.index.add_with_ids(vectors, ids)
@@ -31,7 +32,9 @@ class Indexer:
         if len(query_vectors.shape) == 1:
             query_vectors = query_vectors.reshape(1, -1)
         
+        # returns in order of similarity
         scores, indices = self.index.search(query_vectors, k)
+        
         return scores, indices
 
     def save(self, path: str):

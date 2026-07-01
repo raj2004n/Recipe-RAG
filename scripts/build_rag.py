@@ -1,6 +1,7 @@
 import mlflow
 import yaml
 import json
+import numpy as np
 from src.models.encoder import Encoder
 from src.models.indexer import Indexer
 from src.models.retriever import Retriever
@@ -36,27 +37,30 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
     # initialise chunker
     chunker = Chunker(config)
 
-    # initialise transformer encoder
-    encoder = Encoder(config)
-    
-    # initialise FAISS index
-    indexer = Indexer(
-        dimension=embeddings.shape[1],
-        index_type=config["index"]["type"]
-    )
-
     # chunk recipes
     chunks = []
     for recipe in recipes:
         recipe_chunks = chunker.chunk(recipe)
         chunks.extend(recipe_chunks)
 
+    # initialise transformer encoder
+    encoder = Encoder(config)
+    
     # encode documents into dense vectors
     texts = [c["text"] for c in chunks]
     embeddings = encoder.encode_documents(texts)
 
+    # initialise FAISS index
+    indexer = Indexer(
+        dimension=embeddings.shape[1],
+        index_type=config["index"]["type"]
+    )
+    
+    # assign ids to chunks (preserves order)
+    ids = np.arange(len(chunks))
+
     # add vectors to index
-    indexer.add(embeddings, ids=None)
+    indexer.add(embeddings, ids)
     
     # build retriever
     retriever = Retriever(

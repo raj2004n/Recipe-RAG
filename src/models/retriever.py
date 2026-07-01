@@ -13,6 +13,18 @@ class RetrievalResult:
 
 class Retriever:
     def __init__(self, encoder: Encoder, index: Indexer, chunks: list[dict], config: dict):
+        """ Initialise a Retriever object.
+
+            Args:
+                encoder (Encoder): The encoder object used to encode documents.
+                index (Indexer): The index object used to search for nearest neighbors.
+                chunks (list[dict]): A list of dictionaries containing chunk information.
+                config (dict): The configuration dictionary.
+
+        The encoder turns the query into a dense vector in the same space as the recipe vectors.
+        The index is used to search for the nearest neighbors of the query vector (in the encoder space of the recipe vectors).
+        The chunks maps the retrieved indices (top k) to the corresponding recipe chunks.
+        """
         self.encoder = encoder
         self.index = index
         self.top_k = config["retrieval"]["top_k"]
@@ -25,7 +37,7 @@ class Retriever:
         # encode query into dense vector
         query_vector = self.encoder.encode_query(query)
 
-        # search index
+        # search recipe index for nearest neighbors of query vector
         scores, indices = self.index.search(query_vector, top_k)
 
         # build results
@@ -34,12 +46,15 @@ class Retriever:
             # skip invlaid indices
             if idx == -1 or idx >= len(self.chunks):
                 continue
+
             # filter by score
             if self.score_threshold and score < self.score_threshold:
                 continue
-        
+            
+            # assign chunk to nearest neighbor recipe chunk
             chunk = self.chunks[idx]
             
+            # add result to list
             results.append(RetrievalResult(
                 chunk_id=chunk["chunk_id"],
                 recipe_id=chunk["metadata"]["recipe_id"],
@@ -47,6 +62,7 @@ class Retriever:
                 score=float(score),
             ))
 
+            # break if enough results are found
             if len(results) >= top_k:
                 break
         
@@ -57,7 +73,8 @@ class Retriever:
         results = self.retrieve(query, top_k)
         return [r.chunk["text"] for r in results]
     
-    def format_for_llm(self, query: str, top_k: int = None, system_prompt: str = None, max_context_lenght: int = 1500) -> str:
+    # TODO: seperate into a different file
+    def format_for_llm(self, query: str, top_k: int = None, system_prompt: str = None, max_context_length: int = 1500) -> str:
         """ Build a prompt-ready context string. """
         results = self.retrieve(query, top_k)
         
@@ -69,7 +86,7 @@ class Retriever:
             recipe_name = meta.get("recipe_name", f"Document {i}")
             chunk_text = f"[Recipe {i}: {recipe_name}]\n{result.chunk['text']}"
   
-            if current_length + len(chunk_text) > max_context_lenght:
+            if current_length + len(chunk_text) > max_context_length:
                 break
         
             context_parts.append(chunk_text)
