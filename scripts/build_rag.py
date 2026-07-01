@@ -9,15 +9,12 @@ from src.models.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
 #TODO: Add logging
-#TODO: Implement MLFlow for tracking
-#TODO: Create DVC pipeline
 #TODO: Choose to pass config or config path, and keep it consistent
+#TODO: Seperate the build script into R and AG parts
 
-# conect to remote MlFlow server
+# connect to remote MlFlow server
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("first-rag-experiment")
-
-
 
 def flatten_dict(d, parent_key="", sep="."):
     items = {}
