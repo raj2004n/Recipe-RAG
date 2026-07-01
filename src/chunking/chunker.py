@@ -4,17 +4,21 @@ class Chunker:
 
     def chunk(self, recipe: dict) -> list[dict]:
         if self.strategy == "whole recipe":
-            text = self._recipe_to_text(recipe)
+            text = self._format_text_for_embedding(recipe)
+            recipe_id = recipe.get("recipe_id", "Unknown")
+
             return [{
+                "chunk_id": f"{recipe_id}_0",
                 "text": text,
                 "metadata": {
+                    "recipe_id": recipe_id,
                     "recipe_name": recipe.get("recipe_name", "Unknown"),
-                    "servings": recipe.get("servings")
+                    "servings": recipe.get("servings", "")
                 }
             }]
     
-    # semantic chunknig
-    def _recipe_to_text(self, recipe: dict) -> list[dict]: # fix type hint
+    def _format_text_for_embedding(self, recipe: dict) -> str:
+        """ Format recipe text for embedding. """
         lines = []
 
         # header
