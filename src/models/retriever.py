@@ -1,8 +1,7 @@
-import yaml
-import json
-import numpy as np
 from dataclasses import dataclass
-from typing import Optional
+from .encoder import Encoder
+from .indexer import Indexer
+import json
 import os
 
 @dataclass
@@ -11,7 +10,7 @@ class RetrievalResult:
     score: float
 
 class Retriever:
-    def __init__(self, encoder, index, chunks: list[dict], config: dict):
+    def __init__(self, encoder: Encoder, index: Indexer, chunks: list[dict], config: dict):
         
         self.encoder = encoder
         self.index = index
@@ -81,6 +80,7 @@ class Retriever:
         
         context = "\n\n---\n\n".join(context_parts)
         
+        # TODO: save system prompt in config and track with ml flow
         if system_prompt is None:
             system_prompt = (
                 "You are a helpful cooking assistant. "
@@ -95,7 +95,7 @@ RECIPES: {context}
 USER QUESTION: {query}
 
 ANSWER:"""
-    
+    #TODO: Change out of dvc.yaml
     def save(self, path: str):
         """ Save index and chunks to disk."""
         os.makedirs(path, exist_ok=True)
