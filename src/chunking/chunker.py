@@ -1,5 +1,3 @@
-import yaml
-
 class Chunker:
     def __init__(self, config: dict):
         self.strategy = config["chunking"]["strategy"]
@@ -16,7 +14,7 @@ class Chunker:
             }]
     
     # semantic chunknig
-    def _recipe_to_text(self, recipe: dict) -> list[dict]:
+    def _recipe_to_text(self, recipe: dict) -> list[dict]: # fix type hint
         lines = []
 
         # header
