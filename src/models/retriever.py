@@ -6,22 +6,18 @@ import os
 
 @dataclass
 class RetrievalResult:
+    chunk_id: str
+    recipe_id: str
     chunk: dict
     score: float
 
 class Retriever:
     def __init__(self, encoder: Encoder, index: Indexer, chunks: list[dict], config: dict):
-        
         self.encoder = encoder
         self.index = index
         self.top_k = config["retrieval"]["top_k"]
         self.chunks = chunks
         self.score_threshold = config["retrieval"]["score_threshold"]
-
-        self._chunk_id_to_idx: dict[str, int] = {}
-        for i, chunk in enumerate(chunks):
-            chunk_id = chunk.get("metadata", {}).get("id") or chunk.get("id") or str(i)
-            self._chunk_id_to_idx[chunk_id] = i
     
     def retrieve(self, query: str, top_k : int = None) -> list[RetrievalResult]:
         
@@ -46,6 +42,8 @@ class Retriever:
             chunk = self.chunks[idx]
             
             results.append(RetrievalResult(
+                chunk_id=chunk["chunk_id"],
+                recipe_id=chunk["metadata"]["recipe_id"],
                 chunk=chunk,
                 score=float(score),
             ))
@@ -95,7 +93,7 @@ RECIPES: {context}
 USER QUESTION: {query}
 
 ANSWER:"""
-    #TODO: Change out of dvc.yaml
+    #TODO: Change "out" field of dvc.yaml once save modified
     def save(self, path: str):
         """ Save index and chunks to disk."""
         os.makedirs(path, exist_ok=True)
