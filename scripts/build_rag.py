@@ -9,7 +9,6 @@ from src.models.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
 #TODO: Add logging
-#TODO: Choose to pass config or config path, and keep it consistent
 #TODO: Seperate the build script into R and AG parts
 
 # connect to remote MlFlow server
@@ -34,26 +33,27 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
     with open("data/processed/cleaned_recipes.json") as f:
         recipes = json.load(f)
     
+    # initialise chunker
     chunker = Chunker(config)
 
-    # chunk
-    chunks = []
-    for recipe in recipes:
-        recipe_chunks = chunker.chunk(recipe)
-        chunks.extend(recipe_chunks)
-    
-    # load encoder
+    # initialise transformer encoder
     encoder = Encoder(config)
     
-    # encode documents
-    texts = [c["text"] for c in chunks]
-    embeddings = encoder.encode_documents(texts)
-    
-    # index
+    # initialise FAISS index
     indexer = Indexer(
         dimension=embeddings.shape[1],
         index_type=config["index"]["type"]
     )
+
+    # chunk recipes
+    chunks = []
+    for recipe in recipes:
+        recipe_chunks = chunker.chunk(recipe)
+        chunks.extend(recipe_chunks)
+
+    # encode documents into dense vectors
+    texts = [c["text"] for c in chunks]
+    embeddings = encoder.encode_documents(texts)
 
     # add vectors to index
     indexer.add(embeddings, ids=None)
@@ -72,10 +72,9 @@ def build_retriever(config: dict) -> tuple[Retriever, list[dict]]:
     return retriever, recipes
 
 
-def build_generator(config: dict, retriever: Retriever, recipes: list) -> Generator:
+def build_generator(config: dict) -> Generator:
     model_name = config["generator"]["model_name"]
     generator = Generator(model_name)
-    # removed generator.save("models/generator"), pretrained model is loaded so no need to save
     return generator
 
 
@@ -89,7 +88,7 @@ def build_rag(config_path: str = "configs/base_config.yaml") -> RAGPipeline:
         retriever, recipes = build_retriever(config)
         
         # build generator
-        generator = build_generator(config, retriever, recipes)
+        generator = build_generator(config)
         
         # create RAG pipeline
         pipeline = RAGPipeline(retriever, generator)

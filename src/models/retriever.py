@@ -20,10 +20,9 @@ class Retriever:
         self.score_threshold = config["retrieval"]["score_threshold"]
     
     def retrieve(self, query: str, top_k : int = None) -> list[RetrievalResult]:
-        
         top_k = top_k or self.top_k
         
-        # encode query
+        # encode query into dense vector
         query_vector = self.encoder.encode_query(query)
 
         # search index
