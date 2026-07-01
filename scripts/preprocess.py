@@ -265,6 +265,11 @@ def preprocess(input_path: str, output_path: str) -> None:
         r["notes"] = [clean_note(note) for note in r["notes"]]
     
     logger.info("Cleaned valid recipes.")
+    
+    # assign ids
+    for recipe_id, recipe in enumerate(valid_recipes):
+        recipe["id"] = recipe_id
+    logger.info("Assigned ids to valid recipes.")
 
     # assign recipe ids to valid recipes
     for recipe_id, recipe in enumerate(valid_recipes):
