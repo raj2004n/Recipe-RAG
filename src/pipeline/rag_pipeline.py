@@ -1,23 +1,27 @@
 # src/pipeline/rag_pipeline.py
-from src.models.generator import Generator
 from src.models.retriever import Retriever
+from src.models.prompt_builder import PromptBuilder
+from src.models.generator import Generator
 from typing import Dict
 
 class RAGPipeline:
-    def __init__(self, retriever: Retriever, generator: Generator):
+    def __init__(self, retriever: Retriever, prompt_builder: PromptBuilder, generator: Generator):
         self.retriever = retriever
+        self.prompt_builder = prompt_builder
         self.generator = generator
     
-    def query(self, question: str, k: int = 3) -> Dict:
+    def query(self, query: str, k: int = 3) -> Dict:
         """Full RAG query: retrieve + generate"""
+        results = self.retriever.retrieve(query, k)
+
         # format prompt with retrieved context
-        prompt = self.retriever.format_for_llm(question, k)
+        prompt = self.prompt_builder.build(query, retrieval_results=results)
         
         # generate answer
         answer = self.generator.generate(prompt)
         
         return {
-            "question": question,
+            "query": query,
             "answer": answer,
             "prompt_used": prompt
         }
