@@ -1,6 +1,6 @@
 # src/pipeline/rag_pipeline.py
 from src.models.retriever import Retriever
-from src.models.prompt_builder import PromptBuilder
+from src.prompting.prompt_builder import PromptBuilder
 from src.models.generator import Generator
 from typing import Dict
 

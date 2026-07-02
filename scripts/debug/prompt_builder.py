@@ -1,4 +1,4 @@
-from src.models.prompt_builder import PromptBuilder
+from src.prompting.prompt_builder import PromptBuilder
 from src.models.retriever import RetrievalResult
 
 # hard code to test
