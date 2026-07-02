@@ -1,16 +1,12 @@
 # src/models/generator.py
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model, PeftModel
-import os
+from peft import PeftModel
 
 class Generator:
     def __init__(self, model_name: str = "microsoft/phi-2", adapter_path: str = None):
         self.model_name = model_name
-
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         # load base model

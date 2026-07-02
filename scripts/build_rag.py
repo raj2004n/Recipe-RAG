@@ -6,8 +6,10 @@ from src.models.encoder import Encoder
 from src.models.indexer import Indexer
 from src.models.retriever import Retriever
 from src.chunking.chunker import Chunker
+from src.prompting.prompt_builder import PromptBuilder
 from src.models.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
+from transformers import AutoTokenizer
 
 #TODO: Add logging
 #TODO: Seperate the build script into R and AG parts
@@ -94,8 +96,14 @@ def build_rag(config_path: str = "configs/base_config.yaml") -> RAGPipeline:
         # build generator
         generator = build_generator(config)
         
+        # build tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(config["generator"]["model_name"])
+
+        # build prompt builder
+        prompt_builder = PromptBuilder(config, tokenizer)
+
         # create RAG pipeline
-        pipeline = RAGPipeline(retriever, generator)
+        pipeline = RAGPipeline(retriever, prompt_builder, generator, tokenizer)
 
         # log params
         flat_config = flatten_dict(config)

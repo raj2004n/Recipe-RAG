@@ -1,9 +1,11 @@
 from src.models.retriever import RetrievalResult
+from transformers import AutoTokenizer
 
 class PromptBuilder:
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, tokenizer: AutoTokenizer):
         self.system_prompt = config["prompts"]["system"]
-        self.max_context_length = config["prompts"]["max_context_length"]
+        self.max_context_length = config["prompts"]["max_context_tokens"]
+        self.tokenizer = tokenizer
     
     def build(self, query: str, retrieval_results: list[RetrievalResult]) -> str:
         """ Build a prompt-ready context string. """
@@ -20,11 +22,14 @@ class PromptBuilder:
                 f"{result.chunk.get('text', '')}"
             )
         
+            tokens = self.tokenizer.encode(chunk_text)
+            
             if current_length + len(chunk_text) > self.max_context_length:
                 break
         
             context_parts.append(chunk_text)
-            current_length += len(chunk_text)
+
+            current_length += len(tokens)
 
         context = "\n\n---\n\n".join(context_parts)
         
