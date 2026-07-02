@@ -22,6 +22,11 @@ stages:
     - models/retriever/index.faiss
     - models/retriever/chunks.json
     - models/retriever/config.yaml
-  
 
-
+  generate_eval_dataset:
+    cmd: python -m scripts.generate_eval_dataset
+    deps:
+    - scripts/generate_eval_dataset.py
+    - data/processed/cleaned_recipes.json
+    outs:
+    - data/evaluation/evaluation_dataset.json

@@ -9,13 +9,13 @@ stages:
       size: 6431682
     - path: scripts/preprocess.py
       hash: md5
-      md5: bd6c13871eea38bc7560c5e3f11936a3
-      size: 9688
+      md5: 00c95f9e091d35f2bfd2cc0ec5ca6d8b
+      size: 9848
     outs:
     - path: data/processed/cleaned_recipes.json
       hash: md5
-      md5: b5561f4bd47dbd07b84dec159f6c0be6
-      size: 10438106
+      md5: 9e23ba439d4e300a3fba4ae8e1c088e9
+      size: 10466636
   build_rag:
     cmd: python -m scripts.build_rag
     deps:
@@ -25,8 +25,8 @@ stages:
       size: 649
     - path: data/processed/cleaned_recipes.json
       hash: md5
-      md5: b5561f4bd47dbd07b84dec159f6c0be6
-      size: 10438106
+      md5: 9e23ba439d4e300a3fba4ae8e1c088e9
+      size: 10466636
     - path: scripts/build_rag.py
       hash: md5
       md5: 7bec337670f4d0dbdeb5a43e90f981ce
@@ -49,8 +49,8 @@ stages:
       size: 1665
     - path: src/models/retriever.py
       hash: md5
-      md5: 44cb95ed9a73cdea6e65522ba191082d
-      size: 2683
+      md5: 85ee88cdb9f21560fc8acdffc17c17fe
+      size: 2476
     outs:
     - path: models/retriever/chunks.json
       hash: md5
