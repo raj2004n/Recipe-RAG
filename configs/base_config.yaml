@@ -14,7 +14,10 @@ retrieval:
   top_k: 10
   score_threshold: 0.5
 
-
+prompts:
+  system: You are a helpful cooking assistant. Answer the user's question using ONLY the recipes provided below. If the recipes don't contain enough information, say so honestly. Always mention which recipe(s) you're referencing.
+  max_context_length: 1500
+  
 generator:
   model_name: microsoft/phi-2
   max_new_tokens: 512
