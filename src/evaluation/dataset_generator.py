@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from ollama import chat
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 MODEL_NAME = "gemma3:4b"
 
@@ -35,9 +36,6 @@ Reules:
 - Ignore adjectives in recipe names.
 - Ignore people names in recipe names.
 
-Format:
-- Return a JSON array of strings. 
-
 Recipe name:
 {recipe["recipe_name"]}
 
@@ -52,7 +50,8 @@ def generate_queries(recipe: dict) -> list[str]:
     
     response = chat(
         MODEL_NAME,
-        messages=[{"role": "user", "content": prompt,}]
+        messages=[{"role": "user", "content": prompt,}],
+        format="json"
     )
 
     content = response.message.content.strip()
@@ -74,24 +73,32 @@ def generate_queries(recipe: dict) -> list[str]:
 
     return queries
 
+def process_recipe(recipe_id, recipe):
+    queries = generate_queries(recipe)
+    return recipe_id, recipe, queries
+
 def generate_dataset(recipes_file: Path, output_file: Path):
     """ Generates a dataset of queries for a list of recipes."""
     with open(recipes_file, "r") as f:
         recipes = json.load(f)
     
     evaluation_dataset = []
-    for recipe_id, recipe in enumerate(recipes):
-        print(f"Generating queries for recipe {recipe_id}: {recipe['recipe_name']}")
-        queries = generate_queries(recipe)
 
-        for query in queries:
-            evaluation_dataset.append(
-                {
-                    "recipe_id": recipe_id,
-                    "recipe_name": recipe["recipe_name"],
-                    "query": query,
-                }
-            )
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [
+            executor.submit(process_recipe, i, r) for i, r in enumerate(recipes)
+        ]
+
+    for fut in as_completed(futures):
+        recipe_id, recipe, queries = fut.result()
+
+        for q in queries:
+            evaluation_dataset.append({
+                "recipe_id": recipe_id,
+                "recipe_name": recipe["recipe_name"],
+                "query": q,
+            })
+
 
     with open(output_file, "w") as f:
         json.dump(evaluation_dataset, f, indent=4)
