@@ -70,7 +70,7 @@ def build_retriever(config: dict) -> Retriever:
     # build retriever
     retriever = Retriever(
         encoder=encoder,
-        index=indexer,
+        indexer=indexer,
         chunks=chunks,
         config=config
     )
@@ -135,16 +135,23 @@ def build_rag(config_path: str = "configs/base_config.yaml", save: bool = True, 
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    with mlflow.start_run():
+    print("Loaded config")
+
+    with mlflow.start_run():    
 
         if load:
+            # debug line
+            print("Loading retriever")
             retriever = load_retriever(artifact_path)
 
+        print(f"Building retriever")
         # build retriever
         retriever = build_retriever(config)
 
         # save retriever
         if save:
+            # debug line
+            print("Saving retriever")
             save_retriever_artifats(artifact_path, retriever.chunks, retriever.indexer, config)
         
         # build generator
@@ -171,5 +178,5 @@ if __name__ == "__main__":
     print("Testing RAG Pipeline:")
     
     result = pipeline.query("How do I make chicken curry?")
-    print(f"\nQuestion: {result['question']}")
+    print(f"\nQuestion: {result['query']}")
     print(f"\nAnswer: {result['answer']}")

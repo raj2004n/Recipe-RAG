@@ -19,7 +19,9 @@ stages:
     - src/models/indexer.py
     - src/models/retriever.py
     outs:
-    - models/retriever
+    - models/retriever/index.faiss
+    - models/retriever/chunks.json
+    - models/retriever/config.yaml
   
 
 
