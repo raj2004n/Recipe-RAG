@@ -3,6 +3,8 @@ from pathlib import Path
 from ollama import chat
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# TODO: Need to fix. Takes too long to load.
+
 MODEL_NAME = "gemma3:4b"
 
 def get_ingredient_list(recipe: dict) -> list[str]:
