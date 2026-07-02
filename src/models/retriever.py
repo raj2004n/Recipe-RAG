@@ -70,7 +70,3 @@ class Retriever:
                 break
         
         return results
-    
-    #TODO: Change "out" field of dvc.yaml once save modified
-    #TODO: Explicitly save for clarity?
-    # DVC needs to work before moving onto another branch, so yeah fix save. Explicit will be help..
