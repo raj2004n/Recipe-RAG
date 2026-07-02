@@ -52,8 +52,15 @@ stages:
       md5: 44cb95ed9a73cdea6e65522ba191082d
       size: 2683
     outs:
-    - path: models/retriever
+    - path: models/retriever/chunks.json
       hash: md5
-      md5: f3f0d70918e7046bb55640270c71c7ea.dir
-      size: 7846664
-      nfiles: 3
+      md5: d7484992b38e4ec75b97a566e8d70b86
+      size: 5557740
+    - path: models/retriever/config.yaml
+      hash: md5
+      md5: 6f8df066cb00325bb15366776a9c7120
+      size: 626
+    - path: models/retriever/index.faiss
+      hash: md5
+      md5: b24fe278e0b12887197ea136dd2d8d44
+      size: 2288298
