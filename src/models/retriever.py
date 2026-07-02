@@ -67,48 +67,7 @@ class Retriever:
                 break
         
         return results
-
-    def retrieve_as_text(self, query: str, top_k: int = None) -> list[str]:
-        """ Retrieve and return chunk texts directly. """
-        results = self.retrieve(query, top_k)
-        return [r.chunk["text"] for r in results]
     
-    # TODO: seperate into a different file
-    def format_for_llm(self, query: str, top_k: int = None, system_prompt: str = None, max_context_length: int = 1500) -> str:
-        """ Build a prompt-ready context string. """
-        results = self.retrieve(query, top_k)
-        
-        context_parts = []
-        current_length = 0
-
-        for i, result in enumerate(results, 1):
-            meta = result.chunk.get("metadata", {})
-            recipe_name = meta.get("recipe_name", f"Document {i}")
-            chunk_text = f"[Recipe {i}: {recipe_name}]\n{result.chunk['text']}"
-  
-            if current_length + len(chunk_text) > max_context_length:
-                break
-        
-            context_parts.append(chunk_text)
-            current_length += len(chunk_text)
-        
-        context = "\n\n---\n\n".join(context_parts)
-        
-        # TODO: save system prompt in config and track with ml flow
-        if system_prompt is None:
-            system_prompt = (
-                "You are a helpful cooking assistant. "
-                "Answer the user's question using ONLY the recipes provided below. "
-                "If the recipes don't contain enough information, say so honestly. "
-                "Always mention which recipe(s) you're referencing."
-            )
-        return f"""{system_prompt}
-    
-RECIPES: {context}
-
-USER QUESTION: {query}
-
-ANSWER:"""
     #TODO: Change "out" field of dvc.yaml once save modified
     def save(self, path: str):
         """ Save index and chunks to disk."""
