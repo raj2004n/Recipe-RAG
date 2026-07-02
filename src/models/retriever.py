@@ -12,7 +12,7 @@ class RetrievalResult:
     score: float
 
 class Retriever:
-    def __init__(self, encoder: Encoder, index: Indexer, chunks: list[dict], config: dict):
+    def __init__(self, encoder: Encoder, indexer: Indexer, chunks: list[dict], config: dict):
         """ Initialise a Retriever object.
 
             Args:
@@ -26,7 +26,7 @@ class Retriever:
         The chunks maps the retrieved indices (top k) to the corresponding recipe chunks.
         """
         self.encoder = encoder
-        self.index = index
+        self.indexer = indexer
         self.top_k = config["retrieval"]["top_k"]
         self.chunks = chunks
         self.score_threshold = config["retrieval"]["score_threshold"]
@@ -38,7 +38,7 @@ class Retriever:
         query_vector = self.encoder.encode_query(query)
 
         # search recipe index for nearest neighbors of query vector
-        scores, indices = self.index.search(query_vector, top_k)
+        scores, indices = self.indexer.search(query_vector, top_k)
 
         # build results
         results = []
@@ -69,32 +69,5 @@ class Retriever:
         return results
     
     #TODO: Change "out" field of dvc.yaml once save modified
-    def save(self, path: str):
-        """ Save index and chunks to disk."""
-        os.makedirs(path, exist_ok=True)
-        
-        # Save FAISS index
-        self.index.save(os.path.join(path, "index.faiss"))
-        
-        # Save chunks
-        with open(os.path.join(path, "chunks.json"), "w") as f:
-            json.dump(self.chunks, f, indent=2, ensure_ascii=False)
-        
-        print(f"Saved retriever to {path}")
-    
-    @classmethod
-    def load(cls, path: str, encoder, index, config: dict):
-        """ Load a saved retriever. """
-        # Load chunks
-        with open(os.path.join(path, "chunks.json"), "r") as f:
-            chunks = json.load(f)
-        
-        # Load index
-        index.load(os.path.join(path, "index.faiss"))
-        
-        return cls(
-            encoder=encoder,
-            index=index,
-            chunks=chunks,
-            config=config,
-        )
+    #TODO: Explicitly save for clarity?
+    # DVC needs to work before moving onto another branch, so yeah fix save. Explicit will be help..

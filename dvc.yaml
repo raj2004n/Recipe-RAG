@@ -1,6 +1,6 @@
 stages:
   preprocess:
-    cmd: python src/data/preprocess.py
+    cmd: python -m scripts.preprocess
     deps:
     - scripts/preprocess.py
     - data/raw/recipes.json
