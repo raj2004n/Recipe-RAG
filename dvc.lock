@@ -1,18 +1,59 @@
 schema: '2.0'
 stages:
   preprocess:
-    cmd: python src/data/preprocess.py
+    cmd: python -m scripts.preprocess
     deps:
     - path: data/raw/recipes.json
       hash: md5
       md5: 5f422a4713c8e584529800fb3718a4d9
       size: 6431682
-    - path: src/data/preprocess.py
+    - path: scripts/preprocess.py
       hash: md5
-      md5: 2668d1a0b4d57571ff122914ca28acb2
-      size: 9551
+      md5: bd6c13871eea38bc7560c5e3f11936a3
+      size: 9688
     outs:
     - path: data/processed/cleaned_recipes.json
       hash: md5
-      md5: 4226a9ad9103ad8f199a8916b67c9aa2
-      size: 10399202
+      md5: b5561f4bd47dbd07b84dec159f6c0be6
+      size: 10438106
+  build_rag:
+    cmd: python -m scripts.build_rag
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: b80e910f0ec953345336b2350e5fad2a
+      size: 649
+    - path: data/processed/cleaned_recipes.json
+      hash: md5
+      md5: b5561f4bd47dbd07b84dec159f6c0be6
+      size: 10438106
+    - path: scripts/build_rag.py
+      hash: md5
+      md5: 7bec337670f4d0dbdeb5a43e90f981ce
+      size: 4957
+    - path: src/chunking/chunker.py
+      hash: md5
+      md5: 7b0584ee065e4f0107033f77564e5ca7
+      size: 2569
+    - path: src/models/encoder.py
+      hash: md5
+      md5: 88bae318e9410e68b2c170510feea2fc
+      size: 971
+    - path: src/models/generator.py
+      hash: md5
+      md5: c07afe4ad4f00885657fe211654a0bc6
+      size: 1639
+    - path: src/models/indexer.py
+      hash: md5
+      md5: dc3326264d34e59c6bdb4282dd4212a5
+      size: 1665
+    - path: src/models/retriever.py
+      hash: md5
+      md5: 44cb95ed9a73cdea6e65522ba191082d
+      size: 2683
+    outs:
+    - path: models/retriever
+      hash: md5
+      md5: f3f0d70918e7046bb55640270c71c7ea.dir
+      size: 7846664
+      nfiles: 3

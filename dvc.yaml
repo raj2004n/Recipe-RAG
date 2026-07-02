@@ -21,11 +21,5 @@ stages:
     outs:
     - models/retriever
   
-  generate_eval_dataset:
-    cmd: python -m scripts.generate_eval_dataset
-    deps:
-    - scripts/generate_eval_dataset.py
-    - data/processed/cleaned_recipes.json
-    outs:
-    - data/evaluation/evaluation_dataset.json
+
 
