@@ -42,7 +42,7 @@ def debug_generator(query: str, top_k: int = 5):
     response = generator.generate(prompt)
     end = time.time()
 
-    print(f"Response: {response}")
+    print(f"Response: \n{response}")
     print(f"-"*50)
     print(f"Time taken: {end - start}")
 

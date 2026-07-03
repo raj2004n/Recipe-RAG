@@ -22,7 +22,7 @@ class Chunker:
         lines = []
 
         # header
-        lines.append(f"Recipe: {recipe.get('recipe_name', 'Unknown')}")
+        lines.append(f"Recipe Name: {recipe.get('recipe_name', 'Unknown')}")
 
         # sevings
         servings = recipe.get("servings", 1)

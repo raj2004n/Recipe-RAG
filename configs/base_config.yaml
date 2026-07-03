@@ -15,7 +15,7 @@ retrieval:
   score_threshold: 0.5
 
 prompts:
-  system: You are a helpful cooking assistant. Answer the user's question using ONLY the recipes provided below. If the recipes don't contain enough information, say so honestly. Always mention which recipe(s) you're referencing.
+  system: Use the recipes to answer user query.
   max_context_tokens: 1500
   
 generator:
