@@ -33,7 +33,7 @@ def load_rag(config_path: str = "configs/base_config.yaml"):
     generator_path = "models/generator" # can add to config
     model_name = "microsoft/phi-2" # can add to config
     try:
-        generator = Generator(model_name=model_name)
+        generator = Generator(config)
         generator.load(model_name, generator_path)
     except Exception as e:
         raise e

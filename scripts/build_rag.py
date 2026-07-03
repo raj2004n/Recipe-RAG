@@ -125,9 +125,7 @@ def load_retriever(artifact_path: str):
 
 
 def build_generator(config: dict) -> Generator:
-    model_name = config["generator"]["model_name"]
-    generator = Generator(model_name)
-    return generator
+    return Generator(config)
 
 
 def build_rag(config_path: str = "configs/base_config.yaml", save: bool = True, load: bool = False, artifact_path: str = "models/retriever") -> RAGPipeline:
