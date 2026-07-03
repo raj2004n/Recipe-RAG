@@ -7,8 +7,6 @@ from src.models.encoder import Encoder
 from src.models.indexer import Indexer 
 from src.models.retriever import RetrievalResult
 
-# TODO: Measure time taken to load, encode, search, and save
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", type=str, required=False, default="How do I make chicken curry?")
@@ -88,7 +86,7 @@ def debug_retriever(query: str, top_k: int = 5):
     print(f"="*50)
     print(f"Query: {query}")
     print(f"="*50)
-    
+
     results = retriever.retrieve(query, top_k)
     print_results(results)
 

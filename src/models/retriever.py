@@ -4,6 +4,9 @@ from .indexer import Indexer
 import json
 import os
 
+# TODO: Should have save and load method here for consistency.
+# Consider a serparate save methods for the index and the chunks for clarity.
+
 @dataclass
 class RetrievalResult:
     chunk_id: str

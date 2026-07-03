@@ -24,3 +24,5 @@ class Encoder:
             normalize_embeddings=self.normalize_embeddings,
         )
         return embedding
+
+    # no need to save / load a pretrained model
