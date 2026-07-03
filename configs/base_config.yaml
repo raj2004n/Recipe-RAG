@@ -22,5 +22,6 @@ generator:
   model_name: microsoft/phi-2
   max_new_tokens: 512
   max_input_length: 2048
-  max_context_length: 1500
+  max_context_length: 15000
   epochs: 3
+  adapter_path: null
