@@ -4,7 +4,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 class Generator:
-    def __init__(self, model_name: str = "microsoft/phi-2", adapter_path: str = None):
+    def __init__(self, config: dict):
+        model_name = config["generator"]["model_name"]
+        adapter_path = config["generator"]["adapter_path"]
+        
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
