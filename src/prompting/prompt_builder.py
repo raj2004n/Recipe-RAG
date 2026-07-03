@@ -12,31 +12,23 @@ class PromptBuilder:
         context_parts = []
         current_length = 0
 
-        for i, result in enumerate(retrieval_results, 1):
-            recipe_name = result.chunk["metadata"].get(
-                "recipe_name",
-                f"Recipe {result.recipe_id}"
-            )
-            chunk_text= (
-                f"[Recipe {i}: {recipe_name}]\n"
-                f"{result.chunk.get('text', '')}"
-            )
-        
+        for i, result in enumerate(retrieval_results):
+            chunk_text= result.chunk["text"]
+
             tokens = self.tokenizer.encode(chunk_text)
-            
-            if current_length + len(chunk_text) > self.max_context_length:
+
+            if current_length + len(tokens) > self.max_context_length:
+                print(f"Context length exceeded, breaking at chunk {i}")
                 break
         
             context_parts.append(chunk_text)
 
             current_length += len(tokens)
 
-        context = "\n\n---\n\n".join(context_parts)
+        context = "\n\n".join(context_parts)
         
         return f"""{self.system_prompt}
     
-RECIPES: {context}
+Recipes: \n{context}
 
-USER QUESTION: {query}
-
-ANSWER:"""
+User Query: \n{query}"""
