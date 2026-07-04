@@ -1,6 +1,6 @@
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
-from recipe_crawler.items import RecipeItem
+from src.recipe_crawler.recipe_crawler.items import RecipeItem
 from scrapy import Request, Spider
 
 
