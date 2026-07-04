@@ -10,6 +10,7 @@ from src.prompting.prompt_builder import PromptBuilder
 from src.models.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 from transformers import AutoTokenizer
+from src.utils import flatten_config_dict
 import os
 import copy
 
@@ -19,19 +20,6 @@ import copy
 # connect to remote MlFlow server
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("first-rag-experiment")
-
-def flatten_dict(d, parent_key="", sep="."):
-    items = {}
-
-    for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-
-        if isinstance(v, dict):
-            items.update(flatten_dict(v, new_key, sep=sep))
-        else:
-            items[new_key] = v
-
-    return items
 
 
 def build_retriever(config: dict) -> Retriever:
@@ -162,7 +150,7 @@ def build_rag(config_path: str = "configs/base_config.yaml", save: bool = True, 
         pipeline = RAGPipeline(retriever, prompt_builder, generator, tokenizer)
 
         # log params
-        mlflow.log_params(flatten_dict(config))
+        mlflow.log_params(flatten_config_dict(config))
         # log artifact
         mlflow.log_artifact(config_path)
 

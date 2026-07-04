@@ -52,6 +52,25 @@ def load_retriever(config: dict) -> tuple[Retriever, float, float, float]:
 
     return retriever, chunks_time, index_time, retriever_time
 
+ #load evaluation dataset
+def load_eval_dataset(path: str) -> list[dict]:
+    with open(path, "r") as f:
+        dataset = [json.loads(line) for line in f if line.strip()]
+    return dataset
+
 # build generator
 def build_generator(config: dict) -> Generator:
     return Generator(config)
+
+def flatten_config_dict(d, parent_key="", sep="."):
+    items = {}
+
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+
+        if isinstance(v, dict):
+            items.update(flatten_config_dict(v, new_key, sep=sep))
+        else:
+            items[new_key] = v
+
+    return items
