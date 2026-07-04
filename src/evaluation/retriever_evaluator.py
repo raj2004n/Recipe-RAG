@@ -23,19 +23,28 @@ import numpy as np
 
 def evaluate_strict(retriever: Retriever, evaluation_dataset: list[dict], ks: Sequence[int] = (1, 3, 5)) -> dict[str, float]:
     """ Evaluates a retriever on a dataset of queries and ground truths. """
-
-    results = {k : [] for k in ks}
+    # dict of recall@k scores
+    recall_at_ks = {
+        k : [] for k in ks
+    }
+    
     max_k = max(ks)
 
-    for sample in evaluation_dataset:
-        query = sample["query"]
-        source_recipe = sample["recipe_id"]
+    for eval in evaluation_dataset:
+        query = eval["query"]
+        ground_truth_id = eval["recipe_id"]
 
-        retrieved_ids = retriever.retrieve(query, max_k)
+        results = retriever.retrieve(query, max_k)
+        
+        # assign retrieved ids to a list
+        retrieved_ids = []
+        for r in results:
+            retrieved_ids.append(r.recipe_id)
 
+        # calculate recall@k for each k
         for k in ks:
-            score = strict_recall_at_k(retrieved_ids, source_recipe, k)
-            results[k].append(score)
+            score = strict_recall_at_k(retrieved_ids, ground_truth_id, k)
+            recall_at_ks[k].append(score)
     
     return {
         f"strict_recall@{k}": np.mean(results[k]) for k in ks
