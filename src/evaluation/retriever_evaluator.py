@@ -47,5 +47,5 @@ def evaluate_strict(retriever: Retriever, evaluation_dataset: list[dict], ks: Se
             recall_at_ks[k].append(score)
     
     return {
-        f"strict_recall@{k}": np.mean(results[k]) for k in ks
+        f"strict_recall_at_{k}": np.mean(recall_at_ks[k]) for k in ks
     }
