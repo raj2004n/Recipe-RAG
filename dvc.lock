@@ -21,46 +21,62 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: b80e910f0ec953345336b2350e5fad2a
-      size: 649
+      md5: 2146ca710ab10f9594f81cf65e08d414
+      size: 489
     - path: data/processed/cleaned_recipes.json
       hash: md5
       md5: 9e23ba439d4e300a3fba4ae8e1c088e9
       size: 10466636
     - path: scripts/build_rag.py
       hash: md5
-      md5: 7bec337670f4d0dbdeb5a43e90f981ce
-      size: 4957
+      md5: 23f4d88e37193f3c2bd04834e7723ee0
+      size: 4876
     - path: src/chunking/chunker.py
       hash: md5
-      md5: 7b0584ee065e4f0107033f77564e5ca7
-      size: 2569
+      md5: 6032aad236822e158c5245988f202440
+      size: 2574
     - path: src/models/encoder.py
       hash: md5
-      md5: 88bae318e9410e68b2c170510feea2fc
-      size: 971
+      md5: 4cc08eb8d0f7f41daa34de34fe41d0d9
+      size: 1020
     - path: src/models/generator.py
       hash: md5
-      md5: c07afe4ad4f00885657fe211654a0bc6
-      size: 1639
+      md5: 2b19b488f0e2d660aed8cf041bc7334d
+      size: 1713
     - path: src/models/indexer.py
       hash: md5
       md5: dc3326264d34e59c6bdb4282dd4212a5
       size: 1665
     - path: src/models/retriever.py
       hash: md5
-      md5: 85ee88cdb9f21560fc8acdffc17c17fe
-      size: 2476
+      md5: 446d1a2ef0a45e9b47cb47d680d5c78a
+      size: 2618
     outs:
     - path: models/retriever/chunks.json
       hash: md5
-      md5: d7484992b38e4ec75b97a566e8d70b86
-      size: 5557740
+      md5: a0c0a1d19374c2a54259bf92282500af
+      size: 5565150
     - path: models/retriever/config.yaml
       hash: md5
-      md5: 6f8df066cb00325bb15366776a9c7120
-      size: 626
+      md5: c1d18c94e84ab22cccc0c68bee4ce698
+      size: 458
     - path: models/retriever/index.faiss
       hash: md5
-      md5: b24fe278e0b12887197ea136dd2d8d44
+      md5: ad63a3294ffd9130f726fe99e23b64af
       size: 2288298
+  generate_eval_dataset:
+    cmd: python -m scripts.generate_eval_dataset
+    deps:
+    - path: data/processed/cleaned_recipes.json
+      hash: md5
+      md5: 9e23ba439d4e300a3fba4ae8e1c088e9
+      size: 10466636
+    - path: scripts/generate_eval_dataset.py
+      hash: md5
+      md5: 754cf75bd51127a637e5227a23611351
+      size: 234
+    outs:
+    - path: data/evaluation/evaluation_dataset.json
+      hash: md5
+      md5: bb8ca9b5a4a9064c40f0910b1da3f701
+      size: 518646
