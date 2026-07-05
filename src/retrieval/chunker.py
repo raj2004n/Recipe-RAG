@@ -1,8 +1,11 @@
+from pathlib import Path
+import json
+
 class Chunker:
     def __init__(self, strategy: str):
         self.strategy = strategy
 
-    def chunk(self, recipe: dict) -> list[dict]:
+    def _chunk(self, recipe: dict) -> list[dict]:
         if self.strategy == "whole recipe":
             text = self._format_text_for_embedding(recipe)
             recipe_id = recipe.get("recipe_id", "Unknown")
@@ -16,7 +19,20 @@ class Chunker:
                     "servings": recipe.get("servings", "")
                 }
             }]
-    
+
+    def get_chunks(self, recipes_path: Path):
+        """ Get chunks from a list of recipes. """
+        with open(recipes_path) as f:
+            recipes = json.load(f)
+        
+        # chunk recipes
+        chunks = []
+        for r in recipes:
+            recipe_chunks = self._chunk(r)
+            chunks.extend(recipe_chunks)
+        
+        return chunks
+
     def _format_text_for_embedding(self, recipe: dict) -> str:
         """ Format recipe text for embedding. """
         lines = []

@@ -12,7 +12,7 @@ class Indexer:
         if self.index_type == "FlatIP":
             return faiss.IndexFlatIP(self.dimension)
         
-    def add(self, vectors: np.ndarray, ids: np.ndarray):
+    def _add(self, vectors: np.ndarray, ids: np.ndarray):
         """ Add vectors to the index. """
         # numpy defualt is float64, but faiss requires float32
         vectors = vectors.astype("float32")
@@ -25,6 +25,11 @@ class Indexer:
         else:
             self.index.add(vectors)
         
+    def index_embeddings(self, embeddings: np.ndarray):
+        """ Assign ids to the embeddings. """
+        ids = np.arange(len(embeddings))
+        self._add(embeddings, ids)
+
     def search(self, query_vectors: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
         """ Search for the k nearest neighbors of the query vectors. """
         query_vectors = query_vectors.astype("float32")

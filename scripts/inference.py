@@ -1,11 +1,13 @@
 import yaml
-import logging
 from src.retrieval.encoder import Encoder
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
 from src.generation.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
+#TODO: Passing in the prompt template into the prompt builder will alow the rag pipeline to be useable (which is clean).
+
+#TODO: Scripts should be short. Add whatever functions in src.
 def load_rag(config_path: str = "configs/base_config.yaml"):
     """Load pre-built RAG system from disk"""
     with open(config_path) as f:

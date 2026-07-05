@@ -17,9 +17,9 @@ class RetrievalResult:
 class Retriever:
     def __init__(
             self,
+            chunks: list[dict],
             encoder: Encoder,
             indexer: Indexer,
-            chunks: list[dict],
             top_k: int,
             score_threshold: float
         ):

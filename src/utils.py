@@ -5,27 +5,27 @@ from pathlib import Path
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
 from src.retrieval.encoder import Encoder
-from src.generation.generator import Generator
 
-# load config
+def save_config(directory: Path, config: dict):
+    path = directory / "config.yaml"
+    with open(path, "w") as f:
+        yaml.dump(config, f, sort_keys=False)
+
 def load_config(config_file: str = "configs/base_config.yaml") -> dict:
     with open(config_file, "r") as f:
         config = yaml.safe_load(f)
     return config
 
-# load chunks
 def load_chunks(path: str = "models/retriever/chunks.json") -> list[dict]:
     with open(path) as f:
         chunks = json.load(f)
     return chunks
 
-# load index
 def load_indexer(path: str = "models/retriever/index.faiss") -> Indexer:
     indexer = Indexer(1) # placeholder, overwrite with load
     indexer.load(path)
     return indexer
 
-# load retriever and return time taken
 def load_retriever(config: dict) -> tuple[Retriever, float, float, float]:
     
     start = time.time()
@@ -51,15 +51,10 @@ def load_retriever(config: dict) -> tuple[Retriever, float, float, float]:
 
     return retriever, chunks_time, index_time, retriever_time
 
- #load evaluation dataset
 def load_eval_dataset(path: str) -> list[dict]:
     with open(path, "r") as f:
         dataset = [json.loads(line) for line in f if line.strip()]
     return dataset
-
-# build generator
-def build_generator(model, adapter_path) -> Generator:
-    return Generator(model, adapter_path)
 
 def flatten_config_dict(d, parent_key="", sep="."):
     items = {}

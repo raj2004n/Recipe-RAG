@@ -7,7 +7,7 @@ class Encoder:
         self.batch_size = batch_size
         self.normalize_embeddings = normalize_embeddings
 
-    def encode_documents(self, documents: list[str]) -> np.ndarray:
+    def _encode_documents(self, documents: list[str]) -> np.ndarray:
         """ Encode a list of documents into dense vectors. """
         embeddings = self.model.encode(
             documents,
@@ -15,6 +15,12 @@ class Encoder:
             normalize_embeddings=self.normalize_embeddings,
             show_progress_bar=True,
         )
+        return embeddings
+    
+    def encode_chunks(self, chunks: list[dict]) -> np.ndarray:
+        """ Encode a list of chunks into dense vectors. """
+        texts = [c["text"] for c in chunks]
+        embeddings = self._encode_documents(texts)
         return embeddings
 
     def encode_query(self, query: str) -> np.ndarray:
@@ -24,5 +30,5 @@ class Encoder:
             normalize_embeddings=self.normalize_embeddings,
         )
         return embedding
-
-    # no need to save / load a pretrained model
+    
+    # Note: no need to save / load a pretrained model
