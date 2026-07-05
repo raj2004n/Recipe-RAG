@@ -30,6 +30,7 @@ def run():
     retriever_config = model_config["retriever"]
 
     # generator configs
+    prompt_templates = prompt_config["template"]
     prompt_config = prompts_config["config"]
     generator_config = model_config["generator"]
 
@@ -67,7 +68,8 @@ def run():
         
         prompt_builder = PromptBuilder(
             tokenizer,
-            prompt_config["max_context_tokens"]
+            prompt_config["max_context_tokens"],
+            prompt_templates
         )
         generator = Generator(
             generator_config["model"],

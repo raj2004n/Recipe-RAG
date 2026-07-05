@@ -5,11 +5,12 @@ from transformers import AutoTokenizer
 # This is in its own dir, but not needed
 
 class PromptBuilder:
-    def __init__(self, tokenizer: AutoTokenizer, max_context_length: int):
+    def __init__(self, tokenizer: AutoTokenizer, max_context_length: int, prompt_templates: dict):
         self.tokenizer = tokenizer
         self.max_context_length = max_context_length
+        self.prompt_templates = prompt_templates
     
-    def build_prompt(self, prompt_template: str, query: str, retrieval_results: list[RetrievalResult]) -> str:
+    def build_prompt(self, query: str, retrieval_results: list[RetrievalResult]) -> str:
         """ Build a prompt-ready context string. """
         context_parts = []
         current_length = 0
@@ -28,16 +29,20 @@ class PromptBuilder:
             current_length += len(tokens)
 
         context = "\n\n".join(context_parts)
-        
+
+        prompt_template = self.prompt_templates["generation"]
+
         return prompt_template.format(
             context=context,
             query=query
         )
     
-    def build_judge_prompt(self, prompt_template: str, recipe: dict, query: str, response: str) -> str:
+    def build_judge_prompt(self, recipe: dict, query: str, response: str) -> str:
         """ Build a prompt-ready context string for LLM judge during evaluation. """
         igredients = recipe.get("ingredients", [])
         ingredients = "\n".join(igredients)
+
+        prompt_template = self.prompt_templates["judge"]
 
         return prompt_template.format(
             query=query,
