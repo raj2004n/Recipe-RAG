@@ -1,0 +1,40 @@
+config:
+  model_name: microsoft/phi-2
+  max_context_tokens: 1500
+
+template:
+  generation: |
+    Use the RELEVANT RECIPES and USER QUERY to answer the question.
+
+    RELEVANT RECIPES: {context}
+
+    USER QUERY: {query}
+
+  judge: |
+    You are a judge for a recipe RAG model.
+
+    User Query: {query}
+
+    Retrieved Recipe: 
+    Name: {recipe["name"]}
+    Ingredients: {ingredients}
+    Instructions: {recipe["instructions"]}
+
+    Response: {response}
+
+    Score the following:
+    1. Query relevance (0 - 2)
+    0 = irrelevant
+    1 = partially relevant
+    2 = relevant
+
+    2. Faithfulness (0 - 2)
+    0 = irrelevant
+    1 = partially relevant
+    2 = relevant
+
+    Return JSON:
+    {{
+        "query_relevance": int,
+        "faithfulness": int
+    }}
