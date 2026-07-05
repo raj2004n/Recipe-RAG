@@ -1,24 +1,21 @@
-#TODO: Consisten naming, e.g. model
+#TODO: Add dataset_generator prompts, first need to test how to properly input
 #TODO: Add save / load paths
-embedding:
+#TODO: Consider different config files
+chunking:
+  strategy: whole recipe
+
+encoder:
   model: sentence-transformers/all-MiniLM-L6-v2
   batch_size: 32
   normalize_embeddings: true
 
-chunking:
-  strategy: whole recipe
-
-index:
+indexer:
   type: FlatIP
   dimension: 384 # for all-MiniLM-L6-v2
   
-retrieval:
+retriever:
   top_k: 10
   score_threshold: 0.5
-
-prompts:
-  system: Use the recipes to answer user query.
-  max_context_tokens: 1500
   
 generator:
   model_name: microsoft/phi-2
@@ -27,3 +24,21 @@ generator:
   max_context_length: 15000
   epochs: 3
   adapter_path: null
+
+evaluation dataset generator:
+  model: gemma3:4b
+  request_timeout: 120
+  max_retries: 4
+  backoff_base: 2
+  max_workers: 4
+
+paths:
+  files:
+    base_config: configs/base_config.yaml
+    raw_recipes: data/raw/recipes.json
+    cleaned_recipes: data/processed/cleaned_recipes.json
+    evaluation_queries: data/evaluation/evaluation_queries.json
+  
+  directories:
+    retriever_artifacts: models/retriever
+  
