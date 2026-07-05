@@ -2,10 +2,10 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 
 class Encoder:
-    def __init__(self, config: dict):
-        self.model = SentenceTransformer(config["embedding"]["model"])
-        self.batch_size = config["embedding"]["batch_size"]
-        self.normalize_embeddings = config["embedding"]["normalize_embeddings"]
+    def __init__(self, model, batch_size, normalize_embeddings):
+        self.model = SentenceTransformer(model)
+        self.batch_size = batch_size
+        self.normalize_embeddings = normalize_embeddings
 
     def encode_documents(self, documents: list[str]) -> np.ndarray:
         """ Encode a list of documents into dense vectors. """

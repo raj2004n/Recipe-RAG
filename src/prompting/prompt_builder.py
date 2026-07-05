@@ -1,13 +1,15 @@
 from src.models.retriever import RetrievalResult
 from transformers import AutoTokenizer
 
+#TODO: Change structure
+# This is in its own dir, but not needed
+
 class PromptBuilder:
-    def __init__(self, config: dict, tokenizer: AutoTokenizer):
-        self.system_prompt = config["prompts"]["system"]
-        self.max_context_length = config["prompts"]["max_context_tokens"]
+    def __init__(self, tokenizer: AutoTokenizer, max_context_length: int):
         self.tokenizer = tokenizer
+        self.max_context_length = max_context_length
     
-    def build(self, query: str, retrieval_results: list[RetrievalResult]) -> str:
+    def build_prompt(self, prompt_template: str, query: str, retrieval_results: list[RetrievalResult]) -> str:
         """ Build a prompt-ready context string. """
         context_parts = []
         current_length = 0
@@ -27,43 +29,19 @@ class PromptBuilder:
 
         context = "\n\n".join(context_parts)
         
-        return f"""{self.system_prompt}
+        return prompt_template.format(
+            context=context,
+            query=query
+        )
     
-Recipes: \n{context}
-
-User Query: \n{query}"""
-    
-    def build_judge_prompt(self, recipe: dict, query: str, response: str) -> str:
+    def build_judge_prompt(self, prompt_template: str, recipe: dict, query: str, response: str) -> str:
         """ Build a prompt-ready context string for LLM judge during evaluation. """
         igredients = recipe.get("ingredients", [])
         ingredients = "\n".join(igredients)
 
-        return f"""
-You are a judge for a recipe RAG model.
-
-User Query: {query}
-
-Retrieved Recipe: 
-Name: {recipe["name"]}
-Ingredients: {ingredients}
-Instructions: {recipe["instructions"]}
-
-Response: {response}
-
-Score the following:
-1. Query relevance (0 - 2)
-0 = irrelevant
-1 = partially relevant
-2 = relevant
-
-2. Faithfulness (0 - 2)
-0 = irrelevant
-1 = partially relevant
-2 = relevant
-
-Return JSON:
-{{
-    "query_relevance": int,
-    "faithfulness": int
-}}
-"""
+        return prompt_template.format(
+            query=query,
+            recipe=recipe,
+            ingredients=ingredients,
+            response=response
+        )

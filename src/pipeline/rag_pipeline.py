@@ -5,11 +5,10 @@ from transformers import AutoTokenizer
 from typing import Dict
 
 class RAGPipeline:
-    def __init__(self, retriever: Retriever, prompt_builder: PromptBuilder, generator: Generator, tokenizer: AutoTokenizer):
+    def __init__(self, retriever: Retriever, prompt_builder: PromptBuilder, generator: Generator):
         self.retriever = retriever
         self.prompt_builder = prompt_builder
         self.generator = generator
-        self.tokenizer = tokenizer
 
     def query(self, query: str, k: int = 3) -> Dict:
         """Full RAG query: retrieve + generate"""

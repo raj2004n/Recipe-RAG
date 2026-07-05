@@ -2,9 +2,9 @@ import faiss
 import numpy as np
 
 class Indexer:
-    def __init__(self, dimension: int, index_type: str = "FlatIP"):
-        self.dimension = dimension
+    def __init__(self, index_type: str, dimension: int):
         self.index_type = index_type
+        self.dimension = dimension
         self.index = self._create_index()
     
     def _create_index(self) -> faiss.Index:

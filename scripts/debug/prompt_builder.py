@@ -3,12 +3,19 @@ from src.models.retriever import RetrievalResult
 from transformers import AutoTokenizer
 from src.utils import load_config
 
-config = load_config()
+prompts_config = load_config("configs/prompts_config.yaml")
+template = prompts_config["template"]
+config = prompts_config["config"]
 
-tokenizer = AutoTokenizer.from_pretrained(config["generator"]["model_name"])
+# TODO: Considering the tokenizer need to be the same (?), and just preloaded, make sure it is consisten or saved
+tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
 
-builder = PromptBuilder(config, tokenizer)
+builder = PromptBuilder(
+    tokenizer,
+    config["max_context_tokens"]
+)
 
+# made up results
 results = [
     RetrievalResult(
         chunk_id="1_0",
@@ -28,7 +35,9 @@ results = [
     ),
 ]
 
-prompt = builder.build(
+
+prompt = builder.build_prompt(
+    prompt_template=template["generation"],
     query="How do I make chicken curry?",
     retrieval_results=results
 )

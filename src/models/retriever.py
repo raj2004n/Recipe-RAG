@@ -15,7 +15,14 @@ class RetrievalResult:
     score: float
 
 class Retriever:
-    def __init__(self, encoder: Encoder, indexer: Indexer, chunks: list[dict], config: dict):
+    def __init__(
+            self,
+            encoder: Encoder,
+            indexer: Indexer,
+            chunks: list[dict],
+            top_k: int,
+            score_threshold: float
+        ):
         """ Initialise a Retriever object.
 
             Args:
@@ -28,11 +35,11 @@ class Retriever:
         The index is used to search for the nearest neighbors of the query vector (in the encoder space of the recipe vectors).
         The chunks maps the retrieved indices (top k) to the corresponding recipe chunks.
         """
+        self.chunks = chunks
         self.encoder = encoder
         self.indexer = indexer
-        self.top_k = config["retrieval"]["top_k"]
-        self.chunks = chunks
-        self.score_threshold = config["retrieval"]["score_threshold"]
+        self.top_k = top_k
+        self.score_threshold = score_threshold
     
     def retrieve(self, query: str, top_k : int = None) -> list[RetrievalResult]:
         top_k = top_k or self.top_k
@@ -70,3 +77,26 @@ class Retriever:
                 break
         
         return results
+    
+    def save_chunks(self, path: str):
+        os.makedirs(path, exist_ok=True)
+        with open(os.path.join(path, "chunks.json"), "w") as f:
+            json.dump(self.chunks, f, indent=2, ensure_ascii=False)
+    
+    def save_indexer(self, path: str):
+        os.makedirs(path, exist_ok=True)
+        self.indexer.save(os.path.join(path, "index.faiss"))
+
+    def load_chunks(self, path: str):
+        with open(os.path.join(path, "chunks.json")) as f:
+            chunks = json.load(f)
+        return chunks 
+    
+    def load_indexer(self, path: str):
+        self.indexer = Indexer(
+            1, # placeholder, overwrite with load
+            self.indexer.dimension
+        )
+        self.indexer.load(os.path.join(path, "index.faiss"))
+        return self.indexer
+    

@@ -1,6 +1,6 @@
 class Chunker:
-    def __init__(self, config: dict):
-        self.strategy = config["chunking"]["strategy"]
+    def __init__(self, strategy: str):
+        self.strategy = strategy
 
     def chunk(self, recipe: dict) -> list[dict]:
         if self.strategy == "whole recipe":

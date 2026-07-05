@@ -1,28 +1,13 @@
-import json
-import argparse
-from pathlib import Path
-from ollama import chat
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic import BaseModel, ValidationError
+from pathlib import Path
+from ollama import chat
 from tqdm import tqdm
-
-MODEL_NAME = "gemma3:4b"
-REQUEST_TIMEOUT = 120
-MAX_RETRIES = 4
-BACKOFF_BASE = 2
-MAX_WORKERS = 4
+import time
+import json
 
 class QueryList(BaseModel):
     queries: list[str]
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--recipes_path", type=str, required=False, default="data/processed/cleaned_recipes.json")
-    parser.add_argument("--output_path", type=str, required=False, default="data/processed/evaluation_queries.json")
-    parser.add_argument("--max_workers", type=int, required=False, default=MAX_WORKERS)
-    return parser.parse_args()
-
 
 def get_ingredient_list(recipe: dict) -> list[str]:
     """ Returns a list of ingredients for a recipe."""
@@ -66,15 +51,15 @@ Ingredients:
 """
     return prompt
 
-def generate_queries(recipe: dict) -> list[str]:
+def generate_queries(recipe: dict, model_name: str, max_retries: int, request_timeout: int, backoff_base: int) -> list[str]:
     """ Generates a list of queries for a recipe."""
     prompt = build_prompt(recipe)
     last_error = None
 
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(max_retries):
         try:
             response = chat(
-                MODEL_NAME,
+                model_name,
                 messages=[{"role": "user", "content": prompt,}],
                 format="json"
             )
@@ -85,21 +70,26 @@ def generate_queries(recipe: dict) -> list[str]:
         except Exception as e:
             last_error = e
         
-        if attempt < MAX_RETRIES - 1:
-            sleep_for = BACKOFF_BASE ** attempt
+        if attempt < max_retries - 1:
+            sleep_for = backoff_base ** attempt
             time.sleep(sleep_for)
 
     return []
 
-def process_recipe(recipe_id: int, recipe: dict) -> tuple[int, dict, list[str]]:
-    queries = generate_queries(recipe)
+def process_recipe(recipe_id: int, 
+                   recipe: dict,
+                   model_name: str,
+                   max_retries: int,
+                   request_timeout: int,
+                   backoff_base: int) -> tuple[int, dict, list[str]]:
+    queries = generate_queries(recipe, model_name, max_retries, request_timeout, backoff_base)
     return recipe_id, recipe, queries
 
-def load_processed_ids(output_file: Path) -> set[int]:
-    if not output_file.exists():
+def load_processed_ids(output_path: Path) -> set[int]:
+    if not output_path.exists():
         return set()
     processed = set()
-    with open(output_file, "r") as f:
+    with open(output_path, "r") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -111,12 +101,18 @@ def load_processed_ids(output_file: Path) -> set[int]:
                 continue
         return processed
 
-def generate_dataset(recipes_file: Path, output_file: Path, max_workers: int = MAX_WORKERS):
+def generate_dataset(recipes_path: Path,
+                     output_path: Path,
+                     model_name: str,
+                     max_workers: int,
+                     request_timeout: int,
+                     max_retries: int,
+                     backoff_base: int):
     """ Generates a dataset of queries for a list of recipes."""
-    with open(recipes_file, "r") as f:
+    with open(recipes_path, "r") as f:
         recipes = json.load(f)
     
-    already_processed = load_processed_ids(output_file)
+    already_processed = load_processed_ids(output_path)
     todo = [(i, r) for i, r in enumerate(recipes) if i not in already_processed]
 
     if not todo:
@@ -124,8 +120,18 @@ def generate_dataset(recipes_file: Path, output_file: Path, max_workers: int = M
     
     failed_ids = []
 
-    with open(output_file, "a") as out_f, ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_recipe, i, r): i for i, r in todo}
+    with open(output_path, "a") as out_f, ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                process_recipe,
+                i, 
+                r,
+                model_name,
+                max_retries,
+                request_timeout,
+                backoff_base
+                ): i for i, r in todo
+            }
 
         for fut in tqdm(as_completed(futures), total=len(futures), desc="Generating queries"):
             recipe_id = futures[fut]
@@ -152,7 +158,3 @@ def generate_dataset(recipes_file: Path, output_file: Path, max_workers: int = M
             print(f"Failed to generate queries for {len(failed_ids)} recipes: {preview}")
     
     print(f"Saved {len(todo) - len(failed_ids)} evaluation queries")
-
-if __name__ == "__main__":
-    args = parse_args()
-    generate_dataset(Path(args.recipes_path), Path(args.output_path), max_workers=args.max_workers)

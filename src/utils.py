@@ -1,12 +1,11 @@
 import yaml
 import json
 import time
+from pathlib import Path
 from src.models.indexer import Indexer
 from src.models.retriever import Retriever
 from src.models.encoder import Encoder
 from src.models.generator import Generator
-
-# TODO: Can add paths in config file
 
 # load config
 def load_config(config_file: str = "configs/base_config.yaml") -> dict:
@@ -59,8 +58,8 @@ def load_eval_dataset(path: str) -> list[dict]:
     return dataset
 
 # build generator
-def build_generator(config: dict) -> Generator:
-    return Generator(config)
+def build_generator(model, adapter_path) -> Generator:
+    return Generator(model, adapter_path)
 
 def flatten_config_dict(d, parent_key="", sep="."):
     items = {}

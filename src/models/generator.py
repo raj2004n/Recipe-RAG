@@ -4,17 +4,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 class Generator:
-    def __init__(self, config: dict):
-        model_name = config["generator"]["model_name"]
-        adapter_path = config["generator"]["adapter_path"]
-        
-        self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+    def __init__(self, model, adapter_path):
+        self.model_name = model
+        self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         # load base model
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
+            model,
             torch_dtype=torch.float16,
             device_map="auto"
         )
