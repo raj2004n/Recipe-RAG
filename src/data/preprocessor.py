@@ -4,7 +4,6 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-
 def setup_logging():
     """ Setup logging for the preprocessor.
     """
@@ -26,7 +25,6 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 logger = setup_logging()
-
 
 def load_raw_data(filepath: str) -> list[dict]:
     """ Load raw recipe data from a JSON file 
@@ -59,7 +57,6 @@ def load_raw_data(filepath: str) -> list[dict]:
     with open(filepath, 'r') as f:
         recipes = json.load(f)
     return recipes
-
 
 def validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
     """ Validate recipe dictionary by removing ingredient groups with no ingredients and instruction groups with no instructions.
@@ -94,7 +91,6 @@ def validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
 
     return recipe, stats
 
-
 def clean_name(name: str) -> str:
     """ Normalise name. 
         
@@ -128,7 +124,6 @@ def clean_name(name: str) -> str:
     # return original name if everything stripped
     return name if name else initial_name 
 
-
 def clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | None]:
     """ Clean amount and unit strings, handle dual units.
 
@@ -150,7 +145,6 @@ def clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | No
     # if dual amount not found
     return amount, unit, None, None
 
-
 def clean_note(note: str) -> str:
     """ Clean ingredient note.
         
@@ -166,7 +160,6 @@ def clean_note(note: str) -> str:
             note = note[1:-1].strip()
     
     return note
-
 
 def clean_junk_group_names(groups: list[dict]) -> list[dict]:
     """ Clean list of group dictionaries by renaming junk group names (applies to ingredient and instruction groups)
@@ -187,7 +180,6 @@ def clean_junk_group_names(groups: list[dict]) -> list[dict]:
                 g["group_name"] = "Unknown"
 
     return groups
-
 
 def preprocess(input_path: str, output_path: str) -> None:
     """ Preprocess raw recipe data and save it to a JSON file."""
@@ -281,10 +273,3 @@ def preprocess(input_path: str, output_path: str) -> None:
         json.dump(valid_recipes, f, indent=4, ensure_ascii=False)
 
     logger.info(f"Saved valid recipes to {output_path}.")
-
-
-if __name__ == "__main__":
-    preprocess(
-        input_path="data/raw/recipes.json",
-        output_path="data/processed/cleaned_recipes.json"
-    )
