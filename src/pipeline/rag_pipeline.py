@@ -1,6 +1,6 @@
-from src.models.retriever import Retriever
-from src.prompting.prompt_builder import PromptBuilder
-from src.models.generator import Generator
+from src.retrieval.retriever import Retriever
+from src.generation.prompt_builder import PromptBuilder
+from src.generation.generator import Generator
 from transformers import AutoTokenizer
 from typing import Dict
 

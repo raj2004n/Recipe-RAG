@@ -1,6 +1,6 @@
 import argparse
 import time
-from src.prompting.prompt_builder import PromptBuilder
+from src.generation.prompt_builder import PromptBuilder
 from src.utils import load_config, load_retriever, build_generator
 
 def parse_args():

@@ -2,12 +2,12 @@ import mlflow
 import yaml
 import json
 import numpy as np
-from src.models.encoder import Encoder
-from src.models.indexer import Indexer
-from src.models.retriever import Retriever
-from src.chunking.chunker import Chunker
-from src.prompting.prompt_builder import PromptBuilder
-from src.models.generator import Generator
+from src.retrieval.encoder import Encoder
+from src.retrieval.indexer import Indexer
+from src.retrieval.retriever import Retriever
+from src.retrieval.chunker import Chunker
+from src.generation.prompt_builder import PromptBuilder
+from src.generation.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 from transformers import AutoTokenizer
 from src.utils import flatten_config_dict, load_config, build_generator

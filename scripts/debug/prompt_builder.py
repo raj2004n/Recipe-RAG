@@ -1,5 +1,5 @@
-from src.prompting.prompt_builder import PromptBuilder
-from src.models.retriever import RetrievalResult
+from src.generation.prompt_builder import PromptBuilder
+from src.retrieval.retriever import RetrievalResult
 from transformers import AutoTokenizer
 from src.utils import load_config
 

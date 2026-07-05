@@ -1,4 +1,4 @@
-from src.models.retriever import RetrievalResult
+from src.retrieval.retriever import RetrievalResult
 from transformers import AutoTokenizer
 
 #TODO: Change structure

@@ -2,10 +2,10 @@ import yaml
 import json
 import time
 from pathlib import Path
-from src.models.indexer import Indexer
-from src.models.retriever import Retriever
-from src.models.encoder import Encoder
-from src.models.generator import Generator
+from src.retrieval.indexer import Indexer
+from src.retrieval.retriever import Retriever
+from src.retrieval.encoder import Encoder
+from src.generation.generator import Generator
 
 # load config
 def load_config(config_file: str = "configs/base_config.yaml") -> dict:

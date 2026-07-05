@@ -1,9 +1,9 @@
 import yaml
 import logging
-from src.models.encoder import Encoder
-from src.models.indexer import Indexer
-from src.models.retriever import Retriever
-from src.models.generator import Generator
+from src.retrieval.encoder import Encoder
+from src.retrieval.indexer import Indexer
+from src.retrieval.retriever import Retriever
+from src.generation.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
 def load_rag(config_path: str = "configs/base_config.yaml"):

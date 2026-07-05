@@ -1,6 +1,6 @@
 import argparse
-from src.models.indexer import Indexer 
-from src.models.retriever import RetrievalResult
+from src.retrieval.indexer import Indexer 
+from src.retrieval.retriever import RetrievalResult
 from src.utils import load_config, load_retriever
 
 def parse_args():
