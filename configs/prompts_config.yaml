@@ -1,4 +1,4 @@
-config:
+settings:
   model_name: microsoft/phi-2
   max_context_tokens: 1500
 

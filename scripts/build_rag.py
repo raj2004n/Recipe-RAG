@@ -30,8 +30,8 @@ def run():
     retriever_config = model_config["retriever"]
 
     # generator configs
-    prompt_templates = prompt_config["template"]
-    prompt_config = prompts_config["config"]
+    prompt_templates = prompts_config["template"]
+    prompt_settings = prompts_config["settings"]
     generator_config = model_config["generator"]
 
 
@@ -85,12 +85,14 @@ def run():
 
         # save config
         save_config(Path(directories["retriever_artifacts"]), model_config)
+        save_config(Path(directories["retriever_artifacts"]), prompts_config)
 
         # encoder, tokenizer (in prompt builder) are pre-loaded, so no need to save
 
         # log params, artifacts
         mlflow.log_params(flatten_config_dict(model_config))
         mlflow.log_artifact(files["base_config"])
+        mlflow.log_artifact(files["prompts_config"])
 
     return
 

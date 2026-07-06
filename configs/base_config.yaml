@@ -35,9 +35,13 @@ evaluation dataset generator:
 paths:
   files:
     base_config: configs/base_config.yaml
+    prompts_config: configs/prompts_config.yaml
     raw_recipes: data/raw/recipes.json
     cleaned_recipes: data/processed/cleaned_recipes.json
     evaluation_queries: data/evaluation/evaluation_queries.json
+    
+    chunks: models/retriever/chunks.json
+    indexer: models/retriever/index.faiss
   
   directories:
     retriever_artifacts: models/retriever

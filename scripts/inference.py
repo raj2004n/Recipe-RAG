@@ -1,55 +1,67 @@
-import yaml
+from pathlib import Path
+from transformers import AutoTokenizer
+from src.utils import load_config, load_chunks, load_indexer
 from src.retrieval.encoder import Encoder
-from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
+from src.generation.prompt_builder import PromptBuilder
 from src.generation.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
 
-#TODO: Passing in the prompt template into the prompt builder will alow the rag pipeline to be useable (which is clean).
+def run():
+    # load config
+    config = load_config("models/retriever/config.yaml")
+    prompts_config = load_config("models/retriever/prompts_config.yaml")
 
-#TODO: Scripts should be short. Add whatever functions in src.
-def load_rag(config_path: str = "configs/base_config.yaml"):
-    """Load pre-built RAG system from disk"""
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-    
-    # Load encoder
-    encoder = Encoder(config)
-    
-    # Load index
-    indexer = Indexer(
-        dimension=config["index"]["dimension"],
-        index_type=config["index"]["type"]
+    encoder_config = config["encoder"]
+    retriever_config = config["retriever"]
+    generator_config = config["generator"]
+
+    prompt_templates = prompts_config["template"]
+    prompt_settings = prompts_config["settings"]
+
+    # load paths
+    paths = config["paths"]
+
+    # load components (initialze Encoder since pre trained hence was not saved)
+    chunks = load_chunks(Path(paths["files"]["chunks"]))
+    encoder = Encoder(
+        encoder_config["model"],
+        encoder_config["batch_size"],
+        encoder_config["normalize_embeddings"]
     )
-    
-    # Load retriever
-    retriever = Retriever.load(
-        path="models/retriever",
-        encoder=encoder,
-        index=indexer,
-        config=config
+    indexer = load_indexer(Path(paths["files"]["indexer"]))
+
+    # initialize retriever
+    retriever = Retriever(
+        chunks,
+        encoder,
+        indexer,
+        retriever_config["top_k"],
+        retriever_config["score_threshold"]
     )
-    
-    # Load generator (if exists, else None for retrieval-only mode)
-    generator = None
-    generator_path = "models/generator" # can add to config
-    model_name = "microsoft/phi-2" # can add to config
-    try:
-        generator = Generator(config)
-        generator.load(model_name, generator_path)
-    except Exception as e:
-        raise e
-    
-    # Create pipeline
-    pipeline = RAGPipeline(retriever, generator)
-    
+    # initialize generator
+    generator = Generator(
+        generator_config["model"],
+        generator_config["adapter_path"]
+    )
+    # initialize prompt builder
+    tokenizer = AutoTokenizer.from_pretrained(generator_config["model"]) 
+    prompt_buidler = PromptBuilder(
+        tokenizer=tokenizer,
+        max_context_length=prompt_settings["max_context_tokens"],
+        template=prompt_templates
+    )
+
+    # build RAG pipeline
+    pipeline = RAGPipeline(retriever, prompt_buidler, generator)
     return pipeline
+
 
 
 if __name__ == "__main__":
     
     # Load the pre built system
-    pipeline = load_rag()
+    pipeline = run()
     
     print("Recipe RAG System Ready!")
     print("Type 'quit' to exit")
