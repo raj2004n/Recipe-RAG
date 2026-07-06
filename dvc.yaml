@@ -13,15 +13,13 @@ stages:
     - scripts/build_rag.py
     - data/processed/cleaned_recipes.json
     - configs/base_config.yaml
-    - src/chunking/chunker.py
-    - src/models/encoder.py
-    - src/models/generator.py
-    - src/models/indexer.py
-    - src/models/retriever.py
+    - configs/prompts_config.yaml
+    - src/retrieval/chunker.py
+    - src/retrieval/encoder.py
+    - src/retrieval/indexer.py
+    - src/retrieval/retriever.py
     outs:
-    - models/retriever/index.faiss
-    - models/retriever/chunks.json
-    - models/retriever/config.yaml
+    - snapshots/latest
 
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset

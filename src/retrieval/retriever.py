@@ -1,18 +1,12 @@
 from dataclasses import dataclass
 from .encoder import Encoder
 from .indexer import Indexer
+from ..data_classes import RetrievalResult
 import json
 import os
 
 # TODO: Should have save and load method here for consistency.
 # Consider a serparate save methods for the index and the chunks for clarity.
-
-@dataclass
-class RetrievalResult:
-    chunk_id: str
-    recipe_id: str
-    chunk: dict
-    score: float
 
 class Retriever:
     def __init__(

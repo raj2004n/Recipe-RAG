@@ -46,7 +46,9 @@ class Indexer:
         """ Save the index to disk. """
         faiss.write_index(self.index, path)
 
-    def load(self, path: str):
+    @classmethod
+    def load(cls, path: str, index_type: str, dimension: int) -> "Indexer":
         """ Load the index from disk. """
-        self.index = faiss.read_index(path)
-        
+        indexer = cls(index_type, dimension)
+        indexer.index = faiss.read_index(path)
+        return indexer

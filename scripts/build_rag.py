@@ -7,7 +7,8 @@ from src.retrieval.chunker import Chunker
 #from src.generation.generator import Generator
 #from src.pipeline.rag_pipeline import RAGPipeline
 #from transformers import AutoTokenizer
-from src.utils import flatten_config_dict, save_config, load_config
+from src.data_classes import Snapshot
+from src.utils import flatten_config_dict, save_config, load_config, save_snapshot
 from pathlib import Path
 
 #TODO: Add logging
@@ -79,13 +80,18 @@ def run():
         # build RAG pipeline, not necessary for now
         pipeline = RAGPipeline(retriever, prompt_builder, generator)
         """
-        # save chunks, indexer
-        retriever.save_chunks(directories["retriever_artifacts"])
-        retriever.save_indexer(directories["retriever_artifacts"])
+        # create snapshot
+        snapshot = Snapshot(
+            snapshot_id=None,
+            created_at=None,
+            index=retriever.indexer,
+            chunks=retriever.chunks,
+            base_config=model_config,
+            prompts_config=prompts_config
+        )
 
-        # save config
-        save_config(Path(directories["retriever_artifacts"]), model_config)
-        save_config(Path(directories["retriever_artifacts"]), prompts_config)
+        # save snapshot
+        save_snapshot(snapshot, directories["snapshots"])
 
         # encoder, tokenizer (in prompt builder) are pre-loaded, so no need to save
 
