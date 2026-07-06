@@ -18,7 +18,7 @@ retriever:
   score_threshold: 0.5
   
 generator:
-  model_name: microsoft/phi-2
+  model: microsoft/phi-2
   max_new_tokens: 512
   max_input_length: 2048
   max_context_length: 15000
