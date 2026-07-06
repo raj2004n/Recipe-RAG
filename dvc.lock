@@ -21,49 +21,42 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 2146ca710ab10f9594f81cf65e08d414
-      size: 489
+      md5: 4528380efa019cc2dd63983ea8524398
+      size: 1077
+    - path: configs/prompts_config.yaml
+      hash: md5
+      md5: 9d1824cb5ec6bd113cc407ec1de141c7
+      size: 755
     - path: data/processed/cleaned_recipes.json
       hash: md5
       md5: 9e23ba439d4e300a3fba4ae8e1c088e9
       size: 10466636
     - path: scripts/build_rag.py
       hash: md5
-      md5: 23f4d88e37193f3c2bd04834e7723ee0
-      size: 4876
-    - path: src/chunking/chunker.py
+      md5: dc499f78c17eccd97d7fa19e0a45e217
+      size: 3399
+    - path: src/retrieval/chunker.py
       hash: md5
-      md5: 6032aad236822e158c5245988f202440
-      size: 2574
-    - path: src/models/encoder.py
+      md5: 95ddd849775f493f5bb71c2c824ac114
+      size: 2953
+    - path: src/retrieval/encoder.py
       hash: md5
-      md5: 4cc08eb8d0f7f41daa34de34fe41d0d9
-      size: 1020
-    - path: src/models/generator.py
+      md5: 71cccc2341ebd1c86074d934bbe73556
+      size: 1238
+    - path: src/retrieval/indexer.py
       hash: md5
-      md5: 2b19b488f0e2d660aed8cf041bc7334d
-      size: 1713
-    - path: src/models/indexer.py
+      md5: 8c19225f661de7a8ccc50b8ae66be481
+      size: 1958
+    - path: src/retrieval/retriever.py
       hash: md5
-      md5: dc3326264d34e59c6bdb4282dd4212a5
-      size: 1665
-    - path: src/models/retriever.py
-      hash: md5
-      md5: 446d1a2ef0a45e9b47cb47d680d5c78a
-      size: 2618
+      md5: 49c17de02930f7c52fcf39d502ac855e
+      size: 3396
     outs:
-    - path: models/retriever/chunks.json
+    - path: snapshots/latest
       hash: md5
-      md5: a0c0a1d19374c2a54259bf92282500af
-      size: 5565150
-    - path: models/retriever/config.yaml
-      hash: md5
-      md5: c1d18c94e84ab22cccc0c68bee4ce698
-      size: 458
-    - path: models/retriever/index.faiss
-      hash: md5
-      md5: ad63a3294ffd9130f726fe99e23b64af
-      size: 2288298
+      md5: f3d8838a7c3e6dcc434742cde4d3ecb1.dir
+      size: 7855179
+      nfiles: 5
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset
     deps:
