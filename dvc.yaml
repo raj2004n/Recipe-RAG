@@ -19,7 +19,7 @@ stages:
     - src/retrieval/indexer.py
     - src/retrieval/retriever.py
     outs:
-    - snapshots/latest
+    - snapshots
 
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset

@@ -21,8 +21,8 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 4528380efa019cc2dd63983ea8524398
-      size: 1077
+      md5: 62d2aedf0293e61a2b393b6603ca20a1
+      size: 1072
     - path: configs/prompts_config.yaml
       hash: md5
       md5: 9d1824cb5ec6bd113cc407ec1de141c7
@@ -52,11 +52,11 @@ stages:
       md5: 49c17de02930f7c52fcf39d502ac855e
       size: 3396
     outs:
-    - path: snapshots/latest
+    - path: snapshots
       hash: md5
-      md5: f3d8838a7c3e6dcc434742cde4d3ecb1.dir
-      size: 7855179
-      nfiles: 5
+      md5: b9d83e6491ed390eb0e22501c0152187.dir
+      size: 23565535
+      nfiles: 16
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset
     deps:

@@ -72,3 +72,4 @@ logs/
 #MlFlow
 mlruns/
 mlartifacts/
+/snapshots
