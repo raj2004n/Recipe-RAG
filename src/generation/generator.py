@@ -4,15 +4,28 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 class Generator:
-    def __init__(self, model, adapter_path):
+    def __init__(
+            self,
+            model: str,
+            max_input_tokens: int,
+            max_new_tokens: int,
+            truncation: bool,
+            return_tensors: str,
+            adapter_path: str | None = None
+    ):
         self.model_name = model
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
-        
+
+        self.max_input_tokens = max_input_tokens
+        self.max_new_tokens = max_new_tokens
+        self.truncation = truncation
+        self.return_tensors = return_tensors
+
         # load base model
         self.model = AutoModelForCausalLM.from_pretrained(
             model,
-            torch_dtype=torch.float16,
+            dtype="auto",
             device_map="auto"
         )
 
@@ -22,25 +35,21 @@ class Generator:
                 adapter_path
             )
         
-    def generate(self, prompt: str, max_new_tokens: int = None) -> str:
+    def generate(self, prompt: str) -> str:
         """ Generate recipe response from prompt """
-        max_new_tokens = 512 # hard coded for now
-
-        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).to(self.model.device)  
+        inputs = self.tokenizer(
+            prompt,
+            return_tensors=self.return_tensors,
+            truncation=self.truncation,
+            max_length=self.max_input_tokens
+        ).to(self.model.device)  
 
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=max_new_tokens,
-                temperature=0.7,
-                do_sample=True,
-                top_p=0.9,
-                pad_token_id=self.tokenizer.pad_token_id
+                max_new_tokens=self.max_new_tokens
             )
         
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        # extract only the answer part after "ANSWER:"
-        if "ANSWER:" in response:
-            response = response.split("ANSWER:")[-1].strip()
+        response = self.tokenizer.batch_decode(outputs)[0]
         
         return response
