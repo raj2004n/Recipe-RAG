@@ -1,20 +1,11 @@
-from pathlib import Path
-from transformers import AutoTokenizer
 from src.utils import load_snapshot
-from src.retrieval.encoder import Encoder
-from src.retrieval.retriever import Retriever
-from src.generation.prompt_builder import PromptBuilder
-from src.generation.generator import Generator
 from src.pipeline.rag_pipeline import RAGPipeline
-from src.data_classes import Snapshot
 
 def run():
     # load snapshot
     snapshot = load_snapshot("snapshots/latest")
     rag = RAGPipeline(snapshot)
     return rag
-
-
 
 if __name__ == "__main__":
     
