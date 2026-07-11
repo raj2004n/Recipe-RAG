@@ -29,7 +29,6 @@ def debug_generator(query: str, top_k: int):
     gen_config["model"] = "google/gemma-3-1b-it" # max input tokens 32k, max new tokens 8192
     gen_config["max_input_tokens"] = 5000
     gen_config["max_new_tokens"] = 2000
-    gen_config["epochs"] = 3
     gen_config["adapter_path"] = None
     gen_config["truncation"] = True
     gen_config["return_tensors"] = "pt"

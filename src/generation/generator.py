@@ -6,25 +6,22 @@ from peft import PeftModel
 class Generator:
     def __init__(
             self,
-            model: str,
+            model_id: str,
             max_input_tokens: int,
             max_new_tokens: int,
             truncation: bool,
             return_tensors: str,
             adapter_path: str | None = None
     ):
-        self.model_name = model
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-
         self.max_input_tokens = max_input_tokens
         self.max_new_tokens = max_new_tokens
         self.truncation = truncation
         self.return_tensors = return_tensors
 
         # load base model
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         self.model = AutoModelForCausalLM.from_pretrained(
-            model,
+            model_id,
             dtype="auto",
             device_map="auto"
         )
@@ -37,19 +34,34 @@ class Generator:
         
     def generate(self, prompt: str) -> str:
         """ Generate recipe response from prompt """
-        inputs = self.tokenizer(
-            prompt,
-            return_tensors=self.return_tensors,
-            truncation=self.truncation,
-            max_length=self.max_input_tokens
-        ).to(self.model.device)  
+        messages = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
 
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=self.max_new_tokens
-            )
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
         
-        response = self.tokenizer.batch_decode(outputs)[0]
+        model_inputs = self.tokenizer(
+            [text],
+            return_tensors="pt"
+        ).to(self.model.device)
+
+        genearted_ids = self.model.generate(
+            **model_inputs,
+            max_new_tokens=self.max_new_tokens,
+            do_sample=False,
+        )
+        
+        output_ids = genearted_ids[0][len(model_inputs["input_ids"][0]):].tolist()
+        response = self.tokenizer.decode(
+            output_ids,
+            skip_special_tokens=True
+        )
         
         return response
