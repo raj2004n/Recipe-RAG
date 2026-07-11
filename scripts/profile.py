@@ -3,7 +3,7 @@ from src.utils import load_snapshot
 import mlflow
 
 TARGET_MODEL = "google/gemma-3-1b-it"
-INPUT_TOKENS = 4096
+INPUT_TOKENS = 8000
 
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("profiling")
@@ -17,6 +17,11 @@ def run() -> None:
         
         memory_metrics =profile_model_memory(TARGET_MODEL, INPUT_TOKENS)
         dataset_metrics = profile_dataset_tokenization(TARGET_MODEL, chunks)
+        
+        status = memory_metrics.pop("status")
+        
+        mlflow.set_tag("status", status)
+        mlflow.log_param("input_tokens", INPUT_TOKENS)
 
         mlflow.log_metrics(memory_metrics)
         mlflow.log_metrics(dataset_metrics)
