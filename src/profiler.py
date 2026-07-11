@@ -1,8 +1,8 @@
 import gc
 import time
 import torch
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 import numpy as np
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 def profile_model_memory(model_id: str, input_tokens: int) -> dict:
     if not torch.cuda.is_available():
@@ -11,10 +11,14 @@ def profile_model_memory(model_id: str, input_tokens: int) -> dict:
 
     # clear CUDA cache before starting
     torch.cuda.empty_cache()
+
+    # reset max memory tracker to isolate the forward pass peak
+    torch.cuda.reset_peak_memory_stats()
+    
     gc.collect()
 
     initial_memory = torch.cuda.memory_allocated() / (1024**3)
-    print(f"Initial Baseline VRAM: {initial_memory:.3f} GB")
+    print(f"Initial Baseline VRAM: {initial_memory:.2f} GB")
 
     # track static weight memory
     print("Loading model and tokenizer...")
@@ -33,8 +37,8 @@ def profile_model_memory(model_id: str, input_tokens: int) -> dict:
     static_weight_vram = post_load_memory - initial_memory
 
     print(f"Model loaded in: {load_time:.2f} seconds")
-    print(f"Post-Load VRAM: {post_load_memory:.3f} GB")
-    print(f"-> Static Weight VRAM Footprint: {static_weight_vram:.3f} GB")
+    print(f"Post-Load VRAM: {post_load_memory:.2f} GB")
+    print(f"-> Static Weight VRAM Footprint: {static_weight_vram:.2f} GB")
 
     # track Dynamic Memory (Prefill & KV Cache)
     print(f"\nSimulating a retrieval prompt ({input_tokens} tokens)...")
@@ -49,28 +53,41 @@ def profile_model_memory(model_id: str, input_tokens: int) -> dict:
 
     # reset max memory tracker to isolate the forward pass peak
     torch.cuda.reset_peak_memory_stats()
+    try:
+        with torch.no_grad():
+            # complete a single prefill forward pass to construct the initial KV cache
+            model(dummy_input_ids, use_cache=True)
 
-    with torch.no_grad():
-        # complete a single prefill forward pass to construct the initial KV cache
-        outputs = model(dummy_input_ids, use_cache=True)
+        peak_prefill_vram = torch.cuda.max_memory_allocated() / (1024**3)
+        dynamic_overhead = peak_prefill_vram - post_load_memory
 
-    peak_prefill_vram = torch.cuda.max_memory_allocated() / (1024**3)
-    dynamic_overhead = peak_prefill_vram - post_load_memory
+        print(f"Peak VRAM during prefill pass: {peak_prefill_vram:.2f} GB")
+        print(
+            f"-> Dynamic Overhead (KV Cache + Activation Tensors): {dynamic_overhead:.2f} GB"
+        )
 
-    print(f"Peak VRAM during prefill pass: {peak_prefill_vram:.3f} GB")
-    print(
-        f"-> Dynamic Overhead (KV Cache + Activation Tensors): {dynamic_overhead:.3f} GB"
-    )
-
-    return {
-        "input_tokens": input_tokens,
-        "load_time_s": round(load_time, 2),
-        "initial_memory_gb": round(initial_memory, 2),
-        "post_load_vram_gb": round(post_load_memory, 2),
-        "static_weight_vram_gb": round(static_weight_vram, 2),
-        "dynamic_overhead_gb": round(dynamic_overhead, 2),
-        "peak_prefill_vram_gb": round(peak_prefill_vram, 2),
-    }
+        return {
+            "status": "success",
+            "load_time_s": round(load_time, 2),
+            "initial_memory_gb": round(initial_memory, 2),
+            "post_load_vram_gb": round(post_load_memory, 2),
+            "static_weight_vram_gb": round(static_weight_vram, 2),
+            "dynamic_overhead_gb": round(dynamic_overhead, 2),
+            "peak_prefill_vram_gb": round(peak_prefill_vram, 2),
+        }
+    except torch.OutOfMemoryError:
+        print(f"Out of memory during prefill with {input_tokens} input tokens.")
+        torch.cuda.empty_cache()
+        gc.collect()
+        return {
+            "status": "out_of_memory",
+            "load_time_s": round(load_time, 2),
+            "initial_memory_gb": round(initial_memory, 2),
+            "post_load_vram_gb": round(post_load_memory, 2),
+            "static_weight_vram_gb": round(static_weight_vram, 2),
+            "dynamic_overhead_gb": -1,
+            "peak_prefill_vram_gb": -1,
+        }
 
 def profile_dataset_tokenization(model_id: str, chunks: dict) -> dict:
     # load config and tokenizer
