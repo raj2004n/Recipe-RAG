@@ -1,6 +1,8 @@
 from pathlib import Path
-from src.evaluation.dataset_generator import generate_dataset
+from src.data.eval_dataset_generator import generate_dataset
 from src.utils import load_config
+
+# TODO: Can add this to evaluate.py.
 
 def run() -> None:
     config = load_config("configs/base_config.yaml")

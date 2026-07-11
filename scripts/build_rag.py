@@ -93,6 +93,8 @@ def run():
         # save snapshot
         save_snapshot(snapshot, directories["snapshots"])
 
+        #TODO: Consider calling eval here.
+        
         # encoder, tokenizer (in prompt builder) are pre-loaded, so no need to save
 
         # log params, artifacts
