@@ -18,11 +18,11 @@ retriever:
   score_threshold: 0.5
   
 generator:
-  model: microsoft/phi-2
-  max_context_tokens: 1000
-  max_input_tokens: 2048
-  max_new_tokens: 512
-  epochs: 3
+  model: google/gemma-3-1b-it
+  max_input_tokens: 5000
+  max_new_tokens: 2000
+  truncation: true
+  return_tensors: pt
   adapter_path: null
 
 evaluation dataset generator:

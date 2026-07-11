@@ -1,6 +1,6 @@
 settings:
-  model_name: microsoft/phi-2
-  max_context_tokens: 1500
+  model_name: google/gemma-3-1b-it
+  max_context_tokens: 4000
 
 template:
   generation: |
