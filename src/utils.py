@@ -30,30 +30,25 @@ def load_indexer(path: str = "models/retriever/index.faiss") -> Indexer:
     indexer.load(path)
     return indexer
 
-def load_retriever(config: dict) -> tuple[Retriever, float, float, float]:
-    
-    start = time.time()
-    chunks = load_chunks()
-    end = time.time()
-    chunks_time = end - start
-
-    encoder = Encoder(config) # uses pretrained model, hence no load
-    
-    start2 = time.time()
-    indexer = load_indexer()
-    end2 = time.time()
-    index_time = end - start
-
-    retriever = Retriever(
-        encoder=encoder,
-        indexer=indexer,
-        chunks=chunks,    
-        config=config
+def load_retriever(snapshot: Snapshot) -> Retriever:
+    encoder = Encoder(
+        snapshot.base_config["encoder"]["model"],
+        snapshot.base_config["encoder"]["batch_size"],
+        snapshot.base_config["encoder"]["normalize_embeddings"]
     )
-    end3 = time.time()
-    retriever_time = end3 - end2
-
-    return retriever, chunks_time, index_time, retriever_time
+    indexer = Indexer.load(
+        snapshot.base_config["paths"]["files"]["indexer"],
+        snapshot.base_config["indexer"]["type"],
+        snapshot.base_config["indexer"]["dimension"]
+    )
+    retriever = Retriever(
+        snapshot.chunks,
+        encoder,
+        indexer,
+        snapshot.base_config["retriever"]["top_k"],
+        snapshot.base_config["retriever"]["score_threshold"]
+    )
+    return retriever
 
 def load_eval_dataset(path: str) -> list[dict]:
     with open(path, "r") as f:
