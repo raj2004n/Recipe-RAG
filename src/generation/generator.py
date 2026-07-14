@@ -1,7 +1,6 @@
-# src/models/generator.py
-import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
+import torch
 
 class Generator:
     def __init__(
@@ -34,6 +33,7 @@ class Generator:
         
     def generate(self, prompt: str) -> str:
         """ Generate recipe response from prompt """
+        # TODO: Fix prompt format
         messages = [
             {
                 "role": "user",
@@ -52,13 +52,14 @@ class Generator:
             return_tensors="pt"
         ).to(self.model.device)
 
-        genearted_ids = self.model.generate(
-            **model_inputs,
-            max_new_tokens=self.max_new_tokens,
-            do_sample=False,
-        )
-        
-        output_ids = genearted_ids[0][len(model_inputs["input_ids"][0]):].tolist()
+        with torch.inference_mode():
+            generated_ids = self.model.generate(
+                **model_inputs,
+                max_new_tokens=self.max_new_tokens,
+                do_sample=False,
+            )
+            
+        output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
         response = self.tokenizer.decode(
             output_ids,
             skip_special_tokens=True

@@ -5,7 +5,8 @@ from src.utils import flatten_config_dict, load_retriever, load_snapshot
 import mlflow
 
 """ 
-- It does not understand "not" etc. e.g. "Do not give me soup recipes". Gives only soup recipes.
+- Does not handle negation well
+Consider Query decomp, and knowledge graph plus more..
 """
 
 mlflow.set_tracking_uri("http://localhost:5000")
@@ -66,7 +67,7 @@ def debug_retriever(queries: list[str], top_k: int = 5):
         mlflow.log_param("query", query)
         mlflow.log_param("top_k", top_k)
         mlflow.log_params(flatten_config_dict(snapshot.base_config))
-        mlflow.log_dict(res, f"results.json")
+        mlflow.log_dict(res, "results.json")
 
 if __name__ == "__main__":
     args = parse_args()
