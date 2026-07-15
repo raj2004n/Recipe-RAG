@@ -1,85 +1,153 @@
 from pathlib import Path
+from itertools import count
 import json
 
-class Chunker:
-    def __init__(self, strategy: str):
-        self.strategy = strategy
+# TODO: Gracefully handle when recipes not found for loading
 
-    def _chunk(self, recipe: dict) -> list[dict]:
-        if self.strategy == "whole recipe":
-            text = self._format_text_for_embedding(recipe)
-            recipe_id = recipe.get("recipe_id", "Unknown")
-
-            return [{
-                "chunk_id": f"{recipe_id}_0",
-                "text": text,
-                "metadata": {
-                    "recipe_id": recipe_id,
-                    "recipe_name": recipe.get("recipe_name", "Unknown"),
-                    "servings": recipe.get("servings", "")
-                }
-            }]
-
-    def get_chunks(self, recipes_path: Path):
-        """ Get chunks from a list of recipes. """
-        with open(recipes_path) as f:
-            recipes = json.load(f)
+def chunk_recipes(strategy, recipes_path: Path) -> list[dict]:
+    # load recipes
+    with open(recipes_path) as f:
+        recipes = json.load(f)
+    
+    if strategy == "whole_recipe":
+        return _chunk_whole(recipes)
+    
+    elif strategy == "instructions_ingredients":
+        return _chunk_it_ing(recipes)
+    
+def _chunk_whole(recipes: list[dict]) -> list[dict]:
+    chunks = []
+    chunk_id = count()
+    for r in recipes:
+        recipe_id = r.get("recipe_id")
         
-        # chunk recipes
-        chunks = []
-        for r in recipes:
-            recipe_chunks = self._chunk(r)
-            chunks.extend(recipe_chunks)
-        
-        return chunks
+        chunks.append({
+            "text": _format_whole_recipe(r),
+            "chunk_type": "whole",
+            "recipe_id": recipe_id,
+            "chunk_id": next(chunk_id)
+        })
+    return chunks
 
-    def _format_text_for_embedding(self, recipe: dict) -> str:
-        """ Format recipe text for embedding. """
-        lines = []
+def _chunk_it_ing(recipes: list[dict]) -> list[dict]:
+    chunks = []
+    chunk_id = count()
 
-        # header
-        lines.append(f"Recipe Name: {recipe.get('recipe_name', 'Unknown')}")
+    for r in recipes:
+        recipe_id = r.get("recipe_id")
 
-        # sevings
-        servings = recipe.get("servings", 1)
-        if servings:
-            lines.append(f"Servings: {servings}")
+        # ingredients
+        chunks.append({
+            "text": _format_ingredients(r),
+            "chunk_type": "ingredients",
+            "recipe_id": recipe_id,
+            "chunk_id": next(chunk_id),
+        })
 
-        # ingredient groups
-        lines.append("\n## Ingredients")
-        for ing_group in recipe.get("ingredient_groups", []):
-            lines.append(f"\n### {ing_group.get('group_name', 'Unknown')}")
-            for ing in ing_group.get("ingredients", []):
-                parts = []
-                if ing.get("amount"):
-                    parts.append(str(ing["amount"]))
-                if ing.get("unit"):
-                    parts.append(ing["unit"])
-                parts.append(ing.get("name", "Unknown"))
-                
-                line = " ".join(parts)
+        # instructions
+        chunks.append({
+            "text": _format_instructions(r),
+            "chunk_type": "instructions",
+            "recipe_id": recipe_id,
+            "chunk_id": next(chunk_id)
+        })
+    
+    return chunks
 
-                if ing.get("notes"):
-                    line += f" ({ing['notes']})"
-                if ing.get("alt_amount"):
-                    line += f" or ({ing['alt_amount']}) {ing['alt_unit']}" # of alt amount, then alt unit exists
-                
-                lines.append(f" - {line}")
+def _format_ingredients(recipe: dict) -> str:
+    lines = []
+
+    for group in recipe.get("ingredient_groups", []):
+        # assign group name if exists
+        group_name = group.get("group_name")
+        if group_name:
+            lines.append(f"## {group_name}")
+
+        for ing in group.get("ingredients", []):
+            parts = []
+
+            if ing.get("amount"):
+                parts.append(str(ing["amount"]))
+            if ing.get("unit"):
+                parts.append(ing["unit"])
+
+            parts.append(ing.get("name", "Unknown"))
+
+            line = " ".join(parts)
+
+            if ing.get("notes"):
+                line += f" ({ing['notes']})"
+
+            if ing.get("alt_amount"):
+                line += f" or {ing['alt_amount']} {ing['alt_unit']}"
+
+            lines.append(f"- {line}")
+
+        lines.append("")
+
+    return "\n".join(lines).strip()
+
+def _format_instructions(recipe: dict) -> str:
+    lines = []
+
+    for group in recipe.get("instruction_groups", []):
+        # assign group name if exists
+        group_name = group.get("group_name")
+        if group_name:
+            lines.append(f"## {group_name}")
+
+        for it in group.get("instructions", []):
+            lines.append(f"{it}")
+    
+    return "\n".join(lines)
+
+def _format_whole_recipe(recipe: dict) -> str:
+    """ Format recipe text for embedding. """
+    lines = []
+
+    # header
+    lines.append(f"Recipe Name: {recipe.get('recipe_name')}")
+
+    # sevings
+    servings = recipe.get("servings", 1)
+    if servings:
+        lines.append(f"Servings: {servings}")
+
+    # ingredient groups
+    lines.append("\n## Ingredients")
+    for ing_group in recipe.get("ingredient_groups", []):
+        lines.append(f"\n### {ing_group.get('group_name')}")
+        for ing in ing_group.get("ingredients", []):
+            parts = []
+            if ing.get("amount"):
+                parts.append(str(ing["amount"]))
+            if ing.get("unit"):
+                parts.append(ing["unit"])
+            parts.append(ing.get("name", "Unknown"))
             
-        # instruction groups
-        lines.append("\n## Instructions")
-        for group in recipe.get("instruction_groups", []):
-            name = group.get("group_name", "")
-            if name not in ("Full Recipe", "Abbreviated Recipe", "Abbreviated", "Main"):
-                lines.append(f"\n### {name}")
-            for i, step in enumerate(group.get("instructions", []), 1):
-                lines.append(f"{i}. {step}")
+            line = " ".join(parts)
 
-        # notes
-        notes = recipe.get("notes", [])
-        if notes:
-            lines.append("\n## Notes")
-            for note in notes:
-                lines.append(f"- {note}")
+            if ing.get("notes"):
+                line += f" ({ing['notes']})"
+            if ing.get("alt_amount"):
+                line += f" or ({ing['alt_amount']}) {ing['alt_unit']}" # of alt amount, then alt unit exists
+            
+            lines.append(f" - {line}")
         
-        return "\n".join(lines)
+    # instruction groups
+    lines.append("\n## Instructions")
+    for group in recipe.get("instruction_groups", []):
+        name = group.get("group_name", "")
+        if name not in ("Full Recipe", "Abbreviated Recipe", "Abbreviated", "Main"):
+            lines.append(f"\n### {name}")
+        for i, step in enumerate(group.get("instructions", []), 1):
+            lines.append(f"{i}. {step}")
+
+    # notes
+    notes = recipe.get("notes", [])
+    if notes:
+        lines.append("\n## Notes")
+        for note in notes:
+            lines.append(f"- {note}")
+    
+    return "\n".join(lines)
