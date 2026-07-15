@@ -9,11 +9,24 @@ class Chunk:
     chunk_id: int
 
 @dataclass
-class EncodedResult:
-    id: int
+class EncodedChunk:
+    id: str
     vector: list[float]
     text: str
     metadata: dict[str, any]
+
+    @classmethod
+    def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
+        return cls(
+            id=f"recipa_{chunk.recipe_id}_chunk_{chunk.chunk_id}",
+            vector=vector,
+            text=chunk.text,
+            metadata={
+                "recipe_id": chunk.recipe_id,
+                "chunk_id": chunk.chunk_id,
+                "chunk_type": chunk.chunk_type
+            }
+        )
 
 @dataclass
 class RetrievalResult:
