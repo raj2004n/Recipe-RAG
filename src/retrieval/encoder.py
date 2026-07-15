@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from ..schemas import Chunk
+from ..schemas import Chunk, EncodedChunk
 import numpy as np
 
 class Encoder:
@@ -18,11 +18,20 @@ class Encoder:
         )
         return embeddings
     
-    def encode_chunks(self, chunks: list[Chunk]) -> np.ndarray:
+    def encode_chunks(self, chunks: list[Chunk]) -> list[EncodedChunk]:
         """ Encode list of chunks into dense vectors. """
         texts = [c.text for c in chunks]
         embeddings = self._encode_documents(texts)
-        return embeddings
+
+        encoded_chunks = [
+            EncodedChunk.from_chunk(
+                chunk=chunk,
+                vector=embedding.tolist()
+            )
+            for chunk, embedding in zip(chunks, embeddings)
+        ]
+        
+        return encoded_chunks
 
     def encode_query(self, query: str) -> np.ndarray:
         """ Encode a single query into a dense vector. """
