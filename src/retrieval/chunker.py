@@ -1,10 +1,11 @@
 from pathlib import Path
 from itertools import count
 import json
+from src.data_classes import Chunk
 
 # TODO: Gracefully handle when recipes not found for loading
 
-def chunk_recipes(strategy, recipes_path: Path) -> list[dict]:
+def chunk_recipes(strategy, recipes_path: Path) -> list[Chunk]:
     # load recipes
     with open(recipes_path) as f:
         recipes = json.load(f)
@@ -15,21 +16,24 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[dict]:
     elif strategy == "instructions_ingredients":
         return _chunk_it_ing(recipes)
     
-def _chunk_whole(recipes: list[dict]) -> list[dict]:
+def _chunk_whole(recipes: list[dict]) -> list[Chunk]:
     chunks = []
     chunk_id = count()
     for r in recipes:
         recipe_id = r.get("recipe_id")
         
-        chunks.append({
-            "text": _format_whole_recipe(r),
-            "chunk_type": "whole",
-            "recipe_id": recipe_id,
-            "chunk_id": next(chunk_id)
-        })
+        chunks.append(
+            Chunk(
+                text=_format_whole_recipe(r),
+                chunk_type="whole",
+                recipe_id=recipe_id,
+                chunk_id=next(chunk_id)
+            )
+        )
+    
     return chunks
 
-def _chunk_it_ing(recipes: list[dict]) -> list[dict]:
+def _chunk_it_ing(recipes: list[dict]) -> list[Chunk]:
     chunks = []
     chunk_id = count()
 
@@ -37,20 +41,24 @@ def _chunk_it_ing(recipes: list[dict]) -> list[dict]:
         recipe_id = r.get("recipe_id")
 
         # ingredients
-        chunks.append({
-            "text": _format_ingredients(r),
-            "chunk_type": "ingredients",
-            "recipe_id": recipe_id,
-            "chunk_id": next(chunk_id),
-        })
+        chunks.append(
+            Chunk(
+                text=_format_ingredients(r),
+                chunk_type="ingredients",
+                recipe_id=recipe_id,
+                chunk_id=next(chunk_id)
+            )
+        )
 
         # instructions
-        chunks.append({
-            "text": _format_instructions(r),
-            "chunk_type": "instructions",
-            "recipe_id": recipe_id,
-            "chunk_id": next(chunk_id)
-        })
+        chunks.append(
+            Chunk(
+                text=_format_instructions(r),
+                chunk_type="instructions",
+                recipe_id=recipe_id,
+                chunk_id=next(chunk_id)
+            )
+        )
     
     return chunks
 
