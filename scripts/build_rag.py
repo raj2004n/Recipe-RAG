@@ -7,7 +7,7 @@ from src.retrieval.chunker import chunk_recipes
 #from src.generation.generator import Generator
 #from src.pipeline.rag_pipeline import RAGPipeline
 #from transformers import AutoTokenizer
-from src.data_classes import Snapshot
+from src.schemas import Snapshot
 from src.utils import flatten_config_dict, save_config, load_config, save_snapshot
 from pathlib import Path
 

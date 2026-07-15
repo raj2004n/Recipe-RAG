@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from src.retrieval.indexer import Indexer
 
-# TODO: Consider modifying RetrieverResult
 @dataclass
 class Chunk:
     text: str
@@ -10,10 +9,15 @@ class Chunk:
     chunk_id: int
 
 @dataclass
+class EncodedResult:
+    id: int
+    vector: list[float]
+    text: str
+    metadata: dict[str, any]
+
+@dataclass
 class RetrievalResult:
-    chunk_id: str
-    recipe_id: str
-    chunk: dict
+    chunk: Chunk
     score: float
 
 @dataclass

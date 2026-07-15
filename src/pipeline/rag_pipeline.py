@@ -4,9 +4,9 @@ from src.generation.prompt_builder import PromptBuilder
 from src.generation.generator import Generator
 from src.retrieval.indexer import Indexer
 from transformers import AutoTokenizer
-from src.data_classes import Snapshot
+from src.schemas import Snapshot
 from typing import Dict
-from src.data_classes import RetrievalResult
+from src.schemas import RetrievalResult
 
 class RAGPipeline:
     def __init__(self, snapshot: Snapshot):

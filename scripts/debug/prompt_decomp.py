@@ -161,4 +161,5 @@ if __name__ == "__main__":
         "i want the secret formula for the krabby patty",
         "I only have potatoes, some seasonings, and chicken stock. Give me some recipes that i can make with that"
         ]
-    decompose_query(queries)
+    decomposed_query = decompose_query(queries[0])
+    print(decomposed_query)

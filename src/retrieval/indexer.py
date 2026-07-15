@@ -37,7 +37,7 @@ class Indexer:
         if len(query_vectors.shape) == 1:
             query_vectors = query_vectors.reshape(1, -1)
         
-        # returns in order of similarity
+        # in order of similarity
         scores, indices = self.index.search(query_vectors, k)
         
         return scores, indices

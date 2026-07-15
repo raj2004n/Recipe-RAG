@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from .encoder import Encoder
 from .indexer import Indexer
-from ..data_classes import RetrievalResult
+from ..schemas import Chunk, RetrievalResult
 import json
 import os
 
@@ -11,7 +11,7 @@ import os
 class Retriever:
     def __init__(
             self,
-            chunks: list[dict],
+            chunks: list[Chunk],
             encoder: Encoder,
             indexer: Indexer,
             top_k: int,
@@ -50,7 +50,6 @@ class Retriever:
             # skip invlaid indices
             if idx == -1 or idx >= len(self.chunks):
                 continue
-
             # filter by score
             if self.score_threshold and score < self.score_threshold:
                 continue
@@ -59,12 +58,12 @@ class Retriever:
             chunk = self.chunks[idx]
             
             # add result to list
-            results.append(RetrievalResult(
-                chunk_id=chunk["chunk_id"],
-                recipe_id=chunk["metadata"]["recipe_id"],
-                chunk=chunk,
-                score=float(score),
-            ))
+            results.append(
+                RetrievalResult(
+                    chunk=chunk,
+                    score=float(score),
+                )
+            )
 
             # break if enough results are found
             if len(results) >= top_k:

@@ -1,7 +1,7 @@
 import json
 import pprint
 from itertools import count
-from src.data_classes import Chunk
+from src.schemas import Chunk
 
 # TODO: Notes saved twice. Notes is not scanned for retrieval so can be discared, then same for serving.
 

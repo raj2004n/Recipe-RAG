@@ -9,7 +9,7 @@ from dataclasses import asdict
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
 from src.retrieval.encoder import Encoder
-from src.data_classes import Snapshot
+from src.schemas import Snapshot
 
 def save_config(directory: Path, config: dict):
     path = directory / "config.yaml"
