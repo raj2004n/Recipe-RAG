@@ -68,7 +68,38 @@ def load_model():
     )
     return model, tokenizer
 
-def decompose_query(queries: list[str]):
+def decompose_query(query: str) -> str:
+    """ LLM to decompose a single query into inclusion and exclusion."""
+    model, tokenizer = load_model()
+    
+    messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": query},
+        ]
+    
+    text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+    
+    model_inputs = tokenizer(
+        [text],
+        return_tensors="pt"
+    ).to(model.device)
+
+    with torch.inference_mode():
+            generated_ids = model.generate(
+                **model_inputs,
+                max_new_tokens=256,
+                do_sample=False
+            )
+    output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
+    decomposed_query = tokenizer.decode(output_ids, skip_special_tokens=True)
+    
+    return decomposed_query
+
+def decompose_queries(queries: list[str]):
     """ LLM to decompose query into multiple queries.
      - Dense retrievers do not handle negation. 
       - By decomposing query, can seperately search for negation query and remove those recipes. """
@@ -99,7 +130,7 @@ def decompose_query(queries: list[str]):
                 **model_inputs,
                 max_new_tokens=256,
                 do_sample=False
-            ) # consider adding temperature
+            )
 
         output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
         response = tokenizer.decode(output_ids, skip_special_tokens=True)
