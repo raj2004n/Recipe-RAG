@@ -5,6 +5,7 @@ import time
 import uuid
 import faiss
 from pathlib import Path
+from dataclasses import asdict
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
 from src.retrieval.encoder import Encoder
@@ -82,7 +83,7 @@ def save_snapshot(snapshot: Snapshot, path: str):
 
     # save chunks
     with open(os.path.join(path, "chunks.json"), "w") as f:
-        json.dump(snapshot.chunks, f, indent=2, ensure_ascii=False)
+        json.dump([asdict(c) for c in snapshot.chunks], f, indent=2)
     
     # save index
     snapshot.index.save(os.path.join(path, "index.faiss"))

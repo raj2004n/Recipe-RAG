@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer
+from src.data_classes import Chunk
 import numpy as np
 
 class Encoder:
@@ -17,9 +18,9 @@ class Encoder:
         )
         return embeddings
     
-    def encode_chunks(self, chunks: list[dict]) -> np.ndarray:
-        """ Encode a list of chunks into dense vectors. """
-        texts = [c["text"] for c in chunks]
+    def encode_chunks(self, chunks: list[Chunk]) -> np.ndarray:
+        """ Encode list of chunks into dense vectors. """
+        texts = [c.text for c in chunks]
         embeddings = self._encode_documents(texts)
         return embeddings
 

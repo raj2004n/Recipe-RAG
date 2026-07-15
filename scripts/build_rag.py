@@ -2,7 +2,7 @@ import mlflow
 from src.retrieval.encoder import Encoder
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
-from src.retrieval.chunker import Chunker
+from src.retrieval.chunker import chunk_recipes
 #from src.generation.prompt_builder import PromptBuilder
 #from src.generation.generator import Generator
 #from src.pipeline.rag_pipeline import RAGPipeline
@@ -38,7 +38,6 @@ def run():
 
     with mlflow.start_run():
         # initialize components
-        chunker = Chunker(chunker_config["strategy"])
         encoder = Encoder(
             encoder_config["model"],
             encoder_config["batch_size"],
@@ -50,7 +49,10 @@ def run():
         )
 
         # chunk, encode, and index data
-        chunks = chunker.get_chunks(files["cleaned_recipes"])
+        chunks = chunk_recipes(
+            strategy=chunker_config["strategy"],
+            recipes_path=files["cleaned_recipes"]
+        )
         embeddings = encoder.encode_chunks(chunks)
         indexer.index_embeddings(embeddings)
 
