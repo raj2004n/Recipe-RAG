@@ -3,6 +3,13 @@ from src.retrieval.indexer import Indexer
 
 # TODO: Consider modifying RetrieverResult
 @dataclass
+class Chunk:
+    text: str
+    chunk_type: str
+    recipe_id: int
+    chunk_id: int
+
+@dataclass
 class RetrievalResult:
     chunk_id: str
     recipe_id: str
