@@ -1,21 +1,50 @@
 import mlflow
-import pprint
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from functools import lru_cache
 
+# consider bits and byte
 
-MODEL_ID = "google/gemma-3-1b-it"
+MODEL_ID = "google/gemma-3-4b-it"
 
 SYSTEM_PROMPT = """
-Extract what the user wants and does not want from the query. 
-If what the user does not want is not explicitly mentioned, exclude nothing.
+You are a query parser for a recipe retrieval system.
 
-Output as such:
-Include: ...
+The user's input is a recipe search query.
+Extract only explicit constraints from the query.
 
-Exclude: ...
+Your task:
+1. Identify things the user wants (inclusions):
+   - ingredients
+   - dishes
+   - cuisines
+   - flavors
+   - textures
+   - cooking methods
+   - dietary preferences
+   - meal characteristics
 
+2. Identify things the user wants to avoid (exclusions):
+   - ingredients
+   - flavors
+   - textures
+   - cooking methods
+   - cuisines
+   - dietary restrictions
+
+Rules:
+- Only extract information explicitly mentioned by the user.
+- Do not infer missing ingredients.
+- Do not infer cuisine from a dish unless explicitly stated.
+- Do not add common recipe ingredients.
+- Do not add meal types unless explicitly requested.
+- Do not add dietary tags unless explicitly stated.
+- Preserve negations.
+- If nothing is specified, output "any" or "none".
+
+Output format (strict):
+Inclusions: <comma-separated list or "any">
+Exclusions: <comma-separated list or "none">
 """
 
 mlflow.set_tracking_uri("http://localhost:5000")
@@ -61,18 +90,24 @@ def decompose_query(queries: list[str]):
         with torch.inference_mode():
             generated_ids = model.generate(
                 **model_inputs,
-                max_new_tokens=128,
-                do_sample=False
-            )
+                max_new_tokens=256,
+                do_sample=False,
+            ) # consider adding temperature
 
         output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
         response = tokenizer.decode(output_ids, skip_special_tokens=True)
 
         results[query] = response
     
-    pprint.pprint(results)
+    for key, value in results.items():
+        print(key)
+        print(f"-"*50)
+        print(value)
+        print(f"="*50)
+
     with mlflow.start_run():
         mlflow.log_param("system_prompt", SYSTEM_PROMPT)
+        mlflow.log_param("model_id", MODEL_ID)
         mlflow.log_dict(results, "results.json")
 
 if __name__ == "__main__":
