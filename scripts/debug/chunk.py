@@ -1,5 +1,6 @@
 import json
 import pprint
+from itertools import count
 
 # TODO: Notes saved twice. Notes is not scanned for retrieval so can be discared, then same for serving.
 
@@ -69,28 +70,26 @@ def format_instruction_group(group: dict) -> str:
 def chunk_it_ing(recipes: list[dict]):
     """ Chunk by instructions and ingredients"""
     chunks = []
-    chunk_id = 0
+    chunk_id = count()
 
     for r in recipes:
         recipe_id = r.get("recipe_id")
 
         # ingredients
         chunks.append({
-            "ing_text": format_ingredients(r),
+            "text": format_ingredients(r),
             "chunk_type": "ingredients",
             "recipe_id": recipe_id,
-            "chunk_id": chunk_id,
+            "chunk_id": next(chunk_id),
         })
-        chunk_id += 1
 
         # instructions
         chunks.append({
-            "it_text": format_instructions(r),
+            "text": format_instructions(r),
             "chunk_type": "instructions",
             "recipe_id": recipe_id,
-            "chunk_id": chunk_id
+            "chunk_id": next(chunk_id)
         })
-        chunk_id += 1
     
     return chunks
 
