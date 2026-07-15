@@ -1,12 +1,12 @@
 import mlflow
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from functools import lru_cache
-
-# consider bits and byte
 
 MODEL_ID = "google/gemma-3-4b-it"
 
+# TODO: Still does not handle "Recipes" well.
+# Some seasonings is interpretted as exclusion
 SYSTEM_PROMPT = """
 You are a query parser for a recipe retrieval system.
 
@@ -50,13 +50,20 @@ Exclusions: <comma-separated list or "none">
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("first-query_decomp-experiment")
 
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
+
 @lru_cache()
 def load_model():    
     # load base model
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
-        dtype="auto",
+        quantization_config=bnb_config,
         device_map="auto"
     )
     return model, tokenizer
@@ -91,7 +98,7 @@ def decompose_query(queries: list[str]):
             generated_ids = model.generate(
                 **model_inputs,
                 max_new_tokens=256,
-                do_sample=False,
+                do_sample=False
             ) # consider adding temperature
 
         output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
@@ -121,5 +128,6 @@ if __name__ == "__main__":
         "i wanna eat some dish from brazil",
         "i wanna eat something from jupiter",
         "i want the secret formula for the krabby patty",
+        "I only have potatoes, some seasonings, and chicken stock. Give me some recipes that i can make with that"
         ]
     decompose_query(queries)
