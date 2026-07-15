@@ -1,7 +1,7 @@
 from pathlib import Path
 from itertools import count
 import json
-from src.data_classes import Chunk
+from ..schemas import Chunk
 
 # TODO: Gracefully handle when recipes not found for loading
 
@@ -18,10 +18,10 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[Chunk]:
     
 def _chunk_whole(recipes: list[dict]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         recipe_id = r.get("recipe_id")
-        
+        chunk_id = count()
+
         chunks.append(
             Chunk(
                 text=_format_whole_recipe(r),
@@ -35,10 +35,10 @@ def _chunk_whole(recipes: list[dict]) -> list[Chunk]:
 
 def _chunk_it_ing(recipes: list[dict]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
 
     for r in recipes:
         recipe_id = r.get("recipe_id")
+        chunk_id = count()
 
         # ingredients
         chunks.append(
