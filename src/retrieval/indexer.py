@@ -1,26 +1,6 @@
 import faiss
 import numpy as np
-from dataclasses import dataclass
-
-@dataclass
-class EncodedChunk:
-    id: str
-    vector: list[float]
-    text: str
-    metadata: dict[str, any]
-
-    @classmethod
-    def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
-        return cls(
-            id=f"recipa_{chunk.recipe_id}_chunk_{chunk.chunk_id}",
-            vector=vector,
-            text=chunk.text,
-            metadata={
-                "recipe_id": chunk.recipe_id,
-                "chunk_id": chunk.chunk_id,
-                "chunk_type": chunk.chunk_type
-            }
-        )
+from .encoder import EncodedChunk
 
 class Indexer:
     def __init__(self, index_type: str, dimension: int):
@@ -32,7 +12,7 @@ class Indexer:
     def _create_index(self) -> faiss.Index:
         """ Create a new index of the specified type. """
         if self.index_type == "FlatIP":
-            return faiss.IndexFlatIP(self.dimension)
+            return faiss.IndexIDMap(faiss.IndexFlatIP(self.dimension))
         
         raise ValueError(f"Unsupported index type: {self.index_type}")
     

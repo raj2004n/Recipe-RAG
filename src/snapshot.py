@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
-from retrieval.indexer import Indexer
+from .retrieval.indexer import Indexer
+from .retrieval.chunker import Chunk
 import time
 import uuid
 import faiss
@@ -15,7 +16,7 @@ class Snapshot:
 
     # retriever
     index: Indexer
-    chunks: list[dict]
+    chunks: list[Chunk]
 
     # configs
     base_config: dict[str, any]

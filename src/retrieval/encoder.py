@@ -1,6 +1,27 @@
 from sentence_transformers import SentenceTransformer
-from ..snapshot import Chunk, EncodedChunk
+from dataclasses import dataclass
+from .chunker import Chunk
 import numpy as np
+
+@dataclass
+class EncodedChunk:
+    id: str
+    vector: list[float]
+    text: str
+    metadata: dict[str, any]
+
+    @classmethod
+    def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
+        return cls(
+            id=f"recipe_{chunk.recipe_id}_chunk_{chunk.chunk_id}",
+            vector=vector,
+            text=chunk.text,
+            metadata={
+                "recipe_id": chunk.recipe_id,
+                "chunk_id": chunk.chunk_id,
+                "chunk_type": chunk.chunk_type
+            }
+        )
 
 class Encoder:
     def __init__(self, model, batch_size, normalize_embeddings):
