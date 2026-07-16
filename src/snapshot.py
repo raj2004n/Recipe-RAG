@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, is_dataclass
 from .retrieval.indexer import Indexer
 from .retrieval.chunker import Chunk
 import time
@@ -45,7 +45,6 @@ def save_snapshot(snapshot: Snapshot, path: str):
     # save configs
     with open(os.path.join(path, "base_config.yaml"), "w") as f:
         yaml.dump(snapshot.base_config, f, sort_keys=False)
-    
     with open(os.path.join(path, "prompts_config.yaml"), "w") as f:
         yaml.dump(snapshot.prompts_config, f, sort_keys=False)
 
@@ -57,19 +56,22 @@ def save_snapshot(snapshot: Snapshot, path: str):
         }, f, indent=2)
 
 def load_snapshot(path: str) -> Snapshot:
-    # load chunks
-    with open(os.path.join(path, "chunks.json")) as f:
-        chunks = json.load(f)
-    
-    # load index
-    index = faiss.read_index(os.path.join(path, "index.faiss"))
-    
     # load configs
     with open(os.path.join(path, "base_config.yaml")) as f:
         base_config = yaml.safe_load(f)
-    
     with open(os.path.join(path, "prompts_config.yaml")) as f:
         prompts_config = yaml.safe_load(f)
+
+    # load chunks
+    with open(os.path.join(path, "chunks.json")) as f:
+        chunks = [Chunk(**chunk) for chunk in json.load(f)]
+    
+    # load index
+    index = Indexer.load(
+        os.path.join(path, "index.faiss"),
+        index_type="FlatIP",
+        dimension=base_config["indexer"]["dimension"],
+    )
     
     # load metadata
     with open(os.path.join(path, "metadata.json")) as f:
