@@ -1,12 +1,15 @@
 from dataclasses import dataclass
+from .chunker import Chunk
 from .encoder import Encoder
 from .indexer import Indexer
-from ..schemas import Chunk, RetrievalResult
-import json
-import os
 
 # TODO: Should have save and load method here for consistency.
 # Consider a serparate save methods for the index and the chunks for clarity.
+
+@dataclass
+class RetrievalResult:
+    chunk: Chunk
+    score: float
 
 class Retriever:
     def __init__(
@@ -29,35 +32,36 @@ class Retriever:
         The index is used to search for the nearest neighbors of the query vector (in the encoder space of the recipe vectors).
         The chunks maps the retrieved indices (top k) to the corresponding recipe chunks.
         """
-        self.chunks = chunks
         self.encoder = encoder
         self.indexer = indexer
         self.top_k = top_k
         self.score_threshold = score_threshold
-    
-    def retrieve(self, query: str, top_k : int = None) -> list[RetrievalResult]:
+
+        self.chunks = {c.id: c for c in chunks}
+
+    def retrieve(self, query: str, top_k : int | None = None) -> list[RetrievalResult]:
         top_k = top_k or self.top_k
         
         # encode query into dense vector
         query_vector = self.encoder.encode_query(query)
 
         # search recipe index for nearest neighbors of query vector
-        scores, indices = self.indexer.search(query_vector, top_k)
+        scores, chunk_ids = self.indexer.search(query_vector, top_k)
 
         # build results
-        results = []
-        for score, idx in zip(scores[0], indices[0]):
-            # skip invlaid indices
-            if idx == -1 or idx >= len(self.chunks):
+        results: list[RetrievalResult] = []
+
+        for score, chunk_id in zip(scores[0], chunk_ids[0]):
+            if chunk_id is None:
                 continue
-            # filter by score
+
             if self.score_threshold and score < self.score_threshold:
                 continue
+
+            chunk = self.chunks.get(chunk_id)
+            if chunk is None:
+                continue
             
-            # assign chunk to nearest neighbor recipe chunk
-            chunk = self.chunks[idx]
-            
-            # add result to list
             results.append(
                 RetrievalResult(
                     chunk=chunk,
@@ -68,28 +72,4 @@ class Retriever:
             # break if enough results are found
             if len(results) >= top_k:
                 break
-        
         return results
-    
-    def save_chunks(self, path: str):
-        os.makedirs(path, exist_ok=True)
-        with open(os.path.join(path, "chunks.json"), "w") as f:
-            json.dump(self.chunks, f, indent=2, ensure_ascii=False)
-    
-    def save_indexer(self, path: str):
-        os.makedirs(path, exist_ok=True)
-        self.indexer.save(os.path.join(path, "index.faiss"))
-
-    def load_chunks(self, path: str):
-        with open(os.path.join(path, "chunks.json")) as f:
-            chunks = json.load(f)
-        return chunks 
-    
-    def load_indexer(self, path: str):
-        self.indexer = Indexer(
-            1, # placeholder, overwrite with load
-            self.indexer.dimension
-        )
-        self.indexer.load(os.path.join(path, "index.faiss"))
-        return self.indexer
-    

@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from ..schemas import Chunk, EncodedChunk
+from ..snapshot import Chunk, EncodedChunk
 import numpy as np
 
 class Encoder:

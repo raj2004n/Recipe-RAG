@@ -1,6 +1,26 @@
 import faiss
 import numpy as np
-from ..schemas import EncodedChunk
+from dataclasses import dataclass
+
+@dataclass
+class EncodedChunk:
+    id: str
+    vector: list[float]
+    text: str
+    metadata: dict[str, any]
+
+    @classmethod
+    def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
+        return cls(
+            id=f"recipa_{chunk.recipe_id}_chunk_{chunk.chunk_id}",
+            vector=vector,
+            text=chunk.text,
+            metadata={
+                "recipe_id": chunk.recipe_id,
+                "chunk_id": chunk.chunk_id,
+                "chunk_type": chunk.chunk_type
+            }
+        )
 
 class Indexer:
     def __init__(self, index_type: str, dimension: int):

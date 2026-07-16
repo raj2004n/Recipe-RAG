@@ -1,9 +1,16 @@
+import json
 from pathlib import Path
 from itertools import count
-import json
-from ..schemas import Chunk
+from dataclasses import dataclass
 
 # TODO: Gracefully handle when recipes not found for loading
+
+@dataclass
+class Chunk:
+    text: str
+    chunk_type: str
+    recipe_id: int
+    chunk_id: int
 
 def chunk_recipes(strategy, recipes_path: Path) -> list[Chunk]:
     # load recipes
