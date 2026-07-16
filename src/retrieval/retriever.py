@@ -37,7 +37,8 @@ class Retriever:
         self.top_k = top_k
         self.score_threshold = score_threshold
 
-        self.chunks = {c.id: c for c in chunks}
+        # dict with k, v = chunk_id, chunk
+        self.chunks_dict = {chunk.chunk_id: chunk for chunk in chunks}
 
     def retrieve(self, query: str, top_k : int | None = None) -> list[RetrievalResult]:
         top_k = top_k or self.top_k
@@ -57,8 +58,9 @@ class Retriever:
 
             if self.score_threshold and score < self.score_threshold:
                 continue
-
-            chunk = self.chunks.get(chunk_id)
+            
+            # get chunk from dict
+            chunk = self.chunks_dict.get(chunk_id)
             if chunk is None:
                 continue
             

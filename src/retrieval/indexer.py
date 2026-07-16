@@ -34,7 +34,7 @@ class Indexer:
 
         # keep mapping back to original chunk ids
         for faiss_id, chunk in zip(faiss_ids, chunks):
-            self.id_mapping[int(faiss_id)] = chunk.id
+            self.id_mapping[int(faiss_id)] = chunk.chunk_id
 
         self._add(vectors, faiss_ids)
 

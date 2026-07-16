@@ -7,10 +7,10 @@ from dataclasses import dataclass
 
 @dataclass
 class Chunk:
-    text: str
-    chunk_type: str
-    recipe_id: int
     chunk_id: int
+    recipe_id: int
+    chunk_type: str
+    text: str
 
 def chunk_recipes(strategy, recipes_path: Path) -> list[Chunk]:
     # load recipes
@@ -25,9 +25,9 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[Chunk]:
     
 def _chunk_whole(recipes: list[dict]) -> list[Chunk]:
     chunks = []
+    chunk_id = count()
     for r in recipes:
         recipe_id = r.get("recipe_id")
-        chunk_id = count()
 
         chunks.append(
             Chunk(
@@ -42,10 +42,9 @@ def _chunk_whole(recipes: list[dict]) -> list[Chunk]:
 
 def _chunk_it_ing(recipes: list[dict]) -> list[Chunk]:
     chunks = []
-
+    chunk_id = count()
     for r in recipes:
         recipe_id = r.get("recipe_id")
-        chunk_id = count()
 
         # ingredients
         chunks.append(
