@@ -1,14 +1,17 @@
 import json
 import mlflow
+import torch
 import pandas as pd
+from src.utils import load_retriever
+from .rerank import recipe_to_string 
 from src.snapshot import load_snapshot
-from src.retrieval.indexer import Indexer 
 from scripts.debug.prompt_decomp import decompose_query
-from src.utils import flatten_config_dict, load_retriever
+from src.retrieval.indexer import Indexer
 from sentence_transformers import CrossEncoder
 
+# retriever score is too low still, even after chunking..
+
 mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("first-retriever-experiment")
 
 def inspect_index(indexer: Indexer, chunks: list[dict]):
     # number of chunks
@@ -16,38 +19,6 @@ def inspect_index(indexer: Indexer, chunks: list[dict]):
     
     # number of vectors
     print(f"Number of vectors: {indexer.index.ntotal}")
-
-def debug_retriever(queries: list[str], top_k: int = 5):
-    snapshot = load_snapshot("snapshots/latest")
-    retriever = load_retriever(snapshot)
-    res = {}
-    for query in queries:
-        res[query] = []
-    #inspect_index(retriever.indexer, retriever.chunks)
-    for query in queries:
-        print(f"="*50)
-        print(f"Query: {query}")
-        print(f"="*50)
-
-        results = retriever.retrieve(query, top_k)
-
-        structured_results = [
-            {
-                "rank": i,
-                "score": r.score,
-                "recipe_id": r.recipe_id,
-                "recipe_name": r.chunk["metadata"]["recipe_name"],
-            }
-            for i, r in enumerate(results)
-        ]
-        
-        res[query] = structured_results
-
-    with mlflow.start_run():
-        mlflow.log_param("query", query)
-        mlflow.log_param("top_k", top_k)
-        mlflow.log_params(flatten_config_dict(snapshot.base_config))
-        mlflow.log_dict(res, "results.json")
 
 def test_new_retriever(query: str):
     # load recipes
@@ -68,161 +39,145 @@ def test_new_retriever(query: str):
 
     print(retrieved_recipes)
 
-def test_query_decomp(queries: list[str]):
-    #TODO retrieve 50 - 100 results
+def test_query_decomp():
+    #TODO: retrieve non decomposed query? Only retrieving inc and exc, is fine, but really relies on llm
+    # Dense retrievers are helpful for complex look ups. Current llm simplies too much.
+    # hybrid approach is viable, but there would be too many recipes with e.g. chicken
+    # can try to extract negation from user query, and preserve the query otherwise.
+    # This makes sense since dense retriever struggle with negation, but are otherwise fine.
+    # The current appraoch does not use the power of dense retrievers.
+
+    # Current chunking for ing does not carry semantic relevance.
+
+    # set experiment
+    mlflow.set_experiment("first-query-decomp-experiment")
     
-    # load recipes
-    with open("data/processed/cleaned_recipes.json") as f:
-        recipes = json.load(f)
+    with mlflow.start_run():    
+        # query and params
+        query = "chicken"
+        params = {
+            "query": query,
+            "retriever_top_k": 50,
+            "reranker": "BAAI/bge-reranker-v2-m3",
+            "reranker_max_length": 512,
+            "reranker_top_k": 10,
+        }
 
-    # load snapshot, retriever
-    snapshot = load_snapshot("snapshots/latest")
-    retriever = load_retriever(snapshot)
+        # load recipes
+        with open("data/processed/cleaned_recipes.json") as f:
+            all_recipes = json.load(f)
 
-    for q in queries:
-        # decompose query into inclusions and exclusions
-        decomposed_query = decompose_query(q)
+        # load snapshot
+        snapshot = load_snapshot("snapshots/latest")
+
+        decomposed_query = decompose_query(query)
         inclusions = decomposed_query.split("Inclusions:")[1].split("Exclusions:")[0].strip()
         exclusions = decomposed_query.split("Exclusions:")[1].strip()  
 
+        mlflow.log_dict(
+            {
+                "original_query": query,
+                "inclusions": inclusions,
+                "exclusions": exclusions
+            },
+            "decomposition.json"
+        )
+
         print(f"Inclusions: {inclusions} \nExclusions: {exclusions}")
-
-        # retriever inclusions and exclusions
-        inc_results = retriever.retrieve(inclusions) # TODO: Split inclusions into separate prompts?
-        exc_results = retriever.retrieve(exclusions)
         
+        # load retriever
+        retriever = load_retriever(snapshot)
+
+        # retrieve inclusions and exclusions
+        inc_results = retriever.retrieve(inclusions, params["retriever_top_k"])
+        exc_results = retriever.retrieve(exclusions, params["retriever_top_k"])
+        
+        # free memory
+        del retriever
+        torch.cuda.empty_cache()
+
         # extract recipe ids
-        inc_recipe_ids = [r.chunk.recipe_id for r in inc_results]
-        exc_recipe_ids = [r.chunk.recipe_id for r in exc_results]
+        inc_recipe_ids = {r.chunk.recipe_id for r in inc_results}
+        exc_recipe_ids = {r.chunk.recipe_id for r in exc_results}
 
-        # combine
-        recipe_ids = inc_recipe_ids + exc_recipe_ids
-
-        # deduplicate
-        recipe_ids = set(recipe_ids)
+        # deduplicate, remove excluded recipes
+        recipe_ids = list(inc_recipe_ids - exc_recipe_ids)
 
         # pull recipes via ids
-        inc_recipes = [recipes[recipe_id]["recipe_name"] for recipe_id in inc_recipe_ids]
-        exc_recipes = [recipes[recipe_id]["recipe_name"] for recipe_id in exc_recipe_ids]
+        candidate_recipes = [all_recipes[recipe_id] for recipe_id in recipe_ids]
+        
+        # format recipes for reranker
+        reranker_inputs = [recipe_to_string(r) for r in candidate_recipes]
 
-        print(f"Inclusion Recipes: {inc_recipes} \nExclusion Recipes: {exc_recipes}")
+        # load reranker
+        reranker = CrossEncoder(
+            model_name_or_path=params["reranker"],
+            max_length=params["reranker_max_length"]
+        )
 
-def recipe_to_string(recipe: dict) -> str:
-    """Flattens the nested recipe JSON into a clean, searchable text block."""
-    text_parts = [f"Recipe Name: {recipe['recipe_name']}"]
-    
-    # parse ingredients
-    text_parts.append("Ingredients:")
-    for group in recipe.get("ingredient_groups", []):
-        for ing in group.get("ingredients", []):
-            amt = f"{ing['amount']} {ing['unit']}".strip()
-            notes = f" ({ing['notes']})" if ing['notes'] else ""
-            text_parts.append(f"- {amt} {ing['name']}{notes}")
-            
-    # parse instructions
-    text_parts.append("Instructions:")
-    for group in recipe.get("instruction_groups", []):
-        for step in group.get("instructions", []):
-            text_parts.append(f"- {step}")
-    
-    # parse notes
-    recipe_notes = recipe.get("notes", [])
-    if recipe_notes:
-        text_parts.append("Notes:")
-        for note in recipe_notes:
-            text_parts.append(f"- {note}")
-
-    # parse servings
-    if "servings" in recipe:
-        text_parts.append(f"Servings: {recipe['servings']}")
-
-    return "\n".join(text_parts)
-
-def test_recipe_to_string():
-    query = "Pork recipes with no potatoes"
-
-    # load recipes
-    with open("data/processed/cleaned_recipes.json") as f:
-        recipes = json.load(f)
-
-    # load snapshot, retriever
-    snapshot = load_snapshot("snapshots/latest")
-    retriever = load_retriever(snapshot)
-
-    retrieved_results = retriever.retrieve(query=query, top_k=5)
-    recipe_ids = [r.chunk.recipe_id for r in retrieved_results]
-
-    recipes = [recipes[recipe_id] for recipe_id in recipe_ids]
-
-    formatted_recipes = [recipe_to_string(r) for r in recipes]
-    print(formatted_recipes[0])
-    print("\n\n")
-    print(formatted_recipes[1])
-
-def test_reranker():
-    # consider chunk type...
-
-    # params
-    params = {
-        "query": "Pork recipes with no potatoes",
-        "retriever_top_k": 50,
-        "reranker": "BAAI/bge-reranker-v2-m3",
-        "reranker_max_length": 512,
-        "reranker_top_k": 10,
-    }
-    query = "Pork recipes with no potatoes"
-
-    # load recipes
-    with open("data/processed/cleaned_recipes.json") as f:
-        recipes = json.load(f)
-
-    # load snapshot, retriever
-    snapshot = load_snapshot("snapshots/latest")
-    retriever = load_retriever(snapshot)
-
-    # load reranker
-    reranker = CrossEncoder(
-        model_name_or_path=params["reranker"],
-        max_length=params["reranker_max_length"]
-    )
-    
-    with mlflow.start_run():
-        retrieved_results = retriever.retrieve(query=query, top_k=params["retriever_top_k"])
-        recipe_ids = [r.chunk.recipe_id for r in retrieved_results]
-
-        recipes = [recipes[recipe_id] for recipe_id in recipe_ids]
-
-        # format recipes for reranker inputs
-        reranker_inputs = [recipe_to_string(r) for r in recipes]
-
-
+        # rerank
         ranked_results = reranker.rank(
             query=query,
             documents=reranker_inputs,
             return_documents=True,
             top_k=params["reranker_top_k"]
         )
+        
+        retrieved_data = []
 
-        structured_data = {
+        for r in inc_results:
+            retrieved_data.append({
+                "type": "inclusion",
+                "recipe_id": r.chunk.recipe_id,
+                "score": getattr(r, "score", None),
+                "recipe_name": all_recipes[r.chunk.recipe_id]["recipe_name"],
+                "text": recipe_to_string(all_recipes[r.chunk.recipe_id])
+            })
+
+        for r in exc_results:
+            retrieved_data.append({
+                "type": "exclusion",
+                "recipe_id": r.chunk.recipe_id,
+                "score": getattr(r, "score", None),
+                "recipe_name": all_recipes[r.chunk.recipe_id]["recipe_name"],
+                "text": recipe_to_string(all_recipes[r.chunk.recipe_id])
+            })
+
+        retrieved_df = pd.DataFrame(retrieved_data)
+
+        filtered_data = [
+            {
+                "recipe_id": recipe_id,
+                "recipe_name": all_recipes[recipe_id]["recipe_name"],
+                "text": recipe_to_string(all_recipes[recipe_id])
+            }
+            for recipe_id in recipe_ids
+        ]
+
+        reranked_results = {
             "query": [query] * len(ranked_results),
             "rank": [i + 1 for i in range(len(ranked_results))],
             "reranker_score": [float(r["score"]) for r in ranked_results],
             "text": [r["text"] for r in ranked_results],
-            "recipe_id": [recipes[i]["recipe_id"] for i in range(len(ranked_results))],
-            "recipe_name": [recipes[i]["recipe_name"] for i in range(len(ranked_results))]
+            "recipe_id": [
+                candidate_recipes[r["corpus_id"]]["recipe_id"]
+                for r in ranked_results
+            ],
+            "recipe_name": [
+                candidate_recipes[r["corpus_id"]]["recipe_name"]
+                for r in ranked_results
+            ]    
         }
-        
-        df = pd.DataFrame(structured_data)
 
-        mlflow.log_table(data=df, artifact_file="results.json")
+        reranked_df = pd.DataFrame(reranked_results)
+
         mlflow.log_params(params)
-
+        mlflow.log_table(data=retrieved_df, artifact_file="retrieved_results.json")
+        mlflow.log_table(data=pd.DataFrame(filtered_data), artifact_file="filtered_candidates.json")
+        mlflow.log_table(data=reranked_df, artifact_file="results.json")
 
     
 if __name__ == "__main__": 
-    queries = [
-        "Pork recipes with no potatoes",
-    ]
-    #test_query_decomp(queries)
+    test_query_decomp()
     #test_recipe_to_string()
-    test_reranker()
+    #test_reranker()

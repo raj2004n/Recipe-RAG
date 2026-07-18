@@ -54,10 +54,9 @@ bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True
+    bnb_4bit_use_double_quant=True,
 )
 
-@lru_cache()
 def load_model():    
     # load base model
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -96,6 +95,15 @@ def decompose_query(query: str) -> str:
             )
     output_ids = generated_ids[0][len(model_inputs["input_ids"][0]):].tolist()
     decomposed_query = tokenizer.decode(output_ids, skip_special_tokens=True)
+    
+    # free memory
+    del generated_ids
+    del model_inputs
+    del model
+    del tokenizer
+
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
     
     return decomposed_query
 
