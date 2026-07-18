@@ -3,13 +3,9 @@ from src.retrieval.encoder import Encoder
 from src.retrieval.indexer import Indexer
 from src.retrieval.retriever import Retriever
 from src.retrieval.chunker import chunk_recipes
-#from src.generation.prompt_builder import PromptBuilder
-#from src.generation.generator import Generator
-#from src.pipeline.rag_pipeline import RAGPipeline
-#from transformers import AutoTokenizer
-from src.schemas import Snapshot
-from src.utils import flatten_config_dict, save_config, load_config, save_snapshot
-from pathlib import Path
+from src.snapshot import Snapshot
+from src.utils import flatten_config_dict, load_config
+from src.snapshot import save_snapshot
 
 #TODO: Add logging
 
@@ -87,7 +83,7 @@ def run():
             snapshot_id=None,
             created_at=None,
             index=retriever.indexer,
-            chunks=retriever.chunks,
+            chunks=chunks,
             base_config=model_config,
             prompts_config=prompts_config
         )

@@ -2,7 +2,7 @@
 #TODO: Add save / load paths
 #TODO: Consider different config files
 chunking:
-  strategy: whole recipe
+  strategy: instructions_ingredients
 
 encoder:
   model: sentence-transformers/all-MiniLM-L6-v2
