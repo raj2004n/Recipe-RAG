@@ -9,8 +9,8 @@
 
 BOT_NAME = "recipe_crawler"
 
-SPIDER_MODULES = ["recipe_crawler.spiders"]
-NEWSPIDER_MODULE = "recipe_crawler.spiders"
+SPIDER_MODULES = ["crawler.recipe_crawler.spiders"]
+NEWSPIDER_MODULE = "crawler.recipe_crawler.spiders"
 
 ADDONS = {}
 
@@ -30,7 +30,7 @@ RANDOMIZE_DOWNLOAD_DELAY = 0.5
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"
 
 ITEM_PIPELINES = {
-    "recipe_crawler.pipelines.RecipeCrawlerPipeline": 300,
+    "crawler.recipe_crawler.pipelines.RecipeCrawlerPipeline": 300,
 }
 
 AUTOTHROTTLE_ENABLED = True

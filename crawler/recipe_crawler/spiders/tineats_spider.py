@@ -16,44 +16,36 @@ class TinEatsSpider(Spider):
     allowed_domains = ["www.recipetineats.com"]
     start_urls = ["https://www.recipetineats.com/recipes/"]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.page_number = 1
-
     def parse(self, response):
         # find all recipe links on recipe page, access and extract from all, then go to next page
         # repeat until last page
-        recipe_links = response.css(
-            "main#genesis-content article header.entry-header a.entry-image-link::attr(href)"
-            ).getall() #TODO test on random pages
+
+        recipe_links = response.css("main#genesis-content article header.entry-header a.entry-image-link::attr(href)").getall()
         
+        # shutdown if no links found
         if not recipe_links:
-            self.logger.info(f"No links found on page {self.page_number}. Stopping crawl.")
-            return
+            self.logger.info("No recipe links found, ending crawl.") 
+            return 
         
-        print(f"Number of links found: {len(recipe_links)} on page {self.page_number}.")
-        
-        for link in recipe_links:
-            recipe_link = link.xpath("@href").get()
+        # get page number from url
+        page_number = int(response.url.split('?fwp_paged=')[-1].split('&')[0]) if '?fwp_paged=' in response.url else 1 # first page url does not specify page number
 
-            # yield a request to follow the recipe link
-            yield response.follow(
-                recipe_link,
-                callback=self.parse_recipe,
-                errback=self.handle_error
-            )
-            # access page and extract data
+        self.logger.info(f"Found {len(recipe_links)} links on page {page_number}")
         
-        # Get the next page link
-        self.page_number += 1
-        next_page = f"https://www.recipetineats.com/recipes/?fwp_paged={self.page_number}"
-        self.logger.info(f"Navigating to Next page: {next_page}")
-
+        # access and extract data for each recipe link on page
+        #for link in recipe_links:
+            #yield response.follow(
+                #link,
+                #callback=self.parse_recipe,
+                #errback=self.handle_error
+            #)
+       
+        next_page = f"https://www.recipetineats.com/recipes/?fwp_paged={page_number+1}"
         yield response.follow(
-            f"?fwp_paged={self.page_number}",
+            next_page,
             callback=self.parse,
             errback=self.handle_error
-        )
+            )
 
     def parse_recipe(self, response):
         name = self._extract_recipe_name(response)

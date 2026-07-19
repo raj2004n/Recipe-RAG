@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 
 
 class RecipeCrawlerPipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item):
         # ...
 
         return item
