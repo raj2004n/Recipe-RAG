@@ -1,4 +1,11 @@
 stages:
+  collect:
+    cmd: python -m scripts.collect_data
+    deps:
+    - crawler.recipe_crawler.spiders.tineats_spider.py
+    outs:
+    - data/raw/recipes.jsonl
+
   preprocess:
     cmd: python -m scripts.preprocess
     deps:
