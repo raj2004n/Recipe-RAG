@@ -1,5 +1,5 @@
-from src.utils import load_config
-from src.data.preprocessor import preprocess
+from src.rag.core.utils import load_config
+from src.rag.data.preprocessor import preprocess
 
 def run():
     config = load_config()

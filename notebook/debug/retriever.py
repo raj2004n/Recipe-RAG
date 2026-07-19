@@ -2,11 +2,11 @@ import json
 import mlflow
 import torch
 import pandas as pd
-from src.utils import load_retriever
+from src.rag.core.utils import load_retriever
 from .rerank import recipe_to_string 
-from src.snapshot import load_snapshot
-from scripts.debug.prompt_decomp import decompose_query
-from src.retrieval.indexer import Indexer
+from src.rag.core.snapshot import load_snapshot
+from notebook.debug.prompt_decomp import decompose_query
+from src.rag.retrieval.indexer import Indexer
 from sentence_transformers import CrossEncoder
 
 # retriever score is too low still, even after chunking..

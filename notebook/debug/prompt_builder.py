@@ -1,7 +1,7 @@
-from src.generation.prompt_builder import PromptBuilder
-from src.retrieval.retriever import RetrievalResult
+from src.rag.generation.prompt_builder import PromptBuilder
+from src.rag.retrieval.retriever import RetrievalResult
 from transformers import AutoTokenizer
-from src.utils import load_config
+from src.rag.core.utils import load_config
 
 prompts_config = load_config("configs/prompts_config.yaml")
 templates = prompts_config["template"]

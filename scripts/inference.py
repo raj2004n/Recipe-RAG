@@ -1,5 +1,5 @@
-from src.utils import load_snapshot
-from src.pipeline.rag_pipeline import RAGPipeline
+from src.rag.core.utils import load_snapshot
+from src.rag.pipeline.rag_pipeline import RAGPipeline
 
 def run():
     # load snapshot

@@ -1,10 +1,10 @@
 import yaml
 import json
 from pathlib import Path
-from src.retrieval.indexer import Indexer
-from src.retrieval.retriever import Retriever
-from src.retrieval.encoder import Encoder
-from src.snapshot import Snapshot
+from src.rag.retrieval.indexer import Indexer
+from src.rag.retrieval.retriever import Retriever
+from src.rag.retrieval.encoder import Encoder
+from src.rag.core.snapshot import Snapshot
 
 def save_config(directory: Path, config: dict):
     path = directory / "config.yaml"

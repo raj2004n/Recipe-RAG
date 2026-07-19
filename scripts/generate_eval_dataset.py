@@ -1,6 +1,6 @@
 from pathlib import Path
-from src.data.eval_dataset_generator import generate_dataset
-from src.utils import load_config
+from src.rag.data.eval_dataset_generator import generate_dataset
+from src.rag.core.utils import load_config
 
 # TODO: Can add this to evaluate.py.
 

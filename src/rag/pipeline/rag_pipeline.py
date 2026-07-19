@@ -1,12 +1,12 @@
-from src.retrieval.retriever import Retriever
-from src.retrieval.encoder import Encoder
-from src.generation.prompt_builder import PromptBuilder
-from src.generation.generator import Generator
-from src.retrieval.indexer import Indexer
+from src.rag.retrieval.retriever import Retriever
+from src.rag.retrieval.encoder import Encoder
+from src.rag.generation.prompt_builder import PromptBuilder
+from src.rag.generation.generator import Generator
+from src.rag.retrieval.indexer import Indexer
 from transformers import AutoTokenizer
-from src.snapshot import Snapshot
+from src.rag.core.snapshot import Snapshot
 from typing import Dict
-from src.snapshot import RetrievalResult
+from src.rag.core.snapshot import RetrievalResult
 
 class RAGPipeline:
     def __init__(self, snapshot: Snapshot):

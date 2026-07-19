@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, is_dataclass
-from .retrieval.indexer import Indexer
-from .retrieval.chunker import Chunk
+from ..retrieval.indexer import Indexer
+from ..retrieval.chunker import Chunk
 import time
 import uuid
 import faiss

@@ -1,7 +1,7 @@
 import json
 import pprint
 from itertools import count
-from src.snapshot import Chunk
+from src.rag.core.snapshot import Chunk
 
 # TODO: Notes saved twice. Notes is not scanned for retrieval so can be discared, then same for serving.
 

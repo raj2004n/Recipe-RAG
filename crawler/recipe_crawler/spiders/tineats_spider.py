@@ -1,4 +1,4 @@
-from src.data.recipe_crawler.recipe_crawler.items import RecipeItem
+from ..items import RecipeItem
 from scrapy import Spider
 import re
 

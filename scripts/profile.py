@@ -1,5 +1,5 @@
-from src.profiler import profile_model_memory, profile_dataset_tokenization
-from src.utils import load_snapshot
+from src.rag.core.profiler import profile_model_memory, profile_dataset_tokenization
+from src.rag.core.utils import load_snapshot
 import mlflow
 import argparse
 

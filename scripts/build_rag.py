@@ -1,11 +1,11 @@
 import mlflow
-from src.retrieval.encoder import Encoder
-from src.retrieval.indexer import Indexer
-from src.retrieval.retriever import Retriever
-from src.retrieval.chunker import chunk_recipes
-from src.snapshot import Snapshot
-from src.utils import flatten_config_dict, load_config
-from src.snapshot import save_snapshot
+from src.rag.retrieval.encoder import Encoder
+from src.rag.retrieval.indexer import Indexer
+from src.rag.retrieval.retriever import Retriever
+from src.rag.retrieval.chunker import chunk_recipes
+from src.rag.core.snapshot import Snapshot
+from src.rag.core.utils import flatten_config_dict, load_config
+from src.rag.core.snapshot import save_snapshot
 
 #TODO: Add logging
 

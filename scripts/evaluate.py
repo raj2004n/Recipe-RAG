@@ -1,7 +1,7 @@
 from typing import Sequence
 import mlflow
-from src.utils import load_retriever, load_config, load_eval_dataset
-from src.evaluation.retriever_evaluator import evaluate_strict
+from src.rag.core.utils import load_retriever, load_config, load_eval_dataset
+from src.rag.evaluation.retriever_evaluator import evaluate_strict
 
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("evaluation-experiment") #TODO Should not be a new experiment. Should be the same experiment as the one used for building.

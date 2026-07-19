@@ -1,7 +1,7 @@
 import argparse
 import mlflow
-from src.utils import load_snapshot, flatten_config_dict
-from src.pipeline.rag_pipeline import RAGPipeline
+from src.rag.core.utils import load_snapshot, flatten_config_dict
+from src.rag.pipeline.rag_pipeline import RAGPipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 """ 
