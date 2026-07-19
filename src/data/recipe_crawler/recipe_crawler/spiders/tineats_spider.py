@@ -1,123 +1,152 @@
-from scrapy.spiders import CrawlSpider, Rule
-from scrapy.linkextractors import LinkExtractor
 from src.data.recipe_crawler.recipe_crawler.items import RecipeItem
-from scrapy import Request, Spider
+from scrapy import Spider
+import re
 
+#TODO: Add place for testing
+#TODO: add logging, especially for any missed websites
+
+#TODO: store href, good to have reference
+
+# test out on a few random pages
+# and then have it run later on at night, while I spend today working on hybrid retriever
+# make sure to save this data to a different raw recipes. Maybe have a look at doing this via dvc
 
 class TinEatsSpider(Spider):
     name = "tineats"
     allowed_domains = ["www.recipetineats.com"]
     start_urls = ["https://www.recipetineats.com/recipes/"]
-    page_number = 1
-    seen_links = set()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page_number = 1
 
     def parse(self, response):
-        links = response.xpath("//h2[@class='entry-title']/a[@class='entry-title-link']")
+        # find all recipe links on recipe page, access and extract from all, then go to next page
+        # repeat until last page
+        recipe_links = response.css(
+            "main#genesis-content article header.entry-header a.entry-image-link::attr(href)"
+            ).getall() #TODO test on random pages
         
-        if len(links) == 0:
+        if not recipe_links:
             self.logger.info(f"No links found on page {self.page_number}. Stopping crawl.")
             return
         
-        print(f"Number of links found: {len(links)} on page {self.page_number}.")
+        print(f"Number of links found: {len(recipe_links)} on page {self.page_number}.")
         
-        for link in links:
+        for link in recipe_links:
             recipe_link = link.xpath("@href").get()
 
-            # Check if the link is already seen
-            if recipe_link in self.seen_links:
-                continue
-
-            # Add the link to the item
-            self.seen_links.add(recipe_link)
-            
-            # Yield a request to follow the recipe link
-            yield Request(
+            # yield a request to follow the recipe link
+            yield response.follow(
                 recipe_link,
-                callback=self.parse_recipe
+                callback=self.parse_recipe,
+                errback=self.handle_error
             )
-            # Access page and extract data
+            # access page and extract data
         
         # Get the next page link
         self.page_number += 1
         next_page = f"https://www.recipetineats.com/recipes/?fwp_paged={self.page_number}"
         self.logger.info(f"Navigating to Next page: {next_page}")
 
-        yield Request(
-            url=next_page,
-            callback=self.parse
+        yield response.follow(
+            f"?fwp_paged={self.page_number}",
+            callback=self.parse,
+            errback=self.handle_error
         )
 
     def parse_recipe(self, response):
-        # 1. Verify this is a recipe page and extract the name
-        name = response.css('h2.wprm-recipe-name::text').get()
+        name = self._extract_recipe_name(response)
         if not name:
-            self.logger.info(f"Skipping page: {response.url} (Not a recipe page)")
+            self.logger.info(f"Skipping page: {response.url}")
             return
+        
+        self.logger.info(f"Preprocessing Recipe: {name}")
 
-        print(f"--- Processing Recipe: {name.strip()} ------  on page number: {self.page_number} ---")
-        # Instantiate the Scrapy Item
         recipe = RecipeItem()
-        recipe['recipe_name'] = name.strip()
-        recipe['ingredient_groups'] = []
-        recipe['instruction_groups'] = []
-        recipe['notes'] = []
+        recipe["recipe_name"] = name
+        recipe["servings"] = self._extract_servings(response)
+        recipe["ingredient_groups"] = self._extract_ingredient_groups(response)
+        recipe["instruction_groups"] = self._extract_instruction_groups(response)
+        recipe["notes"] = self._extract_notes(response)
 
-        # 2. Parse Servings
-        # Extract the immutable author baseline yield
-        servings = response.css('span.wprm-recipe-servings::text').get()
-        if servings:
-            recipe['servings'] = float(servings)
-
-        # 3. Parse Ingredient Groups
-        ingredient_groups = response.css('div.wprm-recipe-ingredient-group')
-        for group in ingredient_groups:
-            group_title = group.css('h4.wprm-recipe-group-name::text').get()
-            if group_title:
-                group_title = group_title.strip()
-
-            ingredients_list = []
-            for li in group.css('ul.wprm-recipe-ingredients li.wprm-recipe-ingredient'):
-                item = {
-                    'amount': li.css('.wprm-recipe-ingredient-amount::text').get(default='').strip(),
-                    'unit': li.css('.wprm-recipe-ingredient-unit::text').get(default='').strip(),
-                    'name': li.css('.wprm-recipe-ingredient-name::text').get(default='').strip(),
-                    'notes': li.css('.wprm-recipe-ingredient-notes::text').get(default='').strip()
-                }
-                
-                if not item['name']:
-                    item['name'] = li.css('.wprm-recipe-ingredient-name a::text').get(default='').strip()
-                    
-                ingredients_list.append(item)
-
-            recipe['ingredient_groups'].append({
-                'group_name': group_title,
-                'ingredients': ingredients_list
-            })
-
-        # 4. Parse Instruction Groups
-        instruction_groups = response.css('div.wprm-recipe-instruction-group')
-        for group in instruction_groups:
-            group_title = group.css('h4.wprm-recipe-instruction-group-name::text').get()
-            if group_title:
-                group_title = group_title.strip()
-                
-            steps_list = []
-            for li in group.css('ul.wprm-recipe-instructions li.wprm-recipe-instruction'):
-                step_text = "".join(li.css('.wprm-recipe-instruction-text ::text').getall()).strip()
-                if step_text:
-                    steps_list.append(step_text)
-                    
-            recipe['instruction_groups'].append({
-                'group_name': group_title,
-                'instructions': steps_list
-            })
-
-        # 5. Parse Recipe Notes
-        notes_container = response.css('div.wprm-recipe-notes')
-        for span in notes_container.css('span'):
-            note_text = "".join(span.css('::text').getall()).strip()
-            if note_text:
-                recipe['notes'].append(note_text)
-
-        # Yield the unified data structure to Scrapy engine
         yield recipe
+
+    def _extract_recipe_name(self, response):
+        name = response.css("h2.wprm-recipe-name::text").get()
+        return name.strip() if name else None
+
+    def _extract_servings(self, response):
+        text = response.css("span.wprm-recipe-servings::text").get()
+        if not text:
+            return None
+        
+        match = re.search(r"\d+(\.\d+)?", text) # for robustness, should not contain units
+
+        return float(match.group()) if match else None
+    
+    def _extract_ingredient_groups(self, response):
+        groups = []
+        # parse ingredient groups
+        for group in response.css("div.wprm-recipe-ingredient-group"):
+            # ingredient group name is not always present
+            name = group.css("h4.wprm-recipe-group-name::text").get()
+            name = name.strip() if name else "Main" # if not given, then it will be the main dish's ing
+
+            ingredients = [
+                self._extract_ingredient(li)
+                for li in group.css("ul.wprm-recipe-ingredients li.wprm-recipe-ingredient")
+            ] # ing group should only contain ing list, so recipe-ingredients is not needed
+            # but for robustness, will keep
+
+            groups.append({
+                "group_name": name,
+                "ingredients": ingredients
+            })
+        
+        return groups
+    
+    def _extract_ingredient(self, li):
+        # e.g. 6 cloves garlic, finely chopped 
+        return {
+            "amount": li.css(".wprm-recipe-ingredient-amount::text").get(default="").strip(),
+            "unit": li.css(".wprm-recipe-ingredient-unit::text").get(default="").strip(),
+            "name": li.css(".wprm-recipe-ingredient-name::text").get(default="").strip(),
+            "notes": li.css(".wprm-recipe-ingredient-notes::text").get(default="").strip(),
+        }
+
+    def _extract_instruction_groups(self, response):
+        groups = []
+        # parse instructions groups
+        for group in response.css("div.wprm-recipe-instruction-group"):
+            name = group.css("h4.wprm-recipe-instruction-group-name::text").get()
+            name = name.strip() if name else "Main"
+
+            instructions = [
+                "".join(step.css(".wprm-recipe-instruction-text::text").getall()).strip()
+                for step in group.css(
+                    "ul.wprm-recipe-instructions li.wprm-recipe-instruction"
+                )
+            ]
+
+            # filter out empty steps, e.g. ""
+            instructions = [step for step in instructions if step]
+
+            groups.append({
+                "group_name": name,
+                "instructions": instructions,
+            })
+
+        return groups
+
+    def _extract_notes(self, response):
+        return [
+            "".join(span.css("::text").getall()).strip()
+            for span in response.css("div.wprm-recipe-notes span")
+            if "".join(span.css("::text").getall()).strip()
+        ]
+
+    def handle_error(self, failure):
+        self.logger.error(
+            f"Request failed: {failure.request.url}"
+        )
