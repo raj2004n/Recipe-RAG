@@ -73,3 +73,15 @@ stages:
       hash: md5
       md5: bb8ca9b5a4a9064c40f0910b1da3f701
       size: 518646
+  collect:
+    cmd: python -m scripts.collect_data
+    deps:
+    - path: crawler/recipe_crawler/spiders/tineats_spider.py
+      hash: md5
+      md5: 20632a3fda6ec1fd99f1bc94affa646f
+      size: 6920
+    outs:
+    - path: data/raw/recipes.jsonl
+      hash: md5
+      md5: 1e399985140392fde26278036d780025
+      size: 13880101
