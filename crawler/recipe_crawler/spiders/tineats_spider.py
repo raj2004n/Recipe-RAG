@@ -33,12 +33,12 @@ class TinEatsSpider(Spider):
         self.logger.info(f"Found {len(recipe_links)} links on page {page_number}")
         
         # access and extract data for each recipe link on page
-        #for link in recipe_links:
-            #yield response.follow(
-                #link,
-                #callback=self.parse_recipe,
-                #errback=self.handle_error
-            #)
+        for link in recipe_links:
+            yield response.follow(
+                link,
+                callback=self.parse_recipe,
+                errback=self.handle_error
+            )
        
         next_page = f"https://www.recipetineats.com/recipes/?fwp_paged={page_number+1}"
         yield response.follow(
@@ -57,16 +57,65 @@ class TinEatsSpider(Spider):
 
         recipe = RecipeItem()
         recipe["recipe_name"] = name
+        recipe["info"] = self._extract_info(response)
         recipe["servings"] = self._extract_servings(response)
         recipe["ingredient_groups"] = self._extract_ingredient_groups(response)
         recipe["instruction_groups"] = self._extract_instruction_groups(response)
         recipe["notes"] = self._extract_notes(response)
+        recipe["url"] = response.url
+
+        self.logger.debug(recipe)
 
         yield recipe
 
     def _extract_recipe_name(self, response):
         name = response.css("h2.wprm-recipe-name::text").get()
         return name.strip() if name else None
+
+    def _extract_info(self, response):
+        elements = response.xpath(
+            '''
+            //span[@id="dpsp-post-content-markup"]
+            /following::*[
+                not(preceding::*[contains(@class, "wprm-recipe-container")])
+                and not(ancestor::*[contains(@class, "wprm-recipe-container")])
+                and (
+                    self::p
+                    or contains(@class, "wp-block-heading")
+                )
+            ]
+            '''
+        )
+
+        groups = []
+        current_group = {
+            "group_name": "General Information",
+            "content": []
+        }
+
+        for element in elements:
+            classes = element.attrib.get("class", "")
+
+            text = " ".join(element.xpath(".//text()").getall()).strip()
+
+            if not text:
+                continue
+
+            if "wp-block-heading" in classes:
+                if current_group["content"]:
+                    groups.append(current_group)
+
+                current_group = {
+                    "group_name": text,
+                    "content": []
+                }
+            else:
+                current_group["content"].append(text)
+
+        if current_group["content"]:
+            groups.append(current_group)
+
+        return groups or None
 
     def _extract_servings(self, response):
         text = response.css("span.wprm-recipe-servings::text").get()

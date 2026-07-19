@@ -7,11 +7,10 @@ import scrapy
 
 
 class RecipeItem(scrapy.Item):
-    # Core metadata
     recipe_name = scrapy.Field()
+    info = scrapy.Field()
     servings = scrapy.Field()
-
-    # Structured data
     ingredient_groups = scrapy.Field()
     instruction_groups = scrapy.Field()
     notes = scrapy.Field()
+    url = scrapy.Field()
