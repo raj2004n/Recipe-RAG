@@ -3,7 +3,9 @@ import re
 import logging
 from datetime import datetime
 from pathlib import Path
+import jsonlines
 
+#TODO: Move to core
 def setup_logging():
     """ Setup logging for the preprocessor.
     """
@@ -26,8 +28,105 @@ def setup_logging():
 
 logger = setup_logging()
 
-def load_raw_data(filepath: str) -> list[dict]:
-    """ Load raw recipe data from a JSON file 
+def preprocess(input_path: str, output_path: str) -> None:
+    """ Preprocess raw recipe data form JSONL file and save it as a JSON file."""
+
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+
+    if input_path.suffix != ".jsonl":
+        raise ValueError("Input path must end with .jsonl")
+
+    if output_path.suffix != ".json":
+        raise ValueError("Output path must end with .json")
+
+    logger.info("Preprocessing data...")
+    
+    recipes = _load_raw_data(input_path)
+    logger.info(f"Loaded {len(recipes)} recipes.")
+
+    valid_recipes = []
+    total_stats = {
+        "removed ingredient groups": 0,
+        "removed instruction groups": 0,
+        "removed recipes": 0,
+    }
+
+    for r in recipes:
+        # validate recipe; remove invalid recipe, ingredient groups, and instruction groups
+        valid_recipe, stats = _validate_recipe(r)
+        
+        if valid_recipe is not None:
+            valid_recipes.append(valid_recipe)
+        else:
+            total_stats["removed recipes"] += 1
+
+        total_stats["removed ingredient groups"] += stats["removed ingredient groups"]
+        total_stats["removed instruction groups"] += stats["removed instruction groups"]
+
+    logger.info(
+        f"Removed {total_stats['removed ingredient groups']} ingredient groups and {total_stats['removed instruction groups']} instruction groups. \n"
+        f"Removed {total_stats['removed recipes']} due to having no ingredient groups or instruction groups after validation. \n"
+        f"Remaining valid recipes: {len(valid_recipes)}")
+
+    logger.info("Cleaning valid recipes...")
+
+    for r in valid_recipes:
+        # clean recipe name
+        r["recipe_name"] = _clean_name(r["recipe_name"])
+
+        for group in r["ingredient_groups"]:
+            # clean ingredient group names
+            group["group_name"] = _clean_name(group["group_name"])
+            
+            # clean each ingredient
+            for ingredient in group["ingredients"]:
+                # clean amount and unit
+                cleaned_amount, cleaned_unit, alt_amount, alt_unit = _clean_amount(ingredient["amount"], ingredient["unit"])
+                ingredient["amount"] = cleaned_amount
+                ingredient["unit"] = cleaned_unit
+                # if alt amount is found, add it to the ingredient
+                if alt_amount is not None:
+                    ingredient["alt_amount"] = alt_amount
+                    ingredient["alt_unit"] = alt_unit
+                
+                # clean ingredient notes
+                ingredient["notes"] = _clean_note(ingredient["notes"])
+
+        for group in r["instruction_groups"]:
+            # clean instruction group names
+            group["group_name"] = _clean_name(group["group_name"])
+            
+
+        # clean junk ingredient group names
+        r["ingredient_groups"] = _clean_junk_group_names(r["ingredient_groups"])
+
+        # clean junk instruction group names
+        r["instruction_groups"] = _clean_junk_group_names(r["instruction_groups"])
+
+        # clean notes
+        r["notes"] = [_clean_note(note) for note in r["notes"]]
+    
+    logger.info("Cleaned valid recipes.")
+    
+    # assign ids
+    for recipe_id, recipe in enumerate(valid_recipes):
+        recipe["id"] = recipe_id
+    logger.info("Assigned ids to valid recipes.")
+
+    # assign recipe ids to valid recipes
+    for recipe_id, recipe in enumerate(valid_recipes):
+        recipe["recipe_id"] = recipe_id
+
+    # save
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(f"{output_path}", "w") as f:
+        json.dump(valid_recipes, f, indent=4, ensure_ascii=False)
+
+    logger.info(f"Saved valid recipes to {output_path}.")
+
+def _load_raw_data(filepath: str) -> list[dict]:
+    """ Load raw recipe data from a JSONL file 
     
         Returns:
             list[dict]: list of recipe dictionaries
@@ -53,12 +152,22 @@ def load_raw_data(filepath: str) -> list[dict]:
                         instructions: list[str]
                 notes: list[str]
                 servings: float
+                #TODO: Fill in for notes
+                recipe_id: int
     """
-    with open(filepath, 'r') as f:
-        recipes = json.load(f)
+    recipes = []
+
+    with jsonlines.open(filepath, mode="r") as reader:
+        for line_num, recipe in enumerate(reader, start=1):
+            try:
+                recipes.append(recipe)
+            except Exception as e:
+                logger.warning(f"Skipping invalid record on line {line_num}: {e}")
+
+
     return recipes
 
-def validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
+def _validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
     """ Validate recipe dictionary by removing ingredient groups with no ingredients and instruction groups with no instructions.
         Also remove recipe if it has no ingredient groups or instruction groups.
         
@@ -91,7 +200,7 @@ def validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
 
     return recipe, stats
 
-def clean_name(name: str) -> str:
+def _clean_name(name: str) -> str:
     """ Normalise name. 
         
         Returns:
@@ -124,7 +233,7 @@ def clean_name(name: str) -> str:
     # return original name if everything stripped
     return name if name else initial_name 
 
-def clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | None]:
+def _clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | None]:
     """ Clean amount and unit strings, handle dual units.
 
         Returns:
@@ -145,7 +254,7 @@ def clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | No
     # if dual amount not found
     return amount, unit, None, None
 
-def clean_note(note: str) -> str:
+def _clean_note(note: str) -> str:
     """ Clean ingredient note.
         
         Returns:
@@ -161,7 +270,7 @@ def clean_note(note: str) -> str:
     
     return note
 
-def clean_junk_group_names(groups: list[dict]) -> list[dict]:
+def _clean_junk_group_names(groups: list[dict]) -> list[dict]:
     """ Clean list of group dictionaries by renaming junk group names (applies to ingredient and instruction groups)
         
         Returns:
@@ -180,96 +289,3 @@ def clean_junk_group_names(groups: list[dict]) -> list[dict]:
                 g["group_name"] = "Unknown"
 
     return groups
-
-def preprocess(input_path: str, output_path: str) -> None:
-    """ Preprocess raw recipe data and save it to a JSON file."""
-
-    # ensure output ends with .json
-    output_path = Path(output_path)
-    if output_path.suffix != ".json":
-        raise ValueError("Output path must end with .json")
-
-    logger.info("Preprocessing data...")
-    
-    recipes = load_raw_data(input_path)
-    logger.info(f"Loaded {len(recipes)} recipes.")
-
-    valid_recipes = []
-    total_stats = {
-        "removed ingredient groups": 0,
-        "removed instruction groups": 0,
-        "removed recipes": 0,
-    }
-
-    for r in recipes:
-        # validate recipe; remove invalid recipe, ingredient groups, and instruction groups
-        valid_recipe, stats = validate_recipe(r)
-        
-        if valid_recipe is not None:
-            valid_recipes.append(valid_recipe)
-        else:
-            total_stats["removed recipes"] += 1
-
-        total_stats["removed ingredient groups"] += stats["removed ingredient groups"]
-        total_stats["removed instruction groups"] += stats["removed instruction groups"]
-
-    logger.info(
-        f"Removed {total_stats['removed ingredient groups']} ingredient groups and {total_stats['removed instruction groups']} instruction groups. \n"
-        f"Removed {total_stats['removed recipes']} due to having no ingredient groups or instruction groups after validation. \n"
-        f"Remaining valid recipes: {len(valid_recipes)}")
-
-    logger.info("Cleaning valid recipes...")
-
-    for r in valid_recipes:
-        # clean recipe name
-        r["recipe_name"] = clean_name(r["recipe_name"])
-
-        for group in r["ingredient_groups"]:
-            # clean ingredient group names
-            group["group_name"] = clean_name(group["group_name"])
-            
-            # clean each ingredient
-            for ingredient in group["ingredients"]:
-                # clean amount and unit
-                cleaned_amount, cleaned_unit, alt_amount, alt_unit = clean_amount(ingredient["amount"], ingredient["unit"])
-                ingredient["amount"] = cleaned_amount
-                ingredient["unit"] = cleaned_unit
-                # if alt amount is found, add it to the ingredient
-                if alt_amount is not None:
-                    ingredient["alt_amount"] = alt_amount
-                    ingredient["alt_unit"] = alt_unit
-                
-                # clean ingredient notes
-                ingredient["notes"] = clean_note(ingredient["notes"])
-
-        for group in r["instruction_groups"]:
-            # clean instruction group names
-            group["group_name"] = clean_name(group["group_name"])
-            
-
-        # clean junk ingredient group names
-        r["ingredient_groups"] = clean_junk_group_names(r["ingredient_groups"])
-
-        # clean junk instruction group names
-        r["instruction_groups"] = clean_junk_group_names(r["instruction_groups"])
-
-        # clean notes
-        r["notes"] = [clean_note(note) for note in r["notes"]]
-    
-    logger.info("Cleaned valid recipes.")
-    
-    # assign ids
-    for recipe_id, recipe in enumerate(valid_recipes):
-        recipe["id"] = recipe_id
-    logger.info("Assigned ids to valid recipes.")
-
-    # assign recipe ids to valid recipes
-    for recipe_id, recipe in enumerate(valid_recipes):
-        recipe["recipe_id"] = recipe_id
-
-    # save
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(f"{output_path}", "w") as f:
-        json.dump(valid_recipes, f, indent=4, ensure_ascii=False)
-
-    logger.info(f"Saved valid recipes to {output_path}.")
