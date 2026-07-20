@@ -39,6 +39,10 @@ AUTOTHROTTLE_MAX_DELAY = 10
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1
 
 LOG_LEVEL = "INFO"
+
+LOG_FILE = 'logs/spider_crawl.log'
+LOG_FILE_APPEND = True
+
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
 

@@ -7,7 +7,6 @@ from scrapy.http import TextResponse
 import pprint
 # when contains strong, this might indicate the end of the desc
 
-# general info
 def extract_info(response):
     elements = response.xpath(
         '''
@@ -53,6 +52,30 @@ def extract_info(response):
 
     return groups or None
 
+def extract_instruction_groups(response):
+        groups = []
+        # parse instructions groups
+        for group in response.css("div.wprm-recipe-instruction-group"):
+            name = group.css("h4.wprm-recipe-instruction-group-name::text").get()
+            name = name.strip() if name else "Main"
+
+            instructions = [
+                "".join(step.css(".wprm-recipe-instruction-text *::text").getall()).strip()
+                for step in group.css(
+                    "ul.wprm-recipe-instructions li.wprm-recipe-instruction"
+                )
+            ]
+
+            # filter out empty steps, e.g. ""
+            #instructions = [step for step in instructions if step]
+
+            groups.append({
+                "group_name": name,
+                "instructions": instructions,
+            })
+
+        return groups
+
 def load_page(url):
     html = requests.get(
         url,
@@ -81,14 +104,14 @@ def test_crawl():
     process.start()
 
 def test():
-    url = "https://www.recipetineats.com/mapo-tofu/"
+    url = "https://www.recipetineats.com/jalapeno-sauce/"
 
     response = load_page(url)
 
     spider = TinEatsSpider()
-    info = extract_info(response)
+    data = extract_instruction_groups(response)
 
-    pprint.pprint(info)
+    pprint.pprint(data)
 
 if __name__ == "__main__":
-    test_crawl()
+    test()

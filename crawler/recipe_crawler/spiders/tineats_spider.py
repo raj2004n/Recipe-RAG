@@ -164,7 +164,7 @@ class TinEatsSpider(Spider):
             name = name.strip() if name else "Main"
 
             instructions = [
-                "".join(step.css(".wprm-recipe-instruction-text::text").getall()).strip()
+                "".join(step.css(".wprm-recipe-instruction-text *::text").getall()).strip()
                 for step in group.css(
                     "ul.wprm-recipe-instructions li.wprm-recipe-instruction"
                 )
