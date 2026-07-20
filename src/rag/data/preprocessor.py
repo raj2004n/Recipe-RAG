@@ -1,11 +1,26 @@
-import json
 import re
+import json
 import logging
-from datetime import datetime
-from pathlib import Path
 import jsonlines
+from pathlib import Path
+from datetime import datetime
+from copy import deepcopy
+from dataclasses import dataclass, field, asdict
 
 #TODO: Move to core
+
+# TODO: create dataclass
+@dataclass
+class Recipe:
+    recipe_id: int = -1
+    url: str = ""
+    recipe_name: str = ""
+    servings: float = 0.0
+    info: list[dict[str, any]] = field(default_factory=list)
+    ingredient_groups: list[dict[str, any]] = field(default_factory=list)
+    instruction_groups: list[dict[str, any]] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
 def setup_logging():
     """ Setup logging for the preprocessor.
     """
@@ -30,7 +45,6 @@ logger = setup_logging()
 
 def preprocess(input_path: str, output_path: str) -> None:
     """ Preprocess raw recipe data form JSONL file and save it as a JSON file."""
-
     input_path = Path(input_path)
     output_path = Path(output_path)
 
@@ -45,7 +59,8 @@ def preprocess(input_path: str, output_path: str) -> None:
     recipes = _load_raw_data(input_path)
     logger.info(f"Loaded {len(recipes)} recipes.")
 
-    valid_recipes = []
+    valid_recipes: list[Recipe] = []
+
     total_stats = {
         "removed ingredient groups": 0,
         "removed instruction groups": 0,
@@ -57,75 +72,43 @@ def preprocess(input_path: str, output_path: str) -> None:
         valid_recipe, stats = _validate_recipe(r)
         
         if valid_recipe is not None:
+            valid_recipe.recipe_name = _parse_name(r.recipe_name)
+            valid_recipe.info = _parse_info(r.info) if r.info is not None else ""
+            valid_recipe.ingredient_groups = _parse_ing_groups(r.ingredient_groups)
+            valid_recipe.instruction_groups = _parse_it_groups(r.instruction_groups)
+            valid_recipe.notes = [_parse_note(note) for note in r.notes]
             valid_recipes.append(valid_recipe)
         else:
             total_stats["removed recipes"] += 1
-
         total_stats["removed ingredient groups"] += stats["removed ingredient groups"]
         total_stats["removed instruction groups"] += stats["removed instruction groups"]
 
     logger.info(
         f"Removed {total_stats['removed ingredient groups']} ingredient groups and {total_stats['removed instruction groups']} instruction groups. \n"
         f"Removed {total_stats['removed recipes']} due to having no ingredient groups or instruction groups after validation. \n"
-        f"Remaining valid recipes: {len(valid_recipes)}")
+        f"Remaining valid recipes: {len(valid_recipes)}\n"
+        f"Cleaned valid recipes."
+    )
 
-    logger.info("Cleaning valid recipes...")
-
-    for r in valid_recipes:
-        # clean recipe name
-        r["recipe_name"] = _clean_name(r["recipe_name"])
-
-        for group in r["ingredient_groups"]:
-            # clean ingredient group names
-            group["group_name"] = _clean_name(group["group_name"])
-            
-            # clean each ingredient
-            for ingredient in group["ingredients"]:
-                # clean amount and unit
-                cleaned_amount, cleaned_unit, alt_amount, alt_unit = _clean_amount(ingredient["amount"], ingredient["unit"])
-                ingredient["amount"] = cleaned_amount
-                ingredient["unit"] = cleaned_unit
-                # if alt amount is found, add it to the ingredient
-                if alt_amount is not None:
-                    ingredient["alt_amount"] = alt_amount
-                    ingredient["alt_unit"] = alt_unit
-                
-                # clean ingredient notes
-                ingredient["notes"] = _clean_note(ingredient["notes"])
-
-        for group in r["instruction_groups"]:
-            # clean instruction group names
-            group["group_name"] = _clean_name(group["group_name"])
-            
-
-        # clean junk ingredient group names
-        r["ingredient_groups"] = _clean_junk_group_names(r["ingredient_groups"])
-
-        # clean junk instruction group names
-        r["instruction_groups"] = _clean_junk_group_names(r["instruction_groups"])
-
-        # clean notes
-        r["notes"] = [_clean_note(note) for note in r["notes"]]
-    
-    logger.info("Cleaned valid recipes.")
-    
-    # assign ids
+    # assign recipe ids
     for recipe_id, recipe in enumerate(valid_recipes):
-        recipe["id"] = recipe_id
+        recipe.recipe_id = recipe_id
+
     logger.info("Assigned ids to valid recipes.")
-
-    # assign recipe ids to valid recipes
-    for recipe_id, recipe in enumerate(valid_recipes):
-        recipe["recipe_id"] = recipe_id
 
     # save
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(f"{output_path}", "w") as f:
-        json.dump(valid_recipes, f, indent=4, ensure_ascii=False)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(
+            [asdict(recipe) for recipe in valid_recipes],
+            f,
+            indent=4,
+            ensure_ascii=False,
+        )
 
     logger.info(f"Saved valid recipes to {output_path}.")
-
-def _load_raw_data(filepath: str) -> list[dict]:
+ 
+def _load_raw_data(filepath: str) -> list[Recipe]:
     """ Load raw recipe data from a JSONL file 
     
         Returns:
@@ -133,6 +116,10 @@ def _load_raw_data(filepath: str) -> list[dict]:
 
             Each recipe dictionary has the following keys:
                 recipe_name: str
+                info: list[dict]
+                    Each info dictionary has the following keys:
+                        group_name: str
+                        content: list[str]
                 ingredient_groups: list[dict]
                     Each ingredient group dictionary has the following keys:
                         group_name: str
@@ -152,22 +139,21 @@ def _load_raw_data(filepath: str) -> list[dict]:
                         instructions: list[str]
                 notes: list[str]
                 servings: float
-                #TODO: Fill in for notes
                 recipe_id: int
     """
-    recipes = []
+    recipes: list[Recipe] = []
 
     with jsonlines.open(filepath, mode="r") as reader:
-        for line_num, recipe in enumerate(reader, start=1):
+        for line_num, record in enumerate(reader, start=1):
             try:
-                recipes.append(recipe)
+                recipes.append(Recipe(**record))
             except Exception as e:
-                logger.warning(f"Skipping invalid record on line {line_num}: {e}")
-
-
+                logger.warning(
+                    f"Skipping invalid record on line {line_num}: {e}"
+                )
     return recipes
 
-def _validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
+def _validate_recipe(recipe: Recipe) -> tuple[Recipe | None, dict]:
     """ Validate recipe dictionary by removing ingredient groups with no ingredients and instruction groups with no instructions.
         Also remove recipe if it has no ingredient groups or instruction groups.
         
@@ -181,26 +167,26 @@ def _validate_recipe(recipe: dict) -> tuple[dict | None, dict]:
     }
 
     # initial counts
-    initial_count_ing_groups = len(recipe["ingredient_groups"])
-    initial_count_inst_groups = len(recipe["instruction_groups"])
+    initial_count_ing_groups = len(recipe.ingredient_groups)
+    initial_count_inst_groups = len(recipe.instruction_groups)
     
     # remove ingredient groups with no ingredients
-    recipe["ingredient_groups"] = [g for g in recipe["ingredient_groups"] if len(g["ingredients"]) > 0]
+    recipe.ingredient_groups = [g for g in recipe.ingredient_groups if len(g["ingredients"]) > 0]
 
     # remove instruction group with no instructions
-    recipe["instruction_groups"] = [g for g in recipe["instruction_groups"] if len(g["instructions"]) > 0]
+    recipe.instruction_groups = [g for g in recipe.instruction_groups if len(g["instructions"]) > 0]
 
     # update stats
-    stats["removed ingredient groups"] = initial_count_ing_groups - len(recipe["ingredient_groups"])
-    stats["removed instruction groups"] = initial_count_inst_groups - len(recipe["instruction_groups"])
+    stats["removed ingredient groups"] = initial_count_ing_groups - len(recipe.ingredient_groups)
+    stats["removed instruction groups"] = initial_count_inst_groups - len(recipe.instruction_groups)
 
     # if recipe has no ingredient group pr no instruction group, remove it
-    if len(recipe["ingredient_groups"]) == 0 or len(recipe["instruction_groups"]) == 0:
+    if len(recipe.ingredient_groups) == 0 or len(recipe.instruction_groups) == 0:
         return None, stats
 
     return recipe, stats
 
-def _clean_name(name: str) -> str:
+def _parse_name(name: str) -> str:
     """ Normalise name. 
         
         Returns:
@@ -214,26 +200,70 @@ def _clean_name(name: str) -> str:
     # strip wrappng parentheses
     if name.startswith("(") and name.endswith(")"):
         name = name[1:-1]
-
-    # strip trailing charcters
-    name = name.rstrip(':\'"!., ')
-
-    # strip leading characters
-    name = name.lstrip('\'"!., ')
-
-    # remove stray quotes inside the name
-    name = name.replace('"', '').replace('“', '').replace('”', '').replace("'", "")
-
-    # collapse multiple spaces
-    name = re.sub(r'\s+', ' ', name).strip()
-
-    # title case
-    name = name.title()
+    name = name.rstrip(':\'"!., ') # strip trailing charcters
+    name = name.lstrip('\'"!., ') # strip leading characters
+    name = name.replace('"', '').replace('“', '').replace('”', '').replace("'", "") # remove stray quotes inside the name
+    name = re.sub(r'\s+', ' ', name).strip() # collapse multiple spaces
+    name = name.title() # title case
 
     # return original name if everything stripped
     return name if name else initial_name 
 
-def _clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | None]:
+def _parse_ing_groups(ingredient_groups: list[dict]) -> list[dict]:
+    junk_values = {None, '', '.', '<br>', ' ', '<Br>'}
+
+    # if only one group and it's junk, rename to "Main"
+    if len(ingredient_groups) == 1 and ingredient_groups[0]["group_name"] in junk_values:
+        ingredient_groups[0]["group_name"] = "Main"
+
+    # if multiple groups and one is junk, rename to "Unknown"
+    if len(ingredient_groups) > 1:
+        for g in ingredient_groups:
+            if g["group_name"] in junk_values:
+                g["group_name"] = "Unknown"
+
+
+    for g in ingredient_groups:
+        g["group_name"] = _parse_name(g["group_name"])
+        g["ingredients"] = _parse_ingredients(g["ingredients"])
+
+    return ingredient_groups
+
+def _parse_ingredients(ingredients: list[dict]) -> list[dict]:
+    for ing in ingredients:
+        # parse amount, unit, and alt_amount, alt_unit if available
+        ing["amount"], ing["unit"], alt_amount, alt_unit = _parse_amount(ing["amount"], ing["unit"])
+        if alt_amount is not None:
+            ing["alt_amount"] = alt_amount
+            ing["alt_unit"] = alt_unit
+        ing["notes"] = _parse_note(ing["notes"])
+    
+    return ingredients
+   
+def _parse_it_groups(instruction_groups: list[dict]) -> list[dict]:
+    """ Clean list of group dictionaries by renaming junk group names (applies to ingredient and instruction groups)
+        
+        Returns:
+            list[dict]: list of cleaned group dictionaries
+    """
+    junk_values = {None, '', '.', '<br>', ' ', '<Br>'}
+
+    # if only one group and it's junk, rename to "Full Recipe"
+    if len(instruction_groups) == 1 and instruction_groups[0]["group_name"] in junk_values:
+        instruction_groups[0]["group_name"] = "Full Recipe"
+
+    # if multiple groups and one is junk, rename to "Unknown"
+    if len(instruction_groups) > 1:
+        for g in instruction_groups:
+            if g["group_name"] in junk_values:
+                g["group_name"] = "Unknown"
+    
+    for g in instruction_groups:
+        g["group_name"] = _parse_name(g["group_name"])
+
+    return instruction_groups
+
+def _parse_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | None]:
     """ Clean amount and unit strings, handle dual units.
 
         Returns:
@@ -254,7 +284,7 @@ def _clean_amount(amount: str, unit: str) -> tuple[str, str, str | None, str | N
     # if dual amount not found
     return amount, unit, None, None
 
-def _clean_note(note: str) -> str:
+def _parse_note(note: str) -> str:
     """ Clean ingredient note.
         
         Returns:
@@ -270,22 +300,12 @@ def _clean_note(note: str) -> str:
     
     return note
 
-def _clean_junk_group_names(groups: list[dict]) -> list[dict]:
-    """ Clean list of group dictionaries by renaming junk group names (applies to ingredient and instruction groups)
-        
-        Returns:
-            list[dict]: list of cleaned group dictionaries
-    """
-    junk_values = {None, '', '.', '<br>', ' ', '<Br>'}
+def _parse_info(info_groups: list[dict]):
+    parsed = []
 
-    # if only one group and it's junk, rename to "Full Recipe"
-    if len(groups) == 1 and groups[0]["group_name"] in junk_values:
-        groups[0]["group_name"] = "Full Recipe"
+    for group in info_groups:
+        group = deepcopy(group)
+        group["content"] = " ".join(group.get("content", []))
+        parsed.append(group)
 
-    # if multiple groups and one is junk, rename to "Unknown"
-    if len(groups) > 1:
-        for g in groups:
-            if g["group_name"] in junk_values:
-                g["group_name"] = "Unknown"
-
-    return groups
+    return parsed
