@@ -3,19 +3,19 @@ stages:
   preprocess:
     cmd: python -m scripts.preprocess
     deps:
-    - path: data/raw/recipes.json
+    - path: data/raw/recipes.jsonl
       hash: md5
-      md5: 5f422a4713c8e584529800fb3718a4d9
-      size: 6431682
+      md5: 1e399985140392fde26278036d780025
+      size: 13880101
     - path: scripts/preprocess.py
       hash: md5
-      md5: 00c95f9e091d35f2bfd2cc0ec5ca6d8b
-      size: 9848
+      md5: b002541b7c134d1b7008866a6b6b2f8c
+      size: 332
     outs:
     - path: data/processed/cleaned_recipes.json
       hash: md5
-      md5: 9e23ba439d4e300a3fba4ae8e1c088e9
-      size: 10466636
+      md5: 39e96a277195d35a50c1503773b813a2
+      size: 9548912
   build_rag:
     cmd: python -m scripts.build_rag
     deps:
