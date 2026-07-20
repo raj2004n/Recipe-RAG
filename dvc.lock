@@ -5,8 +5,8 @@ stages:
     deps:
     - path: data/raw/recipes.jsonl
       hash: md5
-      md5: 1e399985140392fde26278036d780025
-      size: 13880101
+      md5: 78a628426db6db9f109f4e892cc052ae
+      size: 15125798
     - path: scripts/preprocess.py
       hash: md5
       md5: b002541b7c134d1b7008866a6b6b2f8c
@@ -14,8 +14,8 @@ stages:
     outs:
     - path: data/processed/cleaned_recipes.json
       hash: md5
-      md5: 39e96a277195d35a50c1503773b813a2
-      size: 9548912
+      md5: 8eab36d61aad1983ec16cdcbd871b78f
+      size: 19627371
   build_rag:
     cmd: python -m scripts.build_rag
     deps:
@@ -78,10 +78,10 @@ stages:
     deps:
     - path: crawler/recipe_crawler/spiders/tineats_spider.py
       hash: md5
-      md5: 20632a3fda6ec1fd99f1bc94affa646f
-      size: 6920
+      md5: 36c474690a55f8b783ed3aadbb260bab
+      size: 6922
     outs:
     - path: data/raw/recipes.jsonl
       hash: md5
-      md5: 1e399985140392fde26278036d780025
-      size: 13880101
+      md5: 78a628426db6db9f109f4e892cc052ae
+      size: 15125798
