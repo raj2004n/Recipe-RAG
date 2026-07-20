@@ -1,0 +1,12 @@
+files:
+  base_config: configs/base_config.yaml
+  prompts_config: configs/prompts_config.yaml
+  raw_recipes: data/raw/recipes.jsonl
+  cleaned_recipes: data/processed/cleaned_recipes.json
+  evaluation_queries: data/evaluation/evaluation_queries.json
+  
+  chunks: snapshots/latest/chunks.json
+  indexer: snapshots/latest/index.faiss
+  
+directories:
+  snapshots: snapshots

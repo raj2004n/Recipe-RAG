@@ -10,7 +10,7 @@ stages:
     cmd: python -m scripts.preprocess
     deps:
     - scripts/preprocess.py
-    - data/raw/recipes.json
+    - data/raw/recipes.jsonl
     outs:
     - data/processed/cleaned_recipes.json
 

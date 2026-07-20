@@ -31,18 +31,3 @@ evaluation dataset generator:
   max_retries: 4
   backoff_base: 2
   max_workers: 4
-
-paths:
-  files:
-    base_config: configs/base_config.yaml
-    prompts_config: configs/prompts_config.yaml
-    raw_recipes: data/raw/recipes.json
-    cleaned_recipes: data/processed/cleaned_recipes.json
-    evaluation_queries: data/evaluation/evaluation_queries.json
-    
-    chunks: snapshots/latest/chunks.json
-    indexer: snapshots/latest/index.faiss
-  
-  directories:
-    snapshots: snapshots
-  
