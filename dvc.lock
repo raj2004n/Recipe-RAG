@@ -99,6 +99,6 @@ stages:
     outs:
     - path: snapshots/building/
       hash: md5
-      md5: 3ad3254132603681f412d6ec614c8c4c.dir
+      md5: 32ed281e83adfc55263ef515dccb100a.dir
       size: 12397348
       nfiles: 2
