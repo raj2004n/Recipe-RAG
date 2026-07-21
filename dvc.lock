@@ -85,3 +85,20 @@ stages:
       hash: md5
       md5: 78a628426db6db9f109f4e892cc052ae
       size: 15125798
+  chunk:
+    cmd: python -m scripts.build_rag --run chunk
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 407033a16786b9eca912812862a4fd58
+      size: 675
+    - path: data/processed/cleaned_recipes.json
+      hash: md5
+      md5: 8eab36d61aad1983ec16cdcbd871b78f
+      size: 19627371
+    outs:
+    - path: snapshots/building/
+      hash: md5
+      md5: 3ad3254132603681f412d6ec614c8c4c.dir
+      size: 12397348
+      nfiles: 2
