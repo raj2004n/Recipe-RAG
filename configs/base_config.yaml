@@ -1,11 +1,11 @@
 #TODO: Add dataset_generator prompts, first need to test how to properly input
 #TODO: Add save / load paths
 #TODO: Consider different config files
-chunking:
-  strategy: instructions_ingredients
+rag:
+  strategy: hybrid
 
 encoder:
-  model: sentence-transformers/all-MiniLM-L6-v2
+  model_id: sentence-transformers/all-MiniLM-L6-v2
   batch_size: 32
   normalize_embeddings: true
 
@@ -26,7 +26,7 @@ generator:
   adapter_path: null
 
 evaluation dataset generator:
-  model: gemma3:4b
+  model_id: gemma3:4b
   request_timeout: 120
   max_retries: 4
   backoff_base: 2

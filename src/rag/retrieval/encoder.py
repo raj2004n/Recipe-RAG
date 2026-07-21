@@ -20,8 +20,8 @@ class EncodedChunk:
         )
 
 class Encoder:
-    def __init__(self, model, batch_size, normalize_embeddings):
-        self.model = SentenceTransformer(model)
+    def __init__(self, model_id, batch_size, normalize_embeddings):
+        self.model = SentenceTransformer(model_id)
         self.batch_size = batch_size
         self.normalize_embeddings = normalize_embeddings
 

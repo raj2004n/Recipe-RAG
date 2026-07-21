@@ -1,17 +1,66 @@
 import mlflow
+import argparse
 from src.rag.retrieval.encoder import Encoder
 from src.rag.retrieval.indexer import Indexer
 from src.rag.retrieval.retriever import Retriever
-from src.rag.retrieval.chunker import chunk_recipes
+from src.rag.retrieval.chunker import chunk_recipes, Chunk, ChunkSet
 from src.rag.core.snapshot import Snapshot
 from src.rag.core.utils import flatten_config_dict, load_config
-from src.rag.core.snapshot import save_snapshot
+from src.rag.core.snapshot import save_snapshot, save_chunks
 
 #TODO: Add logging
 
 # connect to remote MlFlow server
-mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("first-rag-experiment")
+#mlflow.set_tracking_uri("http://localhost:5000")
+#mlflow.set_experiment("first-rag-experiment")
+
+MODEL_CONFIG = load_config("configs/base_config.yaml")
+PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
+PATHS_CONFIG = load_config("configs/paths_config.yaml")
+
+FILES = PATHS_CONFIG["files"]
+DIRECTORIES = PATHS_CONFIG["directories"]
+
+ENCODER_CONFIG = MODEL_CONFIG["encoder"]
+INDEXER_CONFIG = MODEL_CONFIG["indexer"]
+RETRIEVER_CONFIG = MODEL_CONFIG["retriever"]
+GENERATOR_CONFIG = MODEL_CONFIG["generator"]
+
+PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
+PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
+
+# TODO: Model strategy
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run", type=str, required=True,
+                        choices=["chunk", "encode", "index", "retrieve", "build"],
+                        help="The RAG pipeline step to run.")
+    return parser.parse_args()
+
+def chunk() -> ChunkSet:
+    chunk_set_list = chunk_recipes(MODEL_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
+    save_chunks(chunk_set_list)
+
+def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
+    encoder = Encoder(
+        model_id=ENCODER_CONFIG["model_id"],
+        batch_size=ENCODER_CONFIG["batch_size"],
+        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
+    )
+
+    # strategy logic
+
+    return encoder.encode_chunks(chunks)
+
+def index_embeddings(embeddings: list[list[float]]) -> None:
+    indexer = Indexer(
+        type=INDEXER_CONFIG["type"],
+        dimension=INDEXER_CONFIG["dimension"]
+    )
+
+    # strategy logic
+
+    return indexer.index_embeddings(embeddings)
 
 def run():
     model_config = load_config("configs/base_config.yaml")
@@ -103,4 +152,6 @@ def run():
     return
 
 if __name__ == "__main__":
-    run()
+    args = parse_args()
+    if args.run == "chunk":
+        chunk()

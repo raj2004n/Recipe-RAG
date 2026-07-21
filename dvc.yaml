@@ -14,6 +14,22 @@ stages:
     outs:
     - data/processed/cleaned_recipes.json
 
+  chunk:
+    cmd: python -m scripts.build_rag --run chunk
+    deps:
+    - data/processed/cleaned_recipes.json
+    - configs/base_config.yaml
+    outs:
+    - snapshots/building/
+
+  encode:
+    cmd: python -m scripts.build_rag --run encode
+    deps:
+    - artifacts/chunks.json
+    - configs/base_config.yaml
+    outs:
+    - artifacts/embeddings.json # TODO check output type
+
   build_rag:
     cmd: python -m scripts.build_rag
     deps:
@@ -24,9 +40,7 @@ stages:
     - src/retrieval/chunker.py
     - src/retrieval/encoder.py
     - src/retrieval/indexer.py
-    - src/retrieval/retriever.py
-    outs:
-    - snapshots
+    - src/retrieval/retriever.py # temp removed out
 
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset

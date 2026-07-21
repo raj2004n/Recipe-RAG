@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, is_dataclass
 from ..retrieval.indexer import Indexer
-from ..retrieval.chunker import Chunk
+from ..retrieval.chunker import Chunk, ChunkSet
 import time
 import uuid
 import faiss
@@ -8,6 +8,7 @@ import json
 import yaml
 import os
 
+# TODO: Snapshot will be discarded
 @dataclass
 class Snapshot:
     # ids
@@ -22,6 +23,30 @@ class Snapshot:
     base_config: dict[str, any]
     prompts_config: dict[str, any]
 
+SAVE_PATH = os.path.join("snapshots/building")
+
+def save_chunks(chunk_set_list: list[ChunkSet]):
+    os.makedirs(SAVE_PATH, exist_ok=True)
+    for chunk_set in chunk_set_list:
+        name = chunk_set.name
+        with open(os.path.join(SAVE_PATH, f"{name}_chunks.json"), "w") as f:
+            json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
+
+# TODO: everything else for different git branch
+def save_index():
+    pass
+
+def save_config():
+    pass
+
+def save_metadata():
+    pass
+
+def finalise_snapshot():
+    # rename latest (old) snapshot to its id
+
+    # rename finalised snapshot
+    pass
 
 def save_snapshot(snapshot: Snapshot, path: str):
     # rename latest snapshot to its id
