@@ -8,5 +8,10 @@ files:
   chunks: snapshots/latest/chunks.json
   indexer: snapshots/latest/index.faiss
   
+building:
+  chunks: snapshots/building/chunks
+  encoded_chunks: snapshots/building/encoded_chunks
+  index: snapshots/building/index
+  
 directories:
   snapshots: snapshots
