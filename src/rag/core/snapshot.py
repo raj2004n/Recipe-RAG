@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 from ..retrieval.encoder import EncodedChunk, EncodedChunkSet
-from ..retrieval.indexer import Indexer
+from ..retrieval.indexer import Indexer, IndexedChunkSet
 from ..retrieval.chunker import Chunk, ChunkSet
 import time
 import uuid
@@ -9,6 +9,7 @@ import json
 import yaml
 import os
 from pathlib import Path
+import numpy as np
 
 # TODO: Snapshot will be discarded
 @dataclass
@@ -27,21 +28,21 @@ class Snapshot:
 
 SAVE_PATH = os.path.join("snapshots/building")
 
-def save_chunks(chunk_set_list: list[ChunkSet], save_path: str):
+def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
     save_path = os.path.join(save_path)
     os.makedirs(save_path, exist_ok=True)
-    for chunk_set in chunk_set_list:
+    for chunk_set in chunk_sets:
         name = chunk_set.name
         with open(os.path.join(save_path, f"{name}_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
 
-def load_chunks(path: str) -> list[ChunkSet]: 
+def load_chunk_sets(path: str) -> list[ChunkSet]: 
     path_obj = Path(path)
     # check if chunks directory exists
     if not path_obj.exists():
         raise FileNotFoundError(f"Chunks directory not found at {path}")
 
-    chunks_set_list = []
+    chunks_sets = []
 
     # load all chunk files from directory
     for chunk_file in sorted(path_obj.glob("*.json")):
@@ -49,24 +50,55 @@ def load_chunks(path: str) -> list[ChunkSet]:
         with open(chunk_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             chunks = [Chunk(**c) for c in data]
-            chunks_set_list.append(
+            chunks_sets.append(
                 ChunkSet(
                     name=name,
                     chunks=chunks
                 )
             )
-    return chunks_set_list
+    return chunks_sets
 
-def save_encoded_chunks(encoded_chunks_set_list: list[EncodedChunkSet], save_path: str):
+def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_path: str):
     save_path = os.path.join(save_path)
     os.makedirs(save_path, exist_ok=True)
-    for encoded_chunks_set in encoded_chunks_set_list:
+    for encoded_chunks_set in encoded_chunks_sets:
         name = encoded_chunks_set.name
         with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
-    
-def save_index():
-    pass
+
+def load_encoded_chunk_sets(path: str) -> list[EncodedChunkSet]:
+    path_obj = Path(path)
+    # check if chunks directory exists
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Chunks directory not found at {path}")
+
+    encoded_chunks_sets = []
+
+    # load all chunk files from directory
+    for chunk_file in sorted(path_obj.glob("*.json")):
+        name = chunk_file.stem.removesuffix("_encoded_chunks")
+        with open(chunk_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            encoded_chunks = [EncodedChunk(**c) for c in data]
+            encoded_chunks_sets.append(
+                EncodedChunkSet(
+                    name=name,
+                    encoded_chunks=encoded_chunks
+                )
+            )
+    return encoded_chunks_sets
+
+def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
+    save_path = os.path.join(save_path)
+    os.makedirs(save_path, exist_ok=True)
+    for indexed_chunk_set in indexed_chunk_sets:
+        name = indexed_chunk_set.name
+        faiss.write_index(indexed_chunk_set.index, os.path.join(save_path, f"{name}_index.faiss"))
+        np.save(
+            os.path.join(save_path, f"{name}_index.mapping.npy"),
+            indexed_chunk_set.id_mapping,
+            allow_pickle=True
+        )
 
 def save_config():
     pass

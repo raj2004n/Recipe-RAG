@@ -7,7 +7,7 @@ from src.rag.retrieval.indexer import Indexer
 from src.rag.retrieval.retriever import Retriever
 from src.rag.retrieval.chunker import chunk_recipes, Chunk, ChunkSet
 from src.rag.core.utils import flatten_config_dict, load_config
-from src.rag.core.snapshot import Snapshot, save_snapshot, save_chunks, save_encoded_chunks, load_chunks
+from src.rag.core.snapshot import Snapshot, save_snapshot, save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets
 
 #TODO: Add logging
 
@@ -38,20 +38,17 @@ def parse_args():
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
-def chunk():
-    chunk_set_list = chunk_recipes(MODEL_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
-    save_chunks(
-        chunk_set_list=chunk_set_list, 
+def chunk() -> None:
+    chunk_sets = chunk_recipes(MODEL_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
+    save_chunk_sets(
+        chunk_sets=chunk_sets, 
         save_path=PATHS_CONFIG["building"]["chunks"]
     )
 
-def encode_chunk():
+def encode_chunk() -> None:
     chunks_path = PATHS_CONFIG["building"]["chunks"]
-    
-    if not os.path.exists(chunks_path):
-        raise FileNotFoundError(f"Chunks directory not found at {chunks_path}")
 
-    chunks_set_list = load_chunks(chunks_path)
+    chunks_sets = load_chunk_sets(chunks_path)
 
     encoder = Encoder(
         model_id=ENCODER_CONFIG["model_id"],
@@ -59,23 +56,27 @@ def encode_chunk():
         normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
     )
 
-    encoded_chunks_set_list = encoder.encode_chunks(chunks_set_list)
+    encoded_chunks_sets = encoder.encode_chunks(chunks_sets)
 
-    save_encoded_chunks(
-        encoded_chunks_set_list=encoded_chunks_set_list,
+    save_encoded_chunk_sets(
+        encoded_chunks_sets=encoded_chunks_sets,
         save_path=PATHS_CONFIG["building"]["encoded_chunks"]
     )
 
+def index_embeddings() -> None:
+    encoded_chunks_sets = load_encoded_chunk_sets(PATHS_CONFIG["building"]["encoded_chunks"])
 
-def index_embeddings(embeddings: list[list[float]]) -> None:
     indexer = Indexer(
-        type=INDEXER_CONFIG["type"],
+        index_type=INDEXER_CONFIG["type"],
         dimension=INDEXER_CONFIG["dimension"]
     )
 
-    # strategy logic
+    indexed_chunks_sets = indexer.index_embeddings(encoded_chunks_sets)
 
-    return indexer.index_embeddings(embeddings)
+    save_indexed_chunk_sets(
+        indexed_chunk_sets=indexed_chunks_sets,
+        save_path=PATHS_CONFIG["building"]["index"]
+    )
 
 def run():
     model_config = load_config("configs/base_config.yaml")
@@ -172,3 +173,5 @@ if __name__ == "__main__":
         chunk()
     elif args.run == "encode":
         encode_chunk()
+    elif args.run == "index":
+        index_embeddings()

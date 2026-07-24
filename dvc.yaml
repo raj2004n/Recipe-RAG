@@ -30,6 +30,14 @@ stages:
     outs:
     - snapshots/building/encoded_chunks/
 
+  index:
+    cmd: python -m scripts.build_rag --run index
+    deps:
+    - snapshots/building/encoded_chunks/
+    - configs/base_config.yaml
+    outs:
+    - snapshots/building/index/
+  
   build_rag:
     cmd: python -m scripts.build_rag
     deps:

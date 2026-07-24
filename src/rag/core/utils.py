@@ -16,16 +16,6 @@ def load_config(config_file: str = "configs/base_config.yaml") -> dict:
         config = yaml.safe_load(f)
     return config
 
-def load_chunks(path: str = "models/retriever/chunks.json") -> list[dict]:
-    with open(path) as f:
-        chunks = json.load(f)
-    return chunks
-
-def load_indexer(path: str = "models/retriever/index.faiss") -> Indexer:
-    indexer = Indexer(1) # placeholder, overwrite with load
-    indexer.load(path)
-    return indexer
-
 def load_retriever(snapshot: Snapshot) -> Retriever:
     encoder = Encoder(
         snapshot.base_config["encoder"]["model"],

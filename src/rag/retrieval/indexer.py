@@ -1,12 +1,18 @@
 import faiss
 import numpy as np
-from .encoder import EncodedChunk
+from .encoder import EncodedChunkSet
+from dataclasses import dataclass
+
+@dataclass
+class IndexedChunkSet:
+    name: str
+    index: faiss.Index
+    id_mapping: dict[int, int]
 
 class Indexer:
     def __init__(self, index_type: str, dimension: int):
         self.index_type = index_type
         self.dimension = dimension
-        self.index = self._create_index()
         self.id_mapping: dict[int,str] = {}
     
     def _create_index(self) -> faiss.Index:
@@ -16,27 +22,40 @@ class Indexer:
         
         raise ValueError(f"Unsupported index type: {self.index_type}")
     
-    def _add(self, vectors: np.ndarray, ids: np.ndarray):
+    def _add(self, index: faiss.Index, vectors: np.ndarray, ids: np.ndarray):
         """ Add vectors to the index. """
         # numpy defualt is float64, but faiss requires float32
         vectors = vectors.astype("float32")
         ids = np.asarray(ids, dtype=np.int64)
-        self.index.add_with_ids(vectors, ids)
+        index.add_with_ids(vectors, ids)
 
-    def index_embeddings(self, chunks: list[EncodedChunk]):
+    def index_embeddings(self, encoded_chunks_sets: list[EncodedChunkSet]) -> list[IndexedChunkSet]:
         """ Assign ids to the embeddings. """
-        vectors = np.asarray(
-            [c.vector for c in chunks],
-            dtype="float32"
-        )
-        # FAISS needs int ids
-        faiss_ids = np.arange(len(chunks), dtype=np.int64)
+        indexed_chunk_sets = []
+        for encoded_chunks_set in encoded_chunks_sets:
+            vectors = np.asarray(
+                [chunk.vector for chunk in encoded_chunks_set.encoded_chunks],
+                dtype="float32"
+            )
 
-        # keep mapping back to original chunk ids
-        for faiss_id, chunk in zip(faiss_ids, chunks):
-            self.id_mapping[int(faiss_id)] = chunk.chunk_id
+            # FAISS needs int ids
+            faiss_ids = np.arange(len(encoded_chunks_set.encoded_chunks), dtype=np.int64)
 
-        self._add(vectors, faiss_ids)
+            # keep mapping back to original chunk ids
+            for faiss_id, chunk in zip(faiss_ids, encoded_chunks_set.encoded_chunks):
+                self.id_mapping[int(faiss_id)] = chunk.chunk_id
+
+            index = self._create_index()
+            self._add(index, vectors, faiss_ids)
+
+            indexed_chunk_sets.append(
+                IndexedChunkSet(
+                    name=encoded_chunks_set.name,
+                    index=index,
+                    id_mapping=self.id_mapping
+                )
+            )
+        return indexed_chunk_sets
 
     def search(self, query_vectors: np.ndarray, k: int) -> tuple[np.ndarray, list[list[str]]]:
         """ Search and return original chunk ids. """
