@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
 from dataclasses import dataclass
-from .chunker import Chunk
+from .chunker import Chunk, ChunkSet
 import numpy as np
 
 @dataclass
@@ -19,6 +19,11 @@ class EncodedChunk:
             chunk_id=chunk.chunk_id
         )
 
+@dataclass
+class EncodedChunkSet:
+    name: str
+    encoded_chunks: list[EncodedChunk]
+
 class Encoder:
     def __init__(self, model_id, batch_size, normalize_embeddings):
         self.model = SentenceTransformer(model_id)
@@ -35,20 +40,29 @@ class Encoder:
         )
         return embeddings
     
-    def encode_chunks(self, chunks: list[Chunk]) -> list[EncodedChunk]:
+    def encode_chunks(self, chunks_set_list: list[ChunkSet]) -> list[EncodedChunkSet]:
         """ Encode list of chunks into dense vectors. """
-        texts = [c.text for c in chunks]
-        embeddings = self._encode_documents(texts)
+        encoded_chunks_set_list = []
+        for chunks_set in chunks_set_list:
+            chunks = chunks_set.chunks
+            texts = [c.text for c in chunks]
+            embeddings = self._encode_documents(texts)
 
-        encoded_chunks = [
-            EncodedChunk.from_chunk(
-                chunk=chunk,
-                vector=embedding.tolist()
+            encoded_chunks = [
+                EncodedChunk.from_chunk(
+                    chunk=chunk,
+                    vector=embedding.tolist()
+                )
+                for chunk, embedding in zip(chunks, embeddings)
+            ]
+
+            encoded_chunks_set_list.append(
+                EncodedChunkSet(
+                    name=chunks_set.name,
+                    encoded_chunks=encoded_chunks
+                )
             )
-            for chunk, embedding in zip(chunks, embeddings)
-        ]
-        
-        return encoded_chunks
+        return encoded_chunks_set_list
 
     def encode_query(self, query: str) -> np.ndarray:
         """ Encode a single query into a dense vector. """

@@ -20,15 +20,15 @@ stages:
     - data/processed/cleaned_recipes.json
     - configs/base_config.yaml
     outs:
-    - snapshots/building/
+    - snapshots/building/chunks/
 
   encode:
     cmd: python -m scripts.build_rag --run encode
     deps:
-    - artifacts/chunks.json
+    - snapshots/building/chunks/
     - configs/base_config.yaml
     outs:
-    - artifacts/embeddings.json # TODO check output type
+    - snapshots/building/encoded_chunks/
 
   build_rag:
     cmd: python -m scripts.build_rag

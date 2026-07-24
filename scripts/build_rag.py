@@ -1,12 +1,13 @@
+import os
+import json
 import mlflow
 import argparse
-from src.rag.retrieval.encoder import Encoder
+from src.rag.retrieval.encoder import Encoder, EncodedChunkSet
 from src.rag.retrieval.indexer import Indexer
 from src.rag.retrieval.retriever import Retriever
 from src.rag.retrieval.chunker import chunk_recipes, Chunk, ChunkSet
-from src.rag.core.snapshot import Snapshot
 from src.rag.core.utils import flatten_config_dict, load_config
-from src.rag.core.snapshot import save_snapshot, save_chunks
+from src.rag.core.snapshot import Snapshot, save_snapshot, save_chunks, save_encoded_chunks, load_chunks
 
 #TODO: Add logging
 
@@ -37,20 +38,34 @@ def parse_args():
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
-def chunk() -> ChunkSet:
+def chunk():
     chunk_set_list = chunk_recipes(MODEL_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
-    save_chunks(chunk_set_list)
+    save_chunks(
+        chunk_set_list=chunk_set_list, 
+        save_path=PATHS_CONFIG["building"]["chunks"]
+    )
 
-def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
+def encode_chunk():
+    chunks_path = PATHS_CONFIG["building"]["chunks"]
+    
+    if not os.path.exists(chunks_path):
+        raise FileNotFoundError(f"Chunks directory not found at {chunks_path}")
+
+    chunks_set_list = load_chunks(chunks_path)
+
     encoder = Encoder(
         model_id=ENCODER_CONFIG["model_id"],
         batch_size=ENCODER_CONFIG["batch_size"],
         normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
     )
 
-    # strategy logic
+    encoded_chunks_set_list = encoder.encode_chunks(chunks_set_list)
 
-    return encoder.encode_chunks(chunks)
+    save_encoded_chunks(
+        encoded_chunks_set_list=encoded_chunks_set_list,
+        save_path=PATHS_CONFIG["building"]["encoded_chunks"]
+    )
+
 
 def index_embeddings(embeddings: list[list[float]]) -> None:
     indexer = Indexer(
@@ -155,3 +170,5 @@ if __name__ == "__main__":
     args = parse_args()
     if args.run == "chunk":
         chunk()
+    elif args.run == "encode":
+        encode_chunk()

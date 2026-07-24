@@ -1,4 +1,5 @@
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass, asdict
+from ..retrieval.encoder import EncodedChunk, EncodedChunkSet
 from ..retrieval.indexer import Indexer
 from ..retrieval.chunker import Chunk, ChunkSet
 import time
@@ -7,6 +8,7 @@ import faiss
 import json 
 import yaml
 import os
+from pathlib import Path
 
 # TODO: Snapshot will be discarded
 @dataclass
@@ -25,14 +27,44 @@ class Snapshot:
 
 SAVE_PATH = os.path.join("snapshots/building")
 
-def save_chunks(chunk_set_list: list[ChunkSet]):
-    os.makedirs(SAVE_PATH, exist_ok=True)
+def save_chunks(chunk_set_list: list[ChunkSet], save_path: str):
+    save_path = os.path.join(save_path)
+    os.makedirs(save_path, exist_ok=True)
     for chunk_set in chunk_set_list:
         name = chunk_set.name
-        with open(os.path.join(SAVE_PATH, f"{name}_chunks.json"), "w") as f:
+        with open(os.path.join(save_path, f"{name}_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
 
-# TODO: everything else for different git branch
+def load_chunks(path: str) -> list[ChunkSet]: 
+    path_obj = Path(path)
+    # check if chunks directory exists
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Chunks directory not found at {path}")
+
+    chunks_set_list = []
+
+    # load all chunk files from directory
+    for chunk_file in sorted(path_obj.glob("*.json")):
+        name = chunk_file.stem.removesuffix("_chunks")
+        with open(chunk_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            chunks = [Chunk(**c) for c in data]
+            chunks_set_list.append(
+                ChunkSet(
+                    name=name,
+                    chunks=chunks
+                )
+            )
+    return chunks_set_list
+
+def save_encoded_chunks(encoded_chunks_set_list: list[EncodedChunkSet], save_path: str):
+    save_path = os.path.join(save_path)
+    os.makedirs(save_path, exist_ok=True)
+    for encoded_chunks_set in encoded_chunks_set_list:
+        name = encoded_chunks_set.name
+        with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
+            json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
+    
 def save_index():
     pass
 
