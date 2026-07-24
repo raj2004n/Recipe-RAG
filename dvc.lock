@@ -138,3 +138,28 @@ stages:
       md5: d48311ffa821c72da55688157cdb86eb.dir
       size: 19519698
       nfiles: 4
+  finalise_snapshot:
+    cmd: python -m scripts.build_rag --run finalise_snapshot
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 407033a16786b9eca912812862a4fd58
+      size: 675
+    - path: configs/paths_config.yaml
+      hash: md5
+      md5: 4be7d21d3474da1777d2e571c23acfe5
+      size: 541
+    - path: configs/prompts_config.yaml
+      hash: md5
+      md5: 2f82ffba86d48239bc061b574cbf04ed
+      size: 760
+    - path: src/rag/core/snapshot.py
+      hash: md5
+      md5: da42aa76d4d2237824b9581268d18e1d
+      size: 7370
+    outs:
+    - path: snapshots/latest/
+      hash: md5
+      md5: 7a71d8bd455d52797fbc66af285fe50f.dir
+      size: 179166136
+      nfiles: 12
