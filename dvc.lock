@@ -155,11 +155,5 @@ stages:
       size: 760
     - path: src/rag/core/snapshot.py
       hash: md5
-      md5: 2b6aa39bf90a079dc3c4a10ea2a6df07
-      size: 7415
-    outs:
-    - path: snapshots/latest/
-      hash: md5
-      md5: 7792cb3274dd4ec013b33fff06c0d347.dir
-      size: 179166136
-      nfiles: 12
+      md5: 2f54593002931680f85716298f2dad44
+      size: 7585
