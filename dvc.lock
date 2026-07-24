@@ -102,3 +102,21 @@ stages:
       md5: 32ed281e83adfc55263ef515dccb100a.dir
       size: 12397348
       nfiles: 2
+  encode:
+    cmd: python -m scripts.build_rag --run encode
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 407033a16786b9eca912812862a4fd58
+      size: 675
+    - path: snapshots/building/chunks/
+      hash: md5
+      md5: 3ad3254132603681f412d6ec614c8c4c.dir
+      size: 12397348
+      nfiles: 2
+    outs:
+    - path: snapshots/building/encoded_chunks/
+      hash: md5
+      md5: b8fba6861feb1c36f7cecabf10ac904f.dir
+      size: 147247016
+      nfiles: 2
