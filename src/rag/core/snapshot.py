@@ -137,12 +137,16 @@ def save_config(save_path: str, config_path: str):
     dst = save_dir / src_dir.name
 
     shutil.copy2(src_dir, dst)
-
+        
 def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
     building = Path("snapshots/building")
+    latest = Path("snapshots/latest")
 
     if not building.exists():
         raise FileNotFoundError(f"Building directory not found at {building}")
+
+    if building.exists() and latest.exists():
+        raise FileExistsError(f"Latest snapshot already exists at {latest}")
 
     configs_save_path = "snapshots/building/configs"
     save_config(
