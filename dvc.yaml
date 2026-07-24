@@ -45,20 +45,6 @@ stages:
     - configs/paths_config.yaml
     - configs/prompts_config.yaml
     - src/rag/core/snapshot.py
-    outs:
-    - snapshots/latest/
-
-  build_rag:
-    cmd: python -m scripts.build_rag
-    deps:
-    - scripts/build_rag.py
-    - data/processed/cleaned_recipes.json
-    - configs/base_config.yaml
-    - configs/prompts_config.yaml
-    - src/retrieval/chunker.py
-    - src/retrieval/encoder.py
-    - src/retrieval/indexer.py
-    - src/retrieval/retriever.py # temp removed out
 
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset
