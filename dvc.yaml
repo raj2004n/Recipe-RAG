@@ -38,6 +38,16 @@ stages:
     outs:
     - snapshots/building/index/
   
+  finalise_snapshot:
+    cmd: python -m scripts.build_rag --run finalise_snapshot
+    deps:
+    - configs/base_config.yaml
+    - configs/paths_config.yaml
+    - configs/prompts_config.yaml
+    - src/rag/core/snapshot.py
+    outs:
+    - snapshots/latest/
+
   build_rag:
     cmd: python -m scripts.build_rag
     deps:

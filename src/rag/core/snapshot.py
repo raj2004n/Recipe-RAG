@@ -10,6 +10,7 @@ import yaml
 import os
 from pathlib import Path
 import numpy as np
+import shutil
 
 # TODO: Snapshot will be discarded
 @dataclass
@@ -127,51 +128,57 @@ def load_encoded_chunk_sets(path: str) -> list[IndexedChunkSet]:
 
     return indexed_chunk_sets
 
+def save_config(save_path: str, config_path: str):
+    save_dir = Path(save_path)
+    src_dir = Path(config_path)
 
-def save_config():
-    pass
+    save_dir.mkdir(parents=True, exist_ok=True)
 
-def save_metadata():
-    pass
+    dst = save_dir / src_dir.name
 
-def finalise_snapshot():
-    # rename latest (old) snapshot to its id
+    shutil.copy2(src_dir, dst)
 
-    # rename finalised snapshot
-    pass
+def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
+    building = Path("snapshots/building")
 
-def save_snapshot(snapshot: Snapshot, path: str):
-    # rename latest snapshot to its id
-    rename_last_snapshot()
+    if not building.exists():
+        raise FileNotFoundError(f"Building directory not found at {building}")
 
+    configs_save_path = "snapshots/building/configs"
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/base_config.yaml"
+    )
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/prompts_config.yaml"
+    )
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/paths_config.yaml"
+    )
+    
     # get id and timestamp if not provided
-    snapshot_id = snapshot.snapshot_id or str(uuid.uuid4())
-    created_at = snapshot.created_at or time.strftime("%Y-%m-%d %H:%M:%S")
-
-    # save snapshot to latest
-    path = os.path.join(path, "latest")
-    os.makedirs(path, exist_ok=True)
-
-    # save chunks
-    with open(os.path.join(path, "chunks.json"), "w") as f:
-        json.dump([asdict(c) for c in snapshot.chunks], f, indent=2)
+    snapshot_id = snapshot_id or str(uuid.uuid4())
+    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
     
-    # save index
-    snapshot.index.save(os.path.join(path, "index.faiss"))
-    
-    # save configs
-    with open(os.path.join(path, "base_config.yaml"), "w") as f:
-        yaml.dump(snapshot.base_config, f, sort_keys=False)
-    with open(os.path.join(path, "prompts_config.yaml"), "w") as f:
-        yaml.dump(snapshot.prompts_config, f, sort_keys=False)
-
-    # save metadata
-    with open(os.path.join(path, "metadata.json"), "w") as f:
+    # add metadata
+    metadata_path = os.path.join("snapshots/building", "metadata.json")
+    with open(metadata_path, "w") as f:
         json.dump({
             "snapshot_id": snapshot_id,
             "created_at": created_at,
         }, f, indent=2)
 
+    # rename latest (old) snapshot to its id
+    rename_last_snapshot()
+
+    latest = Path("snapshots/latest")
+    if latest.exists():
+        shutil.rmtree(latest)
+
+    building.rename(latest)
+    
 def load_snapshot(path: str) -> Snapshot:
     # load configs
     with open(os.path.join(path, "base_config.yaml")) as f:

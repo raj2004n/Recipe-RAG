@@ -1,19 +1,14 @@
-import os
-import json
+import subprocess
 import mlflow
 import argparse
-from src.rag.retrieval.encoder import Encoder, EncodedChunkSet
+from pathlib import Path
+from src.rag.retrieval.encoder import Encoder
 from src.rag.retrieval.indexer import Indexer
-from src.rag.retrieval.retriever import Retriever
-from src.rag.retrieval.chunker import chunk_recipes, Chunk, ChunkSet
-from src.rag.core.utils import flatten_config_dict, load_config
-from src.rag.core.snapshot import Snapshot, save_snapshot, save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets
+from src.rag.retrieval.chunker import chunk_recipes
+from src.rag.core.utils import load_config
+from src.rag.core.snapshot import save_config, save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets, finalise_snapshot
 
 #TODO: Add logging
-
-# connect to remote MlFlow server
-#mlflow.set_tracking_uri("http://localhost:5000")
-#mlflow.set_experiment("first-rag-experiment")
 
 MODEL_CONFIG = load_config("configs/base_config.yaml")
 PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
@@ -34,7 +29,7 @@ PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
-                        choices=["chunk", "encode", "index", "retrieve", "build"],
+                        choices=["chunk", "encode", "index", "finalise_snapshot", "build"],
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
@@ -78,94 +73,22 @@ def index_embeddings() -> None:
         save_path=PATHS_CONFIG["building"]["index"]
     )
 
-def run():
-    model_config = load_config("configs/base_config.yaml")
-    prompts_config = load_config("configs/prompts_config.yaml")
+def complete_snapshot():
+    return finalise_snapshot(
+        snapshot_id=None,
+        created_at=None
+    )
 
-    files = model_config["paths"]["files"]
-    directories = model_config["paths"]["directories"]
+def build_rag():
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("first-rag-experiment")
 
-    # retriever configs
-    chunker_config = model_config["chunking"]
-    encoder_config = model_config["encoder"]
-    indexer_config = model_config["indexer"]
-    retriever_config = model_config["retriever"]
+    subprocess.run(["dvc", "repro", "chunk"])
+    subprocess.run(["dvc", "repro", "encode"])
+    subprocess.run(["dvc", "repro", "index"])
+    subprocess.run(["dvc", "repro", "finalise_snapshot"])
 
-    # generator configs
-    prompt_templates = prompts_config["template"]
-    prompt_settings = prompts_config["settings"]
-    generator_config = model_config["generator"]
-
-
-    with mlflow.start_run():
-        # initialize components
-        encoder = Encoder(
-            encoder_config["model"],
-            encoder_config["batch_size"],
-            encoder_config["normalize_embeddings"]
-        )
-        indexer = Indexer(
-            indexer_config["type"],
-            indexer_config["dimension"]
-        )
-
-        # chunk, encode, and index data
-        chunks = chunk_recipes(
-            strategy=chunker_config["strategy"],
-            recipes_path=files["cleaned_recipes"]
-        )
-        embeddings = encoder.encode_chunks(chunks)
-        indexer.index_embeddings(embeddings)
-
-        # initialize retriever
-        retriever = Retriever(
-            chunks,
-            encoder,
-            indexer,
-            retriever_config["top_k"],
-            retriever_config["score_threshold"]
-        )
-        
-        # unnecessary for now, since loaded generator is pre-trained
-        """
-        tokenizer = AutoTokenizer.from_pretrained(generator_config["model"])
-        
-        prompt_builder = PromptBuilder(
-            tokenizer,
-            prompt_config["max_context_tokens"],
-            prompt_templates
-        )
-        generator = Generator(
-            generator_config["model"],
-            generator_config["adapter_path"]
-        )
-        
-        # build RAG pipeline, not necessary for now
-        pipeline = RAGPipeline(retriever, prompt_builder, generator)
-        """
-        # create snapshot
-        snapshot = Snapshot(
-            snapshot_id=None,
-            created_at=None,
-            index=retriever.indexer,
-            chunks=chunks,
-            base_config=model_config,
-            prompts_config=prompts_config
-        )
-
-        # save snapshot
-        save_snapshot(snapshot, directories["snapshots"])
-
-        #TODO: Consider calling eval here.
-        
-        # encoder, tokenizer (in prompt builder) are pre-loaded, so no need to save
-
-        # log params, artifacts
-        mlflow.log_params(flatten_config_dict(model_config))
-        mlflow.log_artifact(files["base_config"])
-        mlflow.log_artifact(files["prompts_config"])
-
-    return
+    mlflow.log_artifact("snapshots/latest")
 
 if __name__ == "__main__":
     args = parse_args()
@@ -175,3 +98,7 @@ if __name__ == "__main__":
         encode_chunk()
     elif args.run == "index":
         index_embeddings()
+    elif args.run == "finalise_snapshot":
+        complete_snapshot()
+    elif args.run == "build":
+        build_rag()

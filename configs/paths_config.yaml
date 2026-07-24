@@ -12,6 +12,7 @@ building:
   chunks: snapshots/building/chunks
   encoded_chunks: snapshots/building/encoded_chunks
   index: snapshots/building/index
+  configs: snapshots/building/configs
   
 directories:
   snapshots: snapshots
