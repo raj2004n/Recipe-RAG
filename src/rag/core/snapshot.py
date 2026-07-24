@@ -66,7 +66,7 @@ def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_pat
         with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
 
-def load_encoded_chunk_sets(path: str) -> list[EncodedChunkSet]:
+def load_encoded_chunk_sets(path: str) -> None:
     path_obj = Path(path)
     # check if chunks directory exists
     if not path_obj.exists():
@@ -99,6 +99,34 @@ def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path
             indexed_chunk_set.id_mapping,
             allow_pickle=True
         )
+
+def load_encoded_chunk_sets(path: str) -> list[IndexedChunkSet]:
+    path_obj = Path(path)
+
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Encoded Chunks directory not found at {path}.")
+
+    indexed_chunk_sets = []
+
+    for index_file in sorted(path_obj.glob("*_index.faiss")):
+        name = index_file.stem.removesuffix("_index")
+        index = faiss.read_index(str(index_file))
+
+        mapping = np.load(
+            path_obj / f"{name}_index.mapping.npy",
+            allow_pickle=True,
+        ).item()
+
+        indexed_chunk_sets.append(
+            IndexedChunkSet(
+                name=name,
+                index=index,
+                id_mapping=mapping,
+            )
+        )
+
+    return indexed_chunk_sets
+
 
 def save_config():
     pass
