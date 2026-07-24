@@ -97,9 +97,9 @@ stages:
       md5: 8eab36d61aad1983ec16cdcbd871b78f
       size: 19627371
     outs:
-    - path: snapshots/building/
+    - path: snapshots/building/chunks/
       hash: md5
-      md5: 32ed281e83adfc55263ef515dccb100a.dir
+      md5: 3ad3254132603681f412d6ec614c8c4c.dir
       size: 12397348
       nfiles: 2
   encode:
