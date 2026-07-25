@@ -6,7 +6,7 @@ from src.rag.core.utils import load_retriever
 from .rerank import recipe_to_string 
 from src.rag.core.snapshot import load_snapshot
 from notebook.debug.prompt_decomp import decompose_query
-from src.rag.retrieval.indexer import Indexer
+from rag.retrieval.dense.indexer import Indexer
 from sentence_transformers import CrossEncoder
 
 # retriever score is too low still, even after chunking..

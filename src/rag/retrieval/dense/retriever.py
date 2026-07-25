@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .chunker import Chunk
+from ..chunker import Chunk
 from .encoder import Encoder
 from .indexer import Indexer
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
-from ..retrieval.encoder import EncodedChunk, EncodedChunkSet
-from ..retrieval.indexer import Indexer, IndexedChunkSet
+from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
+from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
 from ..retrieval.chunker import Chunk, ChunkSet
 import time
 import uuid

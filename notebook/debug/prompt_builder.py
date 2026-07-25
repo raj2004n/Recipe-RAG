@@ -1,5 +1,5 @@
 from src.rag.generation.prompt_builder import PromptBuilder
-from src.rag.retrieval.retriever import RetrievalResult
+from rag.retrieval.dense.retriever import RetrievalResult
 from transformers import AutoTokenizer
 from src.rag.core.utils import load_config
 

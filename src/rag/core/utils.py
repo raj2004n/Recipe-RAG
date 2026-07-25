@@ -1,9 +1,9 @@
 import yaml
 import json
 from pathlib import Path
-from src.rag.retrieval.indexer import Indexer
-from src.rag.retrieval.retriever import Retriever
-from src.rag.retrieval.encoder import Encoder
+from rag.retrieval.dense.indexer import Indexer
+from rag.retrieval.dense.retriever import Retriever
+from rag.retrieval.dense.encoder import Encoder
 from src.rag.core.snapshot import Snapshot
 
 def save_config(directory: Path, config: dict):

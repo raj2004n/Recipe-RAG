@@ -2,11 +2,11 @@ import subprocess
 import mlflow
 import argparse
 from pathlib import Path
-from src.rag.retrieval.encoder import Encoder
-from src.rag.retrieval.indexer import Indexer
+from rag.retrieval.dense.encoder import Encoder
+from rag.retrieval.dense.indexer import Indexer
 from src.rag.retrieval.chunker import chunk_recipes
 from src.rag.core.utils import load_config
-from src.rag.core.snapshot import save_config, save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets, finalise_snapshot
+from src.rag.core.snapshot import save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets, finalise_snapshot
 
 #TODO: Add logging
 
@@ -25,7 +25,6 @@ GENERATOR_CONFIG = MODEL_CONFIG["generator"]
 PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
 PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
 
-# TODO: Model strategy
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,

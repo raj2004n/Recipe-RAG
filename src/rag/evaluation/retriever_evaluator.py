@@ -18,7 +18,7 @@ Recall@k:
 
 from collections.abc import Sequence
 from .metrics import recall_at_k, strict_recall_at_k
-from src.rag.retrieval.retriever import Retriever
+from rag.retrieval.dense.retriever import Retriever
 import numpy as np
 
 def evaluate_strict(retriever: Retriever, evaluation_dataset: list[dict], ks: Sequence[int] = (1, 3, 5)) -> dict[str, float]:

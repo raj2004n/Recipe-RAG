@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
 from dataclasses import dataclass
-from .chunker import Chunk, ChunkSet
+from ..chunker import Chunk, ChunkSet
 import numpy as np
 
 @dataclass

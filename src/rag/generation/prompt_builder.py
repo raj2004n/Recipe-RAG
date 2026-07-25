@@ -1,4 +1,4 @@
-from src.rag.retrieval.retriever import RetrievalResult
+from rag.retrieval.dense.retriever import RetrievalResult
 from transformers import AutoTokenizer
 
 class PromptBuilder:

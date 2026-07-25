@@ -1,7 +1,7 @@
 from src.rag.core.utils import load_retriever, load_config, load_eval_dataset, build_generator
 from src.rag.generation.prompt_builder import PromptBuilder
 from src.rag.generation.generator import Generator
-from src.rag.retrieval.retriever import Retriever
+from rag.retrieval.dense.retriever import Retriever
 from transformers import AutoTokenizer
 from typing import Sequence
 from ollama import chat

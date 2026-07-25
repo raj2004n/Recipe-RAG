@@ -76,6 +76,7 @@ class Indexer:
 
         return scores, indices
 
+    # TODO old, replace with functions in snapshot
     def save(self, path: str):
         """ Save the index to disk. """
         faiss.write_index(self.index, path)
