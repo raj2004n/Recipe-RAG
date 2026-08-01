@@ -18,7 +18,7 @@ def parse_args():
 def run(model_id: str, input_tokens: int) -> None:
     # load chunks
     snapshot = load_snapshot("snapshots/latest")
-    chunks = snapshot.chunks
+    chunks = [c for s in snapshot.chunk_sets for c in s.chunks]
     
     with mlflow.start_run():
         
