@@ -164,8 +164,8 @@ def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = N
     if not building.exists():
         raise FileNotFoundError(f"Building directory not found at {building}")
 
-    if building.exists() and latest.exists():
-        raise FileExistsError(f"Latest snapshot already exists at {latest}")
+    if latest.exists():
+        rename_latest_snapshot()
 
     configs_save_path = "snapshots/building/configs"
     save_config(
@@ -192,13 +192,6 @@ def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = N
             "snapshot_id": snapshot_id,
             "created_at": created_at,
         }, f, indent=2)
-
-    # rename latest (old) snapshot to its id
-    rename_last_snapshot()
-
-    latest = Path("snapshots/latest")
-    if latest.exists():
-        shutil.rmtree(latest)
 
     building.rename(latest)
 
@@ -242,7 +235,7 @@ def load_snapshot(path: str) -> Snapshot:
         prompts_config=prompts_config,
     )
 
-def rename_last_snapshot():
+def rename_latest_snapshot():
     # change the name of the latest snapshot to its id
     latest_snapshot_path = os.path.join("snapshots", "latest")
 
