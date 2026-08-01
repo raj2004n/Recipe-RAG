@@ -1,15 +1,17 @@
-from rag.retrieval.dense.retriever import Retriever
-from rag.retrieval.dense.encoder import Encoder
-from src.rag.generation.prompt_builder import PromptBuilder
-from src.rag.generation.generator import Generator
+from ..retrieval.dense.retriever import Retriever, RetrievalResult
+from ..retrieval.dense.encoder import Encoder
+from ..generation.prompt_builder import PromptBuilder
+from ..generation.generator import Generator
 from transformers import AutoTokenizer
-from src.rag.core.snapshot import Snapshot, snapshot_retriever_indexer
-from src.rag.core.snapshot import dense_accepts_for
-from src.rag.core.snapshot import RetrievalResult
+from ..core.snapshot import Snapshot, snapshot_retriever_indexer, dense_accepts_for
 
+# TODO: Update for hybrid strategy
 class RAGPipeline:
     def __init__(self, snapshot: Snapshot):
         self.snapshot = snapshot
+
+        # read config and get strategy
+        
         accepts = dense_accepts_for(snapshot)
         encoder = Encoder(
             snapshot.base_config["encoder"]["model_id"],
@@ -27,12 +29,12 @@ class RAGPipeline:
             accepts=accepts,
         )
         self.prompt_builder = PromptBuilder(
-            tokenizer=AutoTokenizer.from_pretrained(snapshot.base_config["generator"]["model"]),
+            tokenizer=AutoTokenizer.from_pretrained(snapshot.base_config["generator"]["model_id"]),
             max_context_tokens=snapshot.prompts_config["settings"]["max_context_tokens"],
             prompt_templates=snapshot.prompts_config["template"]
         )
         self.generator = Generator(
-            snapshot.base_config["generator"]["model"],
+            snapshot.base_config["generator"]["model_id"],
             snapshot.base_config["generator"]["max_input_tokens"],
             snapshot.base_config["generator"]["max_new_tokens"],
             snapshot.base_config["generator"]["truncation"],

@@ -292,7 +292,7 @@ def dense_accepts_for(snapshot: Snapshot):
     names = set(snapshot.base_config.get("retriever", {}).get("dense_sets", ["dense"]))
     return lambda s: s.name in names
 
-def load_retriever(snapshot: Snapshot) -> Retriever:
+def load_dense_retriever(snapshot: Snapshot) -> Retriever:
     accepts = dense_accepts_for(snapshot)
     encoder = Encoder(
         snapshot.base_config["encoder"]["model_id"],

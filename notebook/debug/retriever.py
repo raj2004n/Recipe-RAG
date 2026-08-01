@@ -2,9 +2,8 @@ import json
 import mlflow
 import torch
 import pandas as pd
-from src.rag.core.utils import load_retriever
 from .rerank import recipe_to_string 
-from src.rag.core.snapshot import load_snapshot
+from src.rag.core.snapshot import load_snapshot, load_retriever
 from notebook.debug.prompt_decomp import decompose_query
 from rag.retrieval.dense.indexer import Indexer
 from sentence_transformers import CrossEncoder
@@ -183,6 +182,34 @@ def test_bm25_retriever(query: str):
 
     # load snapshot, retriever
     snapshot = load_snapshot("snapshots/latest")
+    retriever = load_retriever(snapshot)
+
+    results = retriever.retrieve(query)
+    
+    recipe_ids = [r.chunk.recipe_id for r in results]
+    chunk_types = [r.chunk.chunk_type for r in results]
+    texts = [r.chunk.text for r in results]
+
+    retrieved_recipes = [recipes[recipe_id]["recipe_name"] for recipe_id in recipe_ids]
+
+    print(retrieved_recipes)
+
+def test_hybrid(query: str):
+    # test hybrid retriever
+    # retriver results from dense, sparse
+    # load recipes
+    with open("data/processed/cleaned_recipes.json") as f:
+        recipes = json.load(f)
+
+    # load snapshot, retriever
+    snapshot = load_snapshot("snapshots/latest")
+
+    final_recipes = {
+        "dense": [],
+        "sparse": []
+    }
+
+    
     retriever = load_retriever(snapshot)
 
     results = retriever.retrieve(query)
