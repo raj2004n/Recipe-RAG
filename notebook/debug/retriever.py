@@ -176,7 +176,25 @@ def test_query_decomp():
         mlflow.log_table(data=pd.DataFrame(filtered_data), artifact_file="filtered_candidates.json")
         mlflow.log_table(data=reranked_df, artifact_file="results.json")
 
+def test_bm25_retriever(query: str):
+    # load recipes
+    with open("data/processed/cleaned_recipes.json") as f:
+        recipes = json.load(f)
+
+    # load snapshot, retriever
+    snapshot = load_snapshot("snapshots/latest")
+    retriever = load_retriever(snapshot)
+
+    results = retriever.retrieve(query)
     
+    recipe_ids = [r.chunk.recipe_id for r in results]
+    chunk_types = [r.chunk.chunk_type for r in results]
+    texts = [r.chunk.text for r in results]
+
+    retrieved_recipes = [recipes[recipe_id]["recipe_name"] for recipe_id in recipe_ids]
+
+    print(retrieved_recipes)
+
 if __name__ == "__main__": 
     test_query_decomp()
     #test_recipe_to_string()

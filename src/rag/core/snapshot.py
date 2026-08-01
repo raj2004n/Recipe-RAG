@@ -1,19 +1,35 @@
-from dataclasses import dataclass, asdict
+from pathlib import Path
 from typing import Callable
-from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
-from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
+from dataclasses import dataclass, asdict
+
+from ..retrieval.dense.encoder import Encoder
+from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import Chunk, ChunkSet
+from ..retrieval.dense.retriever import Retriever
+from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
+from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
+
+import os
 import time
 import uuid
 import faiss
 import json
 import yaml
-import os
-from pathlib import Path
-import numpy as np
 import shutil
+import numpy as np
 
-# TODO: Snapshot will be discarded
+""" 
+Contains snapshot save logic. 
+
+Usage:
+The retriever is built in modular steps; chunks, encode chunks, index chunks, ...
+At the end of each step, the respsective save mehtod is called.
+
+Therefore, a 'one-does-it-all' function, e.g. save_snapshot, does not exist.
+
+But for inference, the retriever is loaded in one step using load_snapshot.
+"""
+
 @dataclass
 class Snapshot:
     # ids
@@ -140,6 +156,8 @@ def save_config(save_path: str, config_path: str):
     shutil.copy2(src_dir, dst)
 
 def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
+    """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
+    Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
     building = Path("snapshots/building")
     latest = Path("snapshots/latest")
 
@@ -264,9 +282,32 @@ def snapshot_retriever_indexer(
         dimension=base["indexer"]["dimension"],
         accepts=accepts,
     )
-    # Reuse the per-set indexes from the snapshot, but filtered through accepts
-    # so the retriever never wastes cycles on sets it wouldn't look up against.
+    # filter indexed sets to ensure retriever only recieves relevant chunks
     indexer.indexed_sets = [
         s for s in snapshot.indexed_chunk_sets if accepts(s)
     ]
     return indexer
+
+def dense_accepts_for(snapshot: Snapshot):
+    """Build the dense-set accepts predicate from the snapshot's config."""
+    names = set(snapshot.base_config.get("retriever", {}).get("dense_sets", ["dense"]))
+    return lambda s: s.name in names
+
+def load_retriever(snapshot: Snapshot) -> Retriever:
+    accepts = dense_accepts_for(snapshot)
+    encoder = Encoder(
+        snapshot.base_config["encoder"]["model_id"],
+        snapshot.base_config["encoder"]["batch_size"],
+        snapshot.base_config["encoder"]["normalize_embeddings"],
+        accepts=accepts,
+    )
+    indexer = snapshot_retriever_indexer(snapshot, accepts=accepts)
+    retriever = Retriever(
+        snapshot.chunk_sets,
+        encoder,
+        indexer,
+        snapshot.base_config["retriever"]["top_k"],
+        snapshot.base_config["retriever"]["score_threshold"],
+        accepts=accepts,
+    )
+    return retriever

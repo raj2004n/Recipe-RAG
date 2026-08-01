@@ -2,11 +2,9 @@ from rag.retrieval.dense.retriever import Retriever
 from rag.retrieval.dense.encoder import Encoder
 from src.rag.generation.prompt_builder import PromptBuilder
 from src.rag.generation.generator import Generator
-from rag.retrieval.dense.indexer import Indexer
 from transformers import AutoTokenizer
 from src.rag.core.snapshot import Snapshot, snapshot_retriever_indexer
-from src.rag.core.utils import dense_accepts_for
-from typing import Dict
+from src.rag.core.snapshot import dense_accepts_for
 from src.rag.core.snapshot import RetrievalResult
 
 class RAGPipeline:

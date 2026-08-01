@@ -1,26 +1,26 @@
-import subprocess
 import mlflow
 import argparse
-from pathlib import Path
-from rag.retrieval.dense.encoder import Encoder
-from rag.retrieval.dense.indexer import Indexer
-from src.rag.retrieval.chunker import chunk_recipes
+import subprocess
+
+from src.rag.retrieval.dense.encoder import Encoder
+from src.rag.retrieval.dense.indexer import Indexer
 from src.rag.core.utils import load_config
+from src.rag.retrieval.chunker import chunk_recipes
 from src.rag.core.snapshot import save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets, finalise_snapshot
 
 #TODO: Add logging
 
-MODEL_CONFIG = load_config("configs/base_config.yaml")
+BASE_CONFIG = load_config("configs/base_config.yaml")
 PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
 PATHS_CONFIG = load_config("configs/paths_config.yaml")
 
 FILES = PATHS_CONFIG["files"]
 DIRECTORIES = PATHS_CONFIG["directories"]
 
-ENCODER_CONFIG = MODEL_CONFIG["encoder"]
-INDEXER_CONFIG = MODEL_CONFIG["indexer"]
-RETRIEVER_CONFIG = MODEL_CONFIG["retriever"]
-GENERATOR_CONFIG = MODEL_CONFIG["generator"]
+ENCODER_CONFIG = BASE_CONFIG["encoder"]
+INDEXER_CONFIG = BASE_CONFIG["indexer"]
+RETRIEVER_CONFIG = BASE_CONFIG["retriever"]
+GENERATOR_CONFIG = BASE_CONFIG["generator"]
 
 PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
 PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
@@ -40,7 +40,8 @@ def parse_args():
     return parser.parse_args()
 
 def chunk() -> None:
-    chunk_sets = chunk_recipes(MODEL_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
+    chunk_sets = chunk_recipes(BASE_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
+
     save_chunk_sets(
         chunk_sets=chunk_sets, 
         save_path=PATHS_CONFIG["building"]["chunks"]
