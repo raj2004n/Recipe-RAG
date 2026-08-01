@@ -25,6 +25,13 @@ GENERATOR_CONFIG = MODEL_CONFIG["generator"]
 PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
 PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
 
+DENSE_SETS = set(RETRIEVER_CONFIG.get("dense_sets", ["dense"]))
+SPARSE_SETS = set(RETRIEVER_CONFIG.get("sparse_sets", ["sparse"]))
+
+# anonymous function to accept or reject chunks
+dense_accepts = lambda s: s.name in DENSE_SETS
+sparse_accepts = lambda s: s.name in SPARSE_SETS
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
@@ -47,7 +54,8 @@ def encode_chunk() -> None:
     encoder = Encoder(
         model_id=ENCODER_CONFIG["model_id"],
         batch_size=ENCODER_CONFIG["batch_size"],
-        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
+        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"],
+        accepts=dense_accepts,
     )
 
     encoded_chunks_sets = encoder.encode_chunks(chunks_sets)
@@ -62,7 +70,8 @@ def index_embeddings() -> None:
 
     indexer = Indexer(
         index_type=INDEXER_CONFIG["type"],
-        dimension=INDEXER_CONFIG["dimension"]
+        dimension=INDEXER_CONFIG["dimension"],
+        accepts=dense_accepts,
     )
 
     indexed_chunks_sets = indexer.index_embeddings(encoded_chunks_sets)

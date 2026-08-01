@@ -16,6 +16,10 @@ indexer:
 retriever:
   top_k: 10
   score_threshold: 0.5
+  dense_sets:
+    - dense
+  sparse_sets:
+    - sparse
   
 generator:
   model_id: google/gemma-3-1b-it
