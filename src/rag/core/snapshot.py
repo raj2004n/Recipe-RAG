@@ -164,8 +164,7 @@ def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = N
     if not building.exists():
         raise FileNotFoundError(f"Building directory not found at {building}")
 
-    if latest.exists():
-        rename_latest_snapshot()
+    rename_latest_snapshot()
 
     configs_save_path = "snapshots/building/configs"
     save_config(
@@ -255,7 +254,14 @@ def rename_latest_snapshot():
     new_snapshot_path = os.path.join("snapshots", snapshot_id)
 
     if os.path.exists(new_snapshot_path):
-        raise FileExistsError(f"Snapshot with id {snapshot_id} already exists")
+        # an archive with this id already exists; disambiguate with a timestamp
+        # suffix rather than overwriting or aborting the build
+        suffix = time.strftime("%Y%m%d%H%M%S")
+        new_snapshot_path = os.path.join("snapshots", f"{snapshot_id}_{suffix}")
+        print(
+            f"Warning: snapshot with id {snapshot_id} already exists; "
+            f"archiving latest to {os.path.basename(new_snapshot_path)}"
+        )
 
     os.rename(latest_snapshot_path, new_snapshot_path)
 
