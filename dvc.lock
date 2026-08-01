@@ -90,8 +90,8 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 407033a16786b9eca912812862a4fd58
-      size: 675
+      md5: 462b885603bcd3a949ce7aeffdac96c5
+      size: 729
     - path: data/processed/cleaned_recipes.json
       hash: md5
       md5: 8eab36d61aad1983ec16cdcbd871b78f
@@ -107,8 +107,8 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 407033a16786b9eca912812862a4fd58
-      size: 675
+      md5: 462b885603bcd3a949ce7aeffdac96c5
+      size: 729
     - path: snapshots/building/chunks/
       hash: md5
       md5: 3ad3254132603681f412d6ec614c8c4c.dir
@@ -117,34 +117,34 @@ stages:
     outs:
     - path: snapshots/building/encoded_chunks/
       hash: md5
-      md5: b8fba6861feb1c36f7cecabf10ac904f.dir
-      size: 147247016
-      nfiles: 2
+      md5: 249168c24f6a1216d7180813ea464437.dir
+      size: 112089875
+      nfiles: 1
   index:
     cmd: python -m scripts.build_rag --run index
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 407033a16786b9eca912812862a4fd58
-      size: 675
+      md5: 462b885603bcd3a949ce7aeffdac96c5
+      size: 729
     - path: snapshots/building/encoded_chunks/
       hash: md5
-      md5: b8fba6861feb1c36f7cecabf10ac904f.dir
-      size: 147247016
-      nfiles: 2
+      md5: 249168c24f6a1216d7180813ea464437.dir
+      size: 112089875
+      nfiles: 1
     outs:
     - path: snapshots/building/index/
       hash: md5
-      md5: d48311ffa821c72da55688157cdb86eb.dir
-      size: 19519698
-      nfiles: 4
+      md5: e602e32f58d2861e8613e46ee8e591b4.dir
+      size: 14848873
+      nfiles: 2
   finalise_snapshot:
     cmd: python -m scripts.build_rag --run finalise_snapshot
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 407033a16786b9eca912812862a4fd58
-      size: 675
+      md5: 462b885603bcd3a949ce7aeffdac96c5
+      size: 729
     - path: configs/paths_config.yaml
       hash: md5
       md5: 4be7d21d3474da1777d2e571c23acfe5
@@ -155,5 +155,5 @@ stages:
       size: 760
     - path: src/rag/core/snapshot.py
       hash: md5
-      md5: 2f54593002931680f85716298f2dad44
-      size: 7585
+      md5: aa6eb468a9b2ddacb6a5764eddad0827
+      size: 10181
