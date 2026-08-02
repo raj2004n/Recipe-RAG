@@ -24,16 +24,16 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
         recipes = [Recipe(**recipe) for recipe in json.load(f)]
     
     if strategy == "whole_recipe":
-        return ChunkSet(
+        return [ChunkSet(
             name="whole_recipe",
             chunks=_chunk_whole(recipes)
-        )
+        )]
     
     elif strategy == "instructions_ingredients":
-        return ChunkSet(
+        return [ChunkSet(
             name="instructions_ingredients",
             chunks=_chunk_it_ing(recipes)
-        )
+        )]
     
     elif strategy == "hybrid":
         sprase_chunks = _chunk_it_ing(recipes)
