@@ -1,9 +1,9 @@
 import faiss
 import numpy as np
 from pathlib import Path
-from .encoder import EncodedChunkSet
 from dataclasses import dataclass
 from typing import Callable
+from .encoder import EncodedChunk
 
 @dataclass
 class IndexedChunkSet:
@@ -15,12 +15,10 @@ class Indexer:
     def __init__(
         self,
         index_type: str,
-        dimension: int,
-        accepts: Callable[[EncodedChunkSet], bool] = lambda _: True,
+        dimension: int
     ):
         self.index_type = index_type
         self.dimension = dimension
-        self.accepts = accepts
         self.indexed_sets: list[IndexedChunkSet] = []
 
     def _create_index(self) -> faiss.Index:
@@ -37,7 +35,7 @@ class Indexer:
         ids = np.asarray(ids, dtype=np.int64)
         index.add_with_ids(vectors, ids)
 
-    def index_embeddings(self, encoded_chunks_sets: list[EncodedChunkSet]) -> list[IndexedChunkSet]:
+    def index_embeddings(self, encoded_chunks_sets: list[EncodedChunk]) -> list[IndexedChunkSet]:
         """ Assign ids to the embeddings. """
         # filter sets
         selected = [s for s in encoded_chunks_sets if self.accepts(s)]
