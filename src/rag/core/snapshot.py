@@ -6,8 +6,8 @@ from ..retrieval.dense.encoder import Encoder
 from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import Chunk, ChunkSet
 from ..retrieval.dense.retriever import Retriever
-from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
 from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
+from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
 
 import os
 import time
@@ -46,6 +46,25 @@ class Snapshot:
 
 SAVE_PATH = os.path.join("snapshots/building")
 
+
+def save_strategy(strategy: str, save_path: str | None):
+    "Save strategy inside metadata"
+    if save_path is None:
+        os.makedirs(save_path, exist_ok=True)
+        metadata_path = os.path.join("snapshots/building", "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump({
+                "strategy": strategy
+            }, f, indent=2)
+    else:
+        os.makedirs(save_path, exist_ok=True)
+        metadata_path = os.path.join(save_path, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump({
+                "strategy": strategy
+            }, f, indent=2)
+
+
 def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
     save_path = os.path.join(save_path)
     os.makedirs(save_path, exist_ok=True)
@@ -54,27 +73,30 @@ def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
         with open(os.path.join(save_path, f"{name}_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
 
-def load_chunk_sets(path: str) -> list[ChunkSet]:
+
+def load_chunk_sets(target: str, path: str) -> list[ChunkSet]:
     path_obj = Path(path)
+
     # check if chunks directory exists
     if not path_obj.exists():
         raise FileNotFoundError(f"Chunks directory not found at {path}")
 
-    chunks_sets = []
+    # load the chunks that match <target>_chunks.json
+    target_path = path_obj / f"{target}_chunks.json"
 
-    # load all chunk files from directory
-    for chunk_file in sorted(path_obj.glob("*.json")):
-        name = chunk_file.stem.removesuffix("_chunks")
-        with open(chunk_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            chunks = [Chunk(**c) for c in data]
-            chunks_sets.append(
-                ChunkSet(
-                    name=name,
-                    chunks=chunks
-                )
-            )
-    return chunks_sets
+    if not target_path.exists():
+        raise FileNotFoundError(f"Chunk set not found: {target_path}")
+
+    with target_path.open("r") as f:
+        chunk_dicts = json.load(f)
+
+    chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
+
+    return [ChunkSet(
+        name=target,
+        chunks=chunks
+    )]
+
 
 def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_path: str):
     save_path = os.path.join(save_path)
@@ -84,27 +106,31 @@ def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_pat
         with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
             json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
 
-def load_encoded_chunk_sets(path: str) -> list[EncodedChunkSet]:
+
+def load_encoded_chunk_sets(target: str, path: str) -> list[EncodedChunkSet]:
+
     path_obj = Path(path)
-    # check if chunks directory exists
+
+    # check if encoded chunks directory exists
     if not path_obj.exists():
         raise FileNotFoundError(f"Chunks directory not found at {path}")
 
-    encoded_chunks_sets = []
+    # load the encoded chunks that match <target>_encoded_chunks.json
+    target_path = path_obj / f"{target}_encoded_chunks.json"
 
-    # load all chunk files from directory
-    for chunk_file in sorted(path_obj.glob("*.json")):
-        name = chunk_file.stem.removesuffix("_encoded_chunks")
-        with open(chunk_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            encoded_chunks = [EncodedChunk(**c) for c in data]
-            encoded_chunks_sets.append(
-                EncodedChunkSet(
-                    name=name,
-                    encoded_chunks=encoded_chunks
-                )
-            )
-    return encoded_chunks_sets
+    if not target_path.exists():
+        raise FileNotFoundError(f"Chunk set not found: {target_path}")
+
+    with target_path.open("r") as f:
+        chunk_dicts = json.load(f)
+
+    encoded_chunks = [EncodedChunk(**chunk_dict) for chunk_dict in chunk_dicts]
+
+    return [EncodedChunkSet(
+        name=target,
+        encoded_chunks=None
+    )]
+
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
     save_path = os.path.join(save_path)
@@ -117,6 +143,7 @@ def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path
             indexed_chunk_set.id_mapping,
             allow_pickle=True
         )
+
 
 def load_indexed_chunk_sets(path: str) -> list[IndexedChunkSet]:
     path_obj = Path(path)
@@ -145,6 +172,7 @@ def load_indexed_chunk_sets(path: str) -> list[IndexedChunkSet]:
 
     return indexed_chunk_sets
 
+
 def save_config(save_path: str, config_path: str):
     save_dir = Path(save_path)
     src_dir = Path(config_path)
@@ -154,6 +182,7 @@ def save_config(save_path: str, config_path: str):
     dst = save_dir / src_dir.name
 
     shutil.copy2(src_dir, dst)
+
 
 def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
     """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
@@ -184,6 +213,7 @@ def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = N
     snapshot_id = snapshot_id or str(uuid.uuid4())
     created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
 
+    #TODO: Now metadata exists, so ammend not re write
     # add metadata
     metadata_path = os.path.join("snapshots/building", "metadata.json")
     with open(metadata_path, "w") as f:
@@ -193,6 +223,7 @@ def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = N
         }, f, indent=2)
 
     building.rename(latest)
+
 
 def load_snapshot(path: str) -> Snapshot:
     """Load a snapshot produced by the per-set build pipeline.
@@ -234,6 +265,7 @@ def load_snapshot(path: str) -> Snapshot:
         prompts_config=prompts_config,
     )
 
+
 def rename_latest_snapshot():
     # change the name of the latest snapshot to its id
     latest_snapshot_path = os.path.join("snapshots", "latest")
@@ -265,6 +297,7 @@ def rename_latest_snapshot():
 
     os.rename(latest_snapshot_path, new_snapshot_path)
 
+
 def snapshot_retriever_indexer(
     snapshot: Snapshot,
     accepts: Callable[[IndexedChunkSet], bool] = lambda _: True,
@@ -287,10 +320,12 @@ def snapshot_retriever_indexer(
     ]
     return indexer
 
+# probably will be removed
 def dense_accepts_for(snapshot: Snapshot):
     """Build the dense-set accepts predicate from the snapshot's config."""
     names = set(snapshot.base_config.get("retriever", {}).get("dense_sets", ["dense"]))
     return lambda s: s.name in names
+
 
 def load_dense_retriever(snapshot: Snapshot) -> Retriever:
     accepts = dense_accepts_for(snapshot)
