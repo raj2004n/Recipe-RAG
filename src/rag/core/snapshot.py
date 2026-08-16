@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable
 from dataclasses import dataclass, asdict
 
+from .utils import load_config
 from ..retrieval.dense.encoder import Encoder
 from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import Chunk, ChunkSet
@@ -32,141 +33,111 @@ But for inference, the retriever is loaded in one step using load_snapshot.
 
 @dataclass
 class Snapshot:
-    # ids
     snapshot_id: str | None
     created_at: str | None
-
-    # retriever state is per-set, so multiple chunk sets can be carried together
+    strategy: str
     chunk_sets: list[ChunkSet]
-    indexed_chunk_sets: list[IndexedChunkSet]
-
-    # configs
+    transformed_chunk_sets: list[IndexedChunkSet] 
+    # configs for initialising retriever components for inference, in pipeline
     base_config: dict[str, any]
     prompts_config: dict[str, any]
 
 SAVE_PATH = os.path.join("snapshots/building")
 
-
-def save_strategy(strategy: str, save_path: str | None):
-    "Save strategy inside metadata"
-    if save_path is None:
-        os.makedirs(save_path, exist_ok=True)
-        metadata_path = os.path.join("snapshots/building", "metadata.json")
-        with open(metadata_path, "w") as f:
-            json.dump({
-                "strategy": strategy
-            }, f, indent=2)
-    else:
-        os.makedirs(save_path, exist_ok=True)
-        metadata_path = os.path.join(save_path, "metadata.json")
-        with open(metadata_path, "w") as f:
-            json.dump({
-                "strategy": strategy
-            }, f, indent=2)
+#TODO: load TEST PATH here, (watch for circular imports), and change save config for finalise 
+PATHS_CONFIG = load_config("configs/paths_config.yaml")
 
 
 def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
     os.makedirs(save_path, exist_ok=True)
-    for chunk_set in chunk_sets:
-        name = chunk_set.name
-        with open(os.path.join(save_path, f"{name}_chunks.json"), "w") as f:
-            json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
+    with open(os.path.join(save_path, "chunk_sets.json"), "w") as f:
+        json.dump([asdict(cs) for cs in chunk_sets], f, indent=2)
 
 
-def load_chunk_sets(target: str, path: str) -> list[ChunkSet]:
-    path_obj = Path(path)
+def load_chunk_sets(save_path: str) -> list[ChunkSet]:
+    with open(os.path.join(save_path, "chunk_sets.json")) as f:
+        data = json.load(f)
 
-    # check if chunks directory exists
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Chunks directory not found at {path}")
-
-    # load the chunks that match <target>_chunks.json
-    target_path = path_obj / f"{target}_chunks.json"
-
-    if not target_path.exists():
-        raise FileNotFoundError(f"Chunk set not found: {target_path}")
-
-    with target_path.open("r") as f:
-        chunk_dicts = json.load(f)
-
-    chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
-
-    return [ChunkSet(
-        name=target,
-        chunks=chunks
-    )]
+    return [
+        ChunkSet(
+            name=cs["name"],
+            chunks=[Chunk(**chunk) for chunk in cs["chunks"]],
+        )
+        for cs in data
+    ]
 
 
-def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
+def save_encoded_chunk_sets(encoded_chunk_sets: list[EncodedChunkSet], save_path: str):
     os.makedirs(save_path, exist_ok=True)
-    for encoded_chunks_set in encoded_chunks_sets:
-        name = encoded_chunks_set.name
-        with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
-            json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
+
+    with open(os.path.join(save_path, "encoded_chunk_sets.json"), "w") as f:
+        json.dump([asdict(cs) for cs in encoded_chunk_sets], f, indent=2)
 
 
-def load_encoded_chunk_sets(target: str, path: str) -> list[EncodedChunkSet]:
+def load_encoded_chunk_sets(save_path: str) -> list[EncodedChunkSet]:
+    with open(os.path.join(save_path, "encoded_chunk_sets.json"), "r") as f:
+        data = json.load(f)
 
-    path_obj = Path(path)
-
-    # check if encoded chunks directory exists
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Chunks directory not found at {path}")
-
-    # load the encoded chunks that match <target>_encoded_chunks.json
-    target_path = path_obj / f"{target}_encoded_chunks.json"
-
-    if not target_path.exists():
-        raise FileNotFoundError(f"Chunk set not found: {target_path}")
-
-    with target_path.open("r") as f:
-        chunk_dicts = json.load(f)
-
-    encoded_chunks = [EncodedChunk(**chunk_dict) for chunk_dict in chunk_dicts]
-
-    return [EncodedChunkSet(
-        name=target,
-        encoded_chunks=None
-    )]
+    return [
+        EncodedChunkSet(
+            name=chunk_set["name"],
+            encoded_chunks=[
+                EncodedChunk(**chunk)
+                for chunk in chunk_set["encoded_chunks"]
+            ],
+        )
+        for chunk_set in data
+    ]
 
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
-    os.makedirs(save_path, exist_ok=True)
-    for indexed_chunk_set in indexed_chunk_sets:
-        name = indexed_chunk_set.name
-        faiss.write_index(indexed_chunk_set.index, os.path.join(save_path, f"{name}_index.faiss"))
-        np.save(
-            os.path.join(save_path, f"{name}_index.mapping.npy"),
-            indexed_chunk_set.id_mapping,
-            allow_pickle=True
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    manifest = []
+
+    for i, chunk_set in enumerate(indexed_chunk_sets):
+        index_filename = f"index_{i}.faiss"
+
+        faiss.write_index(
+            chunk_set.index,
+            str(save_path / index_filename),
         )
 
+        manifest.append({
+            "name": chunk_set.name,
+            "index": index_filename,
+        })
 
-def load_indexed_chunk_sets(path: str) -> list[IndexedChunkSet]:
-    path_obj = Path(path)
+    with open(save_path / "indexed_chunk_sets.json", "w") as f:
+        json.dump(manifest, f, indent=2)
 
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Index directory not found at {path}.")
+
+
+def load_indexed_chunk_sets(save_path: str) -> list[IndexedChunkSet]:
+    save_path = Path(save_path)
+
+    manifest_path = save_path / "indexed_chunk_sets.json"
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"Index manifest not found at {manifest_path}."
+        )
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
 
     indexed_chunk_sets = []
 
-    for index_file in sorted(path_obj.glob("*_index.faiss")):
-        name = index_file.stem.removesuffix("_index")
-        index = faiss.read_index(str(index_file))
-
-        mapping = np.load(
-            path_obj / f"{name}_index.mapping.npy",
-            allow_pickle=True,
-        ).item()
+    for entry in manifest:
+        index = faiss.read_index(
+            str(save_path / entry["index"])
+        )
 
         indexed_chunk_sets.append(
             IndexedChunkSet(
-                name=name,
+                name=entry["name"],
                 index=index,
-                id_mapping=mapping,
             )
         )
 
@@ -184,92 +155,10 @@ def save_config(save_path: str, config_path: str):
     shutil.copy2(src_dir, dst)
 
 
-def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
-    """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
-    Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
-    building = Path("snapshots/building")
-    latest = Path("snapshots/latest")
-
-    if not building.exists():
-        raise FileNotFoundError(f"Building directory not found at {building}")
-
-    rename_latest_snapshot()
-
-    configs_save_path = "snapshots/building/configs"
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/base_config.yaml"
-    )
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/prompts_config.yaml"
-    )
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/paths_config.yaml"
-    )
-
-    # get id and timestamp if not provided
-    snapshot_id = snapshot_id or str(uuid.uuid4())
-    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
-
-    #TODO: Now metadata exists, so ammend not re write
-    # add metadata
-    metadata_path = os.path.join("snapshots/building", "metadata.json")
-    with open(metadata_path, "w") as f:
-        json.dump({
-            "snapshot_id": snapshot_id,
-            "created_at": created_at,
-        }, f, indent=2)
-
-    building.rename(latest)
-
-
-def load_snapshot(path: str) -> Snapshot:
-    """Load a snapshot produced by the per-set build pipeline.
-
-    Layout (per-set):
-        <path>/configs/base_config.yaml
-        <path>/configs/prompts_config.yaml
-        <path>/configs/paths_config.yaml
-        <path>/chunks/<name>_chunks.json
-        <path>/encoded_chunks/<name>_encoded_chunks.json
-        <path>/index/<name>_index.faiss
-        <path>/index/<name>_index.mapping.npy
-        <path>/metadata.json
-    """
-    path_obj = Path(path)
-
-    # load configs
-    with open(path_obj / "configs" / "base_config.yaml") as f:
-        base_config = yaml.safe_load(f)
-    with open(path_obj / "configs" / "prompts_config.yaml") as f:
-        prompts_config = yaml.safe_load(f)
-
-    # load chunk sets
-    chunk_sets = load_chunk_sets(path_obj / "chunks")
-
-    # load indexed chunk sets
-    indexed_chunk_sets = load_indexed_chunk_sets(path_obj / "index")
-
-    # load metadata
-    with open(path_obj / "metadata.json") as f:
-        metadata = json.load(f)
-
-    return Snapshot(
-        snapshot_id=metadata["snapshot_id"],
-        created_at=metadata["created_at"],
-        chunk_sets=chunk_sets,
-        indexed_chunk_sets=indexed_chunk_sets,
-        base_config=base_config,
-        prompts_config=prompts_config,
-    )
-
-
 def rename_latest_snapshot():
     # change the name of the latest snapshot to its id
-    latest_snapshot_path = os.path.join("snapshots", "latest")
-
+    #latest_snapshot_path = os.path.join("snapshots", "latest")
+    latest_snapshot_path = os.path.join("temp", "latest")
     if not os.path.exists(latest_snapshot_path):
         # no latest snapshot
         return
@@ -298,50 +187,76 @@ def rename_latest_snapshot():
     os.rename(latest_snapshot_path, new_snapshot_path)
 
 
-def snapshot_retriever_indexer(
-    snapshot: Snapshot,
-    accepts: Callable[[IndexedChunkSet], bool] = lambda _: True,
-) -> Indexer:
-    """Build an Indexer whose indexed_sets match the snapshot's stored sets
-    and whose id_mapping matches each set's chunk ids.
+def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
+    """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
+    Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
+    #building = Path("snapshots/building")
+    #latest = Path("snapshots/latest")
+    building = Path("temp/building")
+    latest = Path("temp/latest")
 
-    The same accepts predicate used at build time must be passed in here so
-    the runtime indexer only contains the sets the retriever cares about.
-    """
-    base = snapshot.base_config
-    indexer = Indexer(
-        index_type=base["indexer"]["type"],
-        dimension=base["indexer"]["dimension"],
-        accepts=accepts,
+    if not building.exists():
+        raise FileNotFoundError(f"Building directory not found at {building}")
+
+    rename_latest_snapshot()
+
+    #configs_save_path = "snapshots/building/configs"
+    configs_save_path = "temp/building/configs"
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/base_config.yaml"
     )
-    # filter indexed sets to ensure retriever only recieves relevant chunks
-    indexer.indexed_sets = [
-        s for s in snapshot.indexed_chunk_sets if accepts(s)
-    ]
-    return indexer
-
-# probably will be removed
-def dense_accepts_for(snapshot: Snapshot):
-    """Build the dense-set accepts predicate from the snapshot's config."""
-    names = set(snapshot.base_config.get("retriever", {}).get("dense_sets", ["dense"]))
-    return lambda s: s.name in names
-
-
-def load_dense_retriever(snapshot: Snapshot) -> Retriever:
-    accepts = dense_accepts_for(snapshot)
-    encoder = Encoder(
-        snapshot.base_config["encoder"]["model_id"],
-        snapshot.base_config["encoder"]["batch_size"],
-        snapshot.base_config["encoder"]["normalize_embeddings"],
-        accepts=accepts,
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/prompts_config.yaml"
     )
-    indexer = snapshot_retriever_indexer(snapshot, accepts=accepts)
-    retriever = Retriever(
-        snapshot.chunk_sets,
-        encoder,
-        indexer,
-        snapshot.base_config["retriever"]["top_k"],
-        snapshot.base_config["retriever"]["score_threshold"],
-        accepts=accepts,
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/paths_config.yaml"
     )
-    return retriever
+
+    # get id and timestamp if not provided
+    snapshot_id = snapshot_id or str(uuid.uuid4())
+    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
+
+    metadata_path = os.path.join("temp/building", "metadata.json")
+    with open(metadata_path, "r") as f:
+        metadata = json.load(f)
+
+    metadata.update({
+        "snapshot_id": snapshot_id,
+        "created_at": created_at,
+    })
+
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    building.rename(latest)
+
+
+def load_snapshot(path: str) -> Snapshot:
+    path_obj = Path(path)
+
+    # load configs
+    with open(path_obj / "configs" / "base_config.yaml") as f:
+        base_config = yaml.safe_load(f)
+    with open(path_obj / "configs" / "prompts_config.yaml") as f:
+        prompts_config = yaml.safe_load(f)
+
+    # load chunks
+    chunk_sets = load_chunk_sets(path_obj / "chunks")
+    indexed_chunk_sets = load_indexed_chunk_sets(path_obj / "index")
+
+    # load metadata
+    with open(path_obj / "metadata.json") as f:
+        metadata = json.load(f)
+
+    return Snapshot(
+        snapshot_id=metadata["snapshot_id"],
+        created_at=metadata["created_at"],
+        strategy=metadata["strategy"],
+        chunk_sets=chunk_sets,
+        transformed_chunk_sets=indexed_chunk_sets,
+        base_config=base_config,
+        prompts_config=prompts_config,
+    )
