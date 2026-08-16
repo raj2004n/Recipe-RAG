@@ -26,7 +26,7 @@ ENCODER_CONFIG = BASE_CONFIG["encoder"]
 INDEXER_CONFIG = BASE_CONFIG["indexer"]
 RETRIEVER_CONFIG = BASE_CONFIG["retriever"]
 
-#TODO: Add typehint, here and base. See if inheriting types from base is useful.
+
 class DenseStrategy(BaseStrategy):
     def chunk(self):
         chunk_sets = chunk_recipes(
@@ -42,8 +42,7 @@ class DenseStrategy(BaseStrategy):
 
     def transform(self):
         chunk_sets = load_chunk_sets(
-            target="whole_recipe",
-            path=TEST_PATH["chunks"],
+            save_path=TEST_PATH["chunks"],
         )
         
         encoder = Encoder(
@@ -55,15 +54,14 @@ class DenseStrategy(BaseStrategy):
         encoded_chunk_sets = encoder.encode_chunks(chunk_sets)
 
         save_encoded_chunk_sets(
-            encoded_chunks_sets=encoded_chunk_sets,
+            encoded_chunk_sets=encoded_chunk_sets,
             save_path=TEST_PATH["encoded_chunks"]
         )
 
 
     def index(self):
         encoded_chunks_sets = load_encoded_chunk_sets(
-            target="whole_recipe",
-            path=TEST_PATH["encoded_chunks"]
+            save_path=TEST_PATH["encoded_chunks"]
         )
 
         indexer = Indexer(
