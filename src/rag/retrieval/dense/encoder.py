@@ -20,6 +20,11 @@ class EncodedChunk:
             chunk_id=chunk.chunk_id
         )
 
+@dataclass
+class EncodedChunkSet:
+    name: str
+    encoded_chunks: list[EncodedChunk]
+
 class Encoder:
     def __init__(
         self,
@@ -41,12 +46,10 @@ class Encoder:
         )
         return embeddings
 
-    def encode_chunks(self, chunks_set_list: list[Chunk]) -> list[EncodedChunk]:
+    def encode_chunks(self, chunks_set_list: list[ChunkSet]) -> list[EncodedChunkSet]:
         """ Encode list of chunks into dense vectors. """
-        # filter chunk sets 
-        selected = [s for s in chunks_set_list if self.accepts(s)]
-
-        for chunks_set in selected:
+        encoded_chunks_sets : list[EncodedChunkSet] = []
+        for chunks_set in chunks_set_list:
             chunks = chunks_set.chunks
             texts = [c.text for c in chunks]
             embeddings = self._encode_documents(texts)
@@ -58,7 +61,16 @@ class Encoder:
                 )
                 for chunk, embedding in zip(chunks, embeddings)
             ]
-        return encoded_chunks
+
+            # name is kept the same as chunk set name
+            # "encoded_chunks" is added at the end when saving
+            encoded_chunks_sets.append(
+                EncodedChunkSet(
+                    name=chunks_set.name,
+                    encoded_chunks=encoded_chunks
+                )
+            )
+        return encoded_chunks_sets
 
     def encode_query(self, query: str) -> np.ndarray:
         """ Encode a single query into a dense vector. """

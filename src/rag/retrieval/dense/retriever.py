@@ -1,15 +1,14 @@
 from dataclasses import dataclass
-from typing import Callable
 from ..chunker import Chunk, ChunkSet
 from .encoder import Encoder
 from .indexer import Indexer
 
-# TODO: Should have save and load method here for consistency.
 
 @dataclass
 class RetrievalResult:
     chunk: Chunk
     score: float
+
 
 class Retriever:
     def __init__(
@@ -18,8 +17,7 @@ class Retriever:
             encoder: Encoder,
             indexer: Indexer,
             top_k: int,
-            score_threshold: float,
-            accepts: Callable[[ChunkSet], bool] = lambda _: True,
+            score_threshold: float
         ):
         """ Initialise a Retriever object.
 
@@ -32,8 +30,6 @@ class Retriever:
             indexer: Indexer used to search for nearest neighbors.
             top_k: default number of results to return.
             score_threshold: drop results below this score.
-            accepts: predicate selecting which chunk sets this retriever
-                     handles. Default accepts everything.
 
         The encoder turns the query into a dense vector in the same space as the recipe vectors.
         The index is used to search for the nearest neighbors of the query vector (in the encoder space of the recipe vectors).
@@ -41,17 +37,16 @@ class Retriever:
         """
         self.encoder = encoder
         self.indexer = indexer
-        self.accepts = accepts
         self.top_k = top_k
         self.score_threshold = score_threshold
 
-        # Only build the lookup dict from accepted sets, so the retriever
-        # can never return a chunk that wasn't indexed.
-        accepted_sets = [s for s in chunk_sets if self.accepts(s)]
-        accepted_chunks = [c for s in accepted_sets for c in s.chunks]
+        chunks = [chunk for chunk_set in chunk_sets for chunk in chunk_set.chunks]
 
-        # dict with k, v = chunk_id, chunk
-        self.chunks_dict = {chunk.chunk_id: chunk for chunk in accepted_chunks}
+        self.chunks_dict = {
+            chunk.chunk_id: chunk
+            for chunk in chunks
+        }
+
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievalResult]:
         top_k = top_k or self.top_k
