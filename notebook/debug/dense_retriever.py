@@ -1,14 +1,10 @@
 """ 
 Script to test new dense retriever after removing accepts logic.
 """
-import os
+
 import json 
-
 from src.rag.core.utils import load_config
-
-
 from src.rag.strategy.base import BaseStrategy
-from src.rag.strategy.dense import DenseStrategy
 
 BASE_CONFIG = load_config("configs/base_config.yaml")
 PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
@@ -29,12 +25,6 @@ def load_recipes():
         recipes = json.load(f)
     return recipes
 
-
-# set_strategy writes to metadata file what the strategy is
-# _get_strategy reads that strategy
-# I feel that this function can belong to the base superclass, 
-# and thus using the strategy object becomes self contained and does not 
-# rely on outside functions to set and call strategy.
 
 # works
 def set_strategy() -> None:
@@ -75,14 +65,6 @@ def index_embeddings()-> None:
 def finalise_strategy() -> None:
     strategy = BaseStrategy.from_metadata(TEST_METADATA)
     strategy.finalise_build()
-
-
-# test inference
-# can do this by just passing in the correct snapshot to strategy
-# yes so srategy ensures that the correct strategy has been passed through. 
-
-
-# can move onto hybrid strat..
 
 
 #TODO remember to change the paths of snapshot to correct ones. Once you remove TEST PATH all the places
