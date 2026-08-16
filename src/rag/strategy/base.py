@@ -67,11 +67,12 @@ class BaseStrategy(ABC):
     # naming allows the main intent to be carried through 
     # while being flexible
 
+
     @abstractmethod
     def index(self):
         pass
 
 
-    #@abstractmethod
-    #def finalise_build(self):
-        #pass
+    @abstractmethod
+    def finalise_build(self):
+        pass
