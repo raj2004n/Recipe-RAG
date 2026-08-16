@@ -16,10 +16,13 @@ class DensePipeline:
             batch_size=snapshot.base_config["encoder"]["batch_size"],
             normalize_embeddings=snapshot.base_config["encoder"]["normalize_embeddings"],
         )
+
         indexer = Indexer(
             index_type=snapshot.base_config["indexer"]["type"],
             dimension=snapshot.base_config["indexer"]["dimension"]
         )
+        indexer.set_indexed_sets(snapshot.transformed_chunk_sets)
+
         self.retriever = Retriever(
             chunk_sets=snapshot.chunk_sets,
             encoder=encoder,
@@ -27,11 +30,13 @@ class DensePipeline:
             top_k=snapshot.base_config["retriever"]["top_k"],
             score_threshold=snapshot.base_config["retriever"]["score_threshold"]
         )
+
         self.prompt_builder = PromptBuilder(
             tokenizer=AutoTokenizer.from_pretrained(snapshot.base_config["generator"]["model_id"]),
             max_context_tokens=snapshot.prompts_config["settings"]["max_context_tokens"],
             prompt_templates=snapshot.prompts_config["template"]
         )
+
         self.generator = Generator(
             snapshot.base_config["generator"]["model_id"],
             snapshot.base_config["generator"]["max_input_tokens"],
@@ -57,6 +62,7 @@ class DensePipeline:
         
         # generate answer
         answer = self.generator.generate(prompt)
+        
         # query, and prompt used are not used in this method
         return {
             "query": query,
