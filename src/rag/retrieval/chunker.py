@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from itertools import count
+from typing import Iterator
 from dataclasses import dataclass
 from ..data.preprocessor import Recipe
 
@@ -13,10 +14,12 @@ class Chunk:
     chunk_type: str
     text: str
 
+
 @dataclass
 class ChunkSet:
     name: str
     chunks: list[Chunk]
+
 
 def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
     # load recipes as recipe list[Recipe]
@@ -50,9 +53,8 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
         ]
 
     
-def _chunk_whole(recipes: list[Recipe]) -> list[Chunk]:
+def _chunk_whole(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         chunks.append(
             Chunk(
@@ -64,9 +66,9 @@ def _chunk_whole(recipes: list[Recipe]) -> list[Chunk]:
         )
     return chunks
 
-def _chunk_it_ing(recipes: list[Recipe]) -> list[Chunk]:
+
+def _chunk_it_ing(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         chunks.append(
             Chunk(
@@ -86,10 +88,9 @@ def _chunk_it_ing(recipes: list[Recipe]) -> list[Chunk]:
         )
     return chunks
 
-def _chunk_info(recipes: list[Recipe]) -> list[Chunk]:
-    # for dense retriever
+
+def _chunk_info(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         for i in r.info:
             chunks.append(
@@ -101,6 +102,7 @@ def _chunk_info(recipes: list[Recipe]) -> list[Chunk]:
                 )
         )
     return chunks
+
 
 def _format_ingredients(recipe: Recipe) -> str:
     lines = []
@@ -135,6 +137,7 @@ def _format_ingredients(recipe: Recipe) -> str:
 
     return "\n".join(lines).strip()
 
+
 def _format_instructions(recipe: Recipe) -> str:
     lines = []
 
@@ -149,6 +152,7 @@ def _format_instructions(recipe: Recipe) -> str:
     
     return "\n".join(lines)
 
+
 def _format_info(info: dict) -> str:
     lines = []
     
@@ -158,6 +162,7 @@ def _format_info(info: dict) -> str:
     lines.append(f"{info.get("content", "")}")
     
     return "\n".join(lines)
+
 
 def _format_whole_recipe(recipe: Recipe) -> str:
     """ Format recipe text for embedding. """
