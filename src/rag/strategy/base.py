@@ -8,9 +8,11 @@ class BaseStrategy(ABC):
         # import inside the method to avoid circular imports when dense inherits base
         # downside, strategies dict duplicated in set_strategy, from_metadata
         from .dense import DenseStrategy
+        from .hybrid import HybridStrategy
 
         strategies = {
             "dense": DenseStrategy,
+            "hybrid": HybridStrategy
         }
         
         if strategy_name not in strategies:
@@ -38,9 +40,11 @@ class BaseStrategy(ABC):
         # import inside the method to avoid circular imports when dense inherits base
         # downside, strategies dict duplicated in set_strategy, from_metadata
         from .dense import DenseStrategy
+        from .hybrid import HybridStrategy
 
         strategies = {
             "dense": DenseStrategy,
+            "hybrid": HybridStrategy
         }
 
         metadata_path = os.path.join(metadata_path, "metadata.json")
