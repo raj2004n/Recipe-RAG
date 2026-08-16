@@ -1,32 +1,31 @@
 from ..retrieval.dense.retriever import Retriever, RetrievalResult
 from ..retrieval.dense.encoder import Encoder
+from ..retrieval.dense.indexer import Indexer
 from ..generation.prompt_builder import PromptBuilder
 from ..generation.generator import Generator
 from transformers import AutoTokenizer
-from ..core.snapshot import Snapshot, snapshot_retriever_indexer, dense_accepts_for
+from ..core.snapshot import Snapshot
 
-# TODO: Update for hybrid strategy
-class RAGPipeline:
+
+class DensePipeline:
     def __init__(self, snapshot: Snapshot):
-        self.snapshot = snapshot
-
-        # read config and get strategy
+        assert self._correct_strategy, "Invalide snapshot. DensePipeline requires the dense strategy"
         
-        accepts = dense_accepts_for(snapshot)
         encoder = Encoder(
-            snapshot.base_config["encoder"]["model_id"],
-            snapshot.base_config["encoder"]["batch_size"],
-            snapshot.base_config["encoder"]["normalize_embeddings"],
-            accepts=accepts,
+            model_id=snapshot.base_config["encoder"]["model_id"],
+            batch_size=snapshot.base_config["encoder"]["batch_size"],
+            normalize_embeddings=snapshot.base_config["encoder"]["normalize_embeddings"],
         )
-        indexer = snapshot_retriever_indexer(snapshot, accepts=accepts)
+        indexer = Indexer(
+            index_type=snapshot.base_config["indexer"]["type"],
+            dimension=snapshot.base_config["indexer"]["dimension"]
+        )
         self.retriever = Retriever(
-            snapshot.chunk_sets,
-            encoder,
-            indexer,
-            snapshot.base_config["retriever"]["top_k"],
-            snapshot.base_config["retriever"]["score_threshold"],
-            accepts=accepts,
+            chunk_sets=snapshot.chunk_sets,
+            encoder=encoder,
+            indexer=indexer,
+            top_k=snapshot.base_config["retriever"]["top_k"],
+            score_threshold=snapshot.base_config["retriever"]["score_threshold"]
         )
         self.prompt_builder = PromptBuilder(
             tokenizer=AutoTokenizer.from_pretrained(snapshot.base_config["generator"]["model_id"]),
@@ -41,6 +40,13 @@ class RAGPipeline:
             snapshot.base_config["generator"]["return_tensors"],
             snapshot.base_config["generator"]["adapter_path"]
         )
+
+
+    def _correct_strategy(self, snapshot: Snapshot) -> bool:
+        if snapshot.strategy != "dense":
+            return False
+        return True
+
 
     def query(self, query: str, k: int = 3):
         """Full RAG query: retrieve + generate"""
@@ -57,6 +63,7 @@ class RAGPipeline:
             "answer": answer,
             "prompt_used": prompt
         }
+
 
     def debug_query(self, query: str, k: int = 3) -> tuple[list[RetrievalResult], str, str]:
         """ Query used for debugging purposes, returns retrieved results, query, and prompt used"""

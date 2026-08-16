@@ -1,10 +1,10 @@
 from src.rag.core.snapshot import load_snapshot
-from src.rag.pipeline.rag_pipeline import RAGPipeline
+from rag.pipeline.dense_pipeline import DensePipeline
 
 def run():
     # load snapshot
     snapshot = load_snapshot("snapshots/latest")
-    rag = RAGPipeline(snapshot)
+    rag = DensePipeline(snapshot)
     return rag
 
 if __name__ == "__main__":

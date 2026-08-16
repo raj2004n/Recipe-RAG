@@ -167,7 +167,7 @@ def _format_whole_recipe(recipe: Recipe) -> str:
     lines.append(f"Recipe Name: {recipe.recipe_name}")
 
     # sevings
-    servings = recipe.get("servings", 1)
+    servings = recipe.servings
     if servings:
         lines.append(f"Servings: {servings}")
 
