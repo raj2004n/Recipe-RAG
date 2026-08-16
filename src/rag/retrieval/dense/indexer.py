@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Callable
-from .encoder import EncodedChunk
+from .encoder import EncodedChunkSet
 
 @dataclass
 class IndexedChunkSet:
@@ -35,13 +35,10 @@ class Indexer:
         ids = np.asarray(ids, dtype=np.int64)
         index.add_with_ids(vectors, ids)
 
-    def index_embeddings(self, encoded_chunks_sets: list[EncodedChunk]) -> list[IndexedChunkSet]:
+    def index_embeddings(self, encoded_chunks_sets: list[EncodedChunkSet]) -> list[IndexedChunkSet]:
         """ Assign ids to the embeddings. """
-        # filter sets
-        selected = [s for s in encoded_chunks_sets if self.accepts(s)]
-
         indexed_chunk_sets: list[IndexedChunkSet] = []
-        for encoded_chunks_set in selected:
+        for encoded_chunks_set in encoded_chunks_sets:
             vectors = np.asarray(
                 [chunk.vector for chunk in encoded_chunks_set.encoded_chunks],
                 dtype="float32"
@@ -113,38 +110,3 @@ class Indexer:
                 out_chunk_ids[q, i] = chunk_id
 
         return out_scores, out_chunk_ids
-
-    # TODO: legacy single-set path — the build pipeline now writes per-set
-    # indexes via save_indexed_chunk_sets. These stay for backward compat.
-    def save(self, path: str):
-        """ Save the index to disk. """
-        if not self.indexed_sets:
-            raise RuntimeError("No indexed sets to save.")
-        # If there's only one set, persist in the legacy single-file format.
-        if len(self.indexed_sets) == 1:
-            indexed = self.indexed_sets[0]
-            faiss.write_index(indexed.index, path)
-            np.save(f"{path}.mapping.npy", indexed.id_mapping, allow_pickle=True)
-            return
-
-        raise RuntimeError(
-            "save() only supports a single indexed set; multi-set builds use "
-            "save_indexed_chunk_sets in core.snapshot instead."
-        )
-
-    @classmethod
-    def load(cls, path: str, index_type: str, dimension: int) -> "Indexer":
-        """ Load a single-set index from disk (legacy format). """
-        indexer = cls(index_type, dimension)
-        index = faiss.read_index(path)
-        id_mapping = np.load(
-            f"{path}.mapping.npy",
-            allow_pickle=True,
-        ).item()
-
-        # wrap in a single IndexedChunkSet named after the file.
-        name = Path(path).stem
-        indexer.indexed_sets = [
-            IndexedChunkSet(name=name, index=index, id_mapping=id_mapping)
-        ]
-        return indexer
