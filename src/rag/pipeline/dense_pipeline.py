@@ -19,16 +19,17 @@ class DensePipeline:
 
         indexer = Indexer(
             index_type=snapshot.base_config["indexer"]["type"],
-            dimension=snapshot.base_config["indexer"]["dimension"]
+            dimension=snapshot.base_config["indexer"]["dimension"],
+            score_threshold=snapshot.base_config["retriever"]["score_threshold"],
         )
+        # IndexedChunkSet.chunks was populated by load_snapshot, so the
+        # indexer has everything it needs to resolve hits.
         indexer.set_indexed_sets(snapshot.transformed_chunk_sets)
 
         self.retriever = Retriever(
-            chunk_sets=snapshot.chunk_sets,
             encoder=encoder,
             indexer=indexer,
             top_k=snapshot.base_config["retriever"]["top_k"],
-            score_threshold=snapshot.base_config["retriever"]["score_threshold"]
         )
 
         self.prompt_builder = PromptBuilder(

@@ -1,6 +1,5 @@
 from sentence_transformers import SentenceTransformer
 from dataclasses import dataclass
-from typing import Callable
 from ..chunker import Chunk, ChunkSet
 import numpy as np
 
@@ -10,6 +9,9 @@ class EncodedChunk:
     text: str
     recipe_id: int
     chunk_id: int
+    # Carried from Chunk so the indexer can rebuild a full Chunk on the
+    # other side without needing to re-look-up the source chunk.
+    chunk_type: str = ""
 
     @classmethod
     def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
@@ -17,7 +19,8 @@ class EncodedChunk:
             vector=vector,
             text=chunk.text,
             recipe_id=chunk.recipe_id,
-            chunk_id=chunk.chunk_id
+            chunk_id=chunk.chunk_id,
+            chunk_type=chunk.chunk_type,
         )
 
 @dataclass

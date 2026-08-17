@@ -1,24 +1,38 @@
 import faiss
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .encoder import EncodedChunkSet
+from ..chunker import Chunk
+
+
+# a FAISS id (chunk_id) maps back to its Chunk, so callers can resolve a
+# hit to the underlying object without the indexer leaking ids
+ChunkById = dict[int, Chunk]
 
 
 @dataclass
 class IndexedChunkSet:
     name: str
     index: faiss.Index
+    chunks: ChunkById = field(default_factory=dict)
+    # chunks is populated by index_embeddings (from EncodedChunk.chunk) or by
+    # set_indexed_sets (from a snapshot's chunks.json) 
+    # required for search() to resolve hits back to Chunks
 
     
 class Indexer:
     def __init__(
         self,
         index_type: str,
-        dimension: int
+        dimension: int,
+        score_threshold: float | None = None,
     ):
         self.index_type = index_type
         self.dimension = dimension
+        # Applied in every search() call. None disables the cutoff.
+        self.score_threshold = score_threshold
         self.indexed_sets: list[IndexedChunkSet] = []
+
 
     def _create_index(self) -> faiss.Index:
         """ Create a new index of the specified type. """
@@ -26,6 +40,7 @@ class Indexer:
             return faiss.IndexIDMap(faiss.IndexFlatIP(self.dimension))
 
         raise ValueError(f"Unsupported index type: {self.index_type}")
+
 
     def _add(self, index: faiss.Index, vectors: np.ndarray, ids: np.ndarray):
         """ Add vectors to the index. """
@@ -35,7 +50,24 @@ class Indexer:
         index.add_with_ids(vectors, ids)
 
 
-    def set_indexed_sets(self, indexed_sets: list[IndexedChunkSet]):
+    def set_indexed_sets(
+        self,
+        indexed_sets: list[IndexedChunkSet],
+        chunks_by_set_name: dict[str, ChunkById] | None = None,
+    ):
+        """ Populate indexed_sets from pre-built indices (e.g. loaded from a snapshot).
+
+        Args:
+            indexed_sets: pre-built indices, one per chunk set.
+            chunks_by_set_name: mapping of chunk-set name -> chunk_id -> Chunk.
+                Used to attach the right chunks to each IndexedChunkSet so
+                search() can resolve hits. Required for search() to work;
+                omitted only when the caller doesn't intend to search.
+        """
+        if chunks_by_set_name is not None:
+            for indexed in indexed_sets:
+                indexed.chunks = chunks_by_set_name.get(indexed.name, {})
+
         self.indexed_sets = indexed_sets
 
 
@@ -60,10 +92,23 @@ class Indexer:
             index = self._create_index()
             self._add(index, vectors, chunk_ids)
 
+            # attach the source chunks so search() can resolve FAISS ids
+            # back to a Chunk without anyone else holding a parallel dict.
+            chunks_by_id: ChunkById = {
+                enc.chunk_id: Chunk(
+                    chunk_id=enc.chunk_id,
+                    recipe_id=enc.recipe_id,
+                    chunk_type=enc.chunk_type,
+                    text=enc.text,
+                )
+                for enc in chunks
+            }
+
             indexed_chunk_sets.append(
                 IndexedChunkSet(
                     name=encoded_chunk_set.name,
                     index=index,
+                    chunks=chunks_by_id,
                 )
             )
 
@@ -72,13 +117,25 @@ class Indexer:
         return indexed_chunk_sets
 
     
-    def search(self, query_vectors: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+    def search(
+        self,
+        query_vectors: np.ndarray,
+        k: int,
+    ) -> list[list[tuple[float, Chunk | None]]]:
         """ Search across all indexed sets and merge top-k results.
 
+        Args:
+            query_vectors: (n_queries, dim) or (dim,) dense query vectors.
+            k: maximum number of hits to return per query.
+
+        The indexer's score_threshold (set at construction) is applied after
+        merging. Results are sorted descending, so a miss means the rest are
+        also missed.
+
         Returns:
-            scores: np.ndarray of shape (n_queries, k) with similarity scores.
-            chunk_ids: np.ndarray of shape (n_queries, k) with original chunk ids
-                       (-1 where no result was returned).
+            A list of length n_queries; each inner list is the top-k hits for
+            that query as (score, Chunk) tuples. Chunk is None when a hit's
+            FAISS id doesn't resolve to a known chunk.
         """
         if not self.indexed_sets:
             raise RuntimeError(
@@ -96,42 +153,31 @@ class Indexer:
 
         n_queries = query_vectors.shape[0]
 
-        # collect (score, chunk_id) from every indexed set, then keep top k per query
-        per_query_results: list[list[tuple[float, int]]] = [
+        # collect (score, chunk) from every indexed set, then keep top k per query
+        per_query_results: list[list[tuple[float, Chunk | None]]] = [
             [] for _ in range(n_queries)
         ]
 
         for indexed in self.indexed_sets:
-            scores, chunk_ids = indexed.index.search(
+            scores, faiss_ids = indexed.index.search(
                 query_vectors,
                 k,
             )
 
             for q in range(n_queries):
-                for score, chunk_id in zip(
+                for score, faiss_id in zip(
                     scores[q],
-                    chunk_ids[q],
+                    faiss_ids[q],
                 ):
-                    if chunk_id == -1:
+                    if faiss_id == -1:
                         continue
 
+                    chunk = indexed.chunks.get(int(faiss_id))
                     per_query_results[q].append(
-                        (float(score), int(chunk_id))
+                        (float(score), chunk)
                     )
 
-        # sort by score desc, take top-k, use -1 as the placeholder for missing slots
-        out_scores = np.full(
-            (n_queries, k),
-            -np.inf,
-            dtype="float32",
-        )
-
-        out_chunk_ids = np.full(
-            (n_queries, k),
-            -1,
-            dtype=np.int64,
-        )
-
+        ranked_results: list[list[tuple[float, Chunk | None]]] = []
         for q in range(n_queries):
             ranked = sorted(
                 per_query_results[q],
@@ -139,8 +185,15 @@ class Indexer:
                 reverse=True,
             )[:k]
 
-            for i, (score, chunk_id) in enumerate(ranked):
-                out_scores[q, i] = score
-                out_chunk_ids[q, i] = chunk_id
+            if self.score_threshold is not None:
+                # results are sorted descending, so truncate at the first miss
+                truncated = []
+                for score, chunk in ranked:
+                    if score < self.score_threshold:
+                        break
+                    truncated.append((score, chunk))
+                ranked = truncated
 
-        return out_scores, out_chunk_ids
+            ranked_results.append(ranked)
+
+        return ranked_results

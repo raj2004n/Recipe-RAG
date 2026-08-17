@@ -1,14 +1,12 @@
 from pathlib import Path
-from typing import Callable
 from dataclasses import dataclass, asdict
 
 from .utils import load_config
-from ..retrieval.dense.encoder import Encoder
-from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import Chunk, ChunkSet
-from ..retrieval.dense.retriever import Retriever
 from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
-from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
+from ..retrieval.dense.indexer import IndexedChunkSet
+from ..retrieval.sparse.bm25indexer import BM25IndexedChunkSet
+from ..retrieval.sparse.tokenizer import TokenizedChunk, TokenizedChunkSet
 
 import os
 import time
@@ -74,6 +72,13 @@ def save_encoded_chunk_sets(encoded_chunk_sets: list[EncodedChunkSet], save_path
         json.dump([asdict(cs) for cs in encoded_chunk_sets], f, indent=2)
 
 
+def save_tokenized_chunk_sets(tokenized_chunk_sets: list[TokenizedChunkSet], save_path: str):
+    os.makedirs(save_path, exist_ok=True)
+
+    with open(os.path.join(save_path, "tokenized_chunk_sets.json"), "w",) as f:
+        json.dump([asdict(cs) for cs in tokenized_chunk_sets], f, indent=2)
+
+
 def load_encoded_chunk_sets(save_path: str) -> list[EncodedChunkSet]:
     with open(os.path.join(save_path, "encoded_chunk_sets.json"), "r") as f:
         data = json.load(f)
@@ -88,6 +93,35 @@ def load_encoded_chunk_sets(save_path: str) -> list[EncodedChunkSet]:
         )
         for chunk_set in data
     ]
+
+
+def load_tokenized_chunk_sets(save_path: str) -> list[TokenizedChunkSet]:
+    with open(os.path.join(save_path, "tokenized_chunk_sets.json"), "r") as f:
+        data = json.load(f)
+
+    return [
+        TokenizedChunkSet(
+            name=chunk_set["name"],
+            tokenized_chunks=[
+                TokenizedChunk(
+                    chunk=Chunk(**tokenized_chunk["chunk"]),
+                    tokens=tokenized_chunk["tokens"],
+                )
+                for tokenized_chunk in chunk_set["tokenized_chunks"]
+            ],
+        )
+        for chunk_set in data
+    ]
+
+
+#TODO: write a function to save tokenized chunk sets
+# then load
+# then test
+# similar logic for indexed
+# then that's it. It won't take long. By the end of the day I want to be looking at docker
+# to get ahead. And then once that is sorted, i can do some testing
+# different architecture
+# don't bother with ui. Unless time in future.
 
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
@@ -113,8 +147,28 @@ def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path
         json.dump(manifest, f, indent=2)
 
 
+def save_bm25_index_chunk_sets(bm25_index_chunk_sets: list[BM25IndexedChunkSet], save_path: str):
+    # first make sure that the bm25 indexed chunk set makes sense
+    pass
 
-def load_indexed_chunk_sets(save_path: str) -> list[IndexedChunkSet]:
+
+def load_indexed_chunk_sets(
+    save_path: str,
+    chunks_save_path: str | None = None,
+) -> tuple[list[IndexedChunkSet], dict[str, dict[int, "Chunk"]]]:
+    """ Load indexed chunk sets from a snapshot.
+
+    Args:
+        save_path: directory holding the index manifest and .faiss files.
+        chunks_save_path: directory holding chunk_sets.json. If provided,
+            also load chunks and group them by set name so the caller can
+            attach them to the returned IndexedChunkSets.
+
+    Returns:
+        (indexed_chunk_sets, chunks_by_set_name) where chunks_by_set_name
+        is keyed by chunk-set name -> chunk_id -> Chunk. Empty if
+        chunks_save_path is None.
+    """
     save_path = Path(save_path)
 
     manifest_path = save_path / "indexed_chunk_sets.json"
@@ -141,7 +195,13 @@ def load_indexed_chunk_sets(save_path: str) -> list[IndexedChunkSet]:
             )
         )
 
-    return indexed_chunk_sets
+    chunks_by_set_name: dict[str, dict[int, Chunk]] = {}
+    if chunks_save_path is not None:
+        chunk_sets = load_chunk_sets(chunks_save_path)
+        for cs in chunk_sets:
+            chunks_by_set_name[cs.name] = {c.chunk_id: c for c in cs.chunks}
+
+    return indexed_chunk_sets, chunks_by_set_name
 
 
 def save_config(save_path: str, config_path: str):
@@ -245,7 +305,13 @@ def load_snapshot(path: str) -> Snapshot:
 
     # load chunks
     chunk_sets = load_chunk_sets(path_obj / "chunks")
-    indexed_chunk_sets = load_indexed_chunk_sets(path_obj / "index")
+    indexed_chunk_sets, chunks_by_set_name = load_indexed_chunk_sets(
+        path_obj / "index",
+        chunks_save_path=path_obj / "chunks",
+    )
+    # attach chunks to their indexed sets so the indexer can resolve hits
+    for indexed in indexed_chunk_sets:
+        indexed.chunks = chunks_by_set_name.get(indexed.name, {})
 
     # load metadata
     with open(path_obj / "metadata.json") as f:
