@@ -19,7 +19,7 @@ def run(model_id: str, input_tokens: int) -> None:
     # load chunks
     snapshot = load_snapshot("snapshots/latest")
     # IndexedChunkSet.chunks holds the same Chunk objects that used to be on
-    # snapshot.chunk_sets — flatten them across all indexed sets.
+    # snapshot.chunk_sets - flatten them across all indexed sets.
     chunks = [
         c
         for indexed in snapshot.indexed_chunk_sets

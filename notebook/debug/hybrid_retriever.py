@@ -5,7 +5,7 @@ Script to test hybrid strategy.
 import json 
 from src.rag.core.utils import load_config
 from src.rag.core.snapshot import load_chunk_sets
-from src.rag.strategy.base import BaseStrategy
+from src.rag.builder.base import BaseBuilder
 
 BASE_CONFIG = load_config("configs/base_config.yaml")
 PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
@@ -32,7 +32,7 @@ def set_strategy() -> None:
     # get strategy from config
     strategy_name = BASE_CONFIG["rag"]["strategy"]
 
-    BaseStrategy.set_strategy(
+    BaseBuilder.set_strategy(
         strategy_name=strategy_name,
         metadata_path=TEST_METADATA
     )
@@ -40,26 +40,26 @@ def set_strategy() -> None:
 
 # works
 def chunk() -> None:
-    strategy = BaseStrategy.from_metadata(TEST_METADATA)
+    strategy = BaseBuilder.from_metadata(TEST_METADATA)
     strategy.chunk()
 
 
 # works
 def encode_chunk() -> None:
-    strategy = BaseStrategy.from_metadata(TEST_METADATA)
+    strategy = BaseBuilder.from_metadata(TEST_METADATA)
     strategy.transform()
 
 
 # works 
 def index_embeddings()-> None:
-    strategy = BaseStrategy.from_metadata(TEST_METADATA)
+    strategy = BaseBuilder.from_metadata(TEST_METADATA)
     strategy.index()
     
 
 # works
 def finalise_strategy() -> None:
-    strategy = BaseStrategy.from_metadata(TEST_METADATA)
-    strategy.finalise_build()
+    strategy = BaseBuilder.from_metadata(TEST_METADATA)
+    strategy.seal_snapshot()
 
 
 # ====== other tests =========
@@ -83,10 +83,10 @@ def test_load_index():
     print(bm25_indexed_chunk_sets[0])
 
 if __name__ == "__main__":
-    #set_strategy()
-    #chunk()
-    #encode_chunk()
-    #index_embeddings()
+    set_strategy()
+    chunk()
+    encode_chunk()
+    index_embeddings()
     finalise_strategy()
 
     #test_load_index()
