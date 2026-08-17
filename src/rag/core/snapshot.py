@@ -34,10 +34,8 @@ class Snapshot:
     snapshot_id: str | None
     created_at: str | None
     strategy: str
-    chunk_sets: list[ChunkSet]
-    transformed_chunk_sets: list[IndexedChunkSet] 
-    # configs for initialising retriever components for inference, in pipeline
-    base_config: dict[str, any]
+    indexed_chunk_sets: list[IndexedChunkSet] # carries chunks in IndexedChunkSet.chunks
+    base_config: dict[str, any] # configs for initialising retriever components for inference, in pipeline
     prompts_config: dict[str, any]
 
 SAVE_PATH = os.path.join("snapshots/building")
@@ -112,16 +110,6 @@ def load_tokenized_chunk_sets(save_path: str) -> list[TokenizedChunkSet]:
         )
         for chunk_set in data
     ]
-
-
-#TODO: write a function to save tokenized chunk sets
-# then load
-# then test
-# similar logic for indexed
-# then that's it. It won't take long. By the end of the day I want to be looking at docker
-# to get ahead. And then once that is sorted, i can do some testing
-# different architecture
-# don't bother with ui. Unless time in future.
 
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
@@ -303,13 +291,12 @@ def load_snapshot(path: str) -> Snapshot:
     with open(path_obj / "configs" / "prompts_config.yaml") as f:
         prompts_config = yaml.safe_load(f)
 
-    # load chunks
-    chunk_sets = load_chunk_sets(path_obj / "chunks")
+    # load chunks (used to attach Chunks to IndexedChunkSets so the
+    # indexer can resolve hits at query time)
     indexed_chunk_sets, chunks_by_set_name = load_indexed_chunk_sets(
         path_obj / "index",
         chunks_save_path=path_obj / "chunks",
     )
-    # attach chunks to their indexed sets so the indexer can resolve hits
     for indexed in indexed_chunk_sets:
         indexed.chunks = chunks_by_set_name.get(indexed.name, {})
 
@@ -321,8 +308,7 @@ def load_snapshot(path: str) -> Snapshot:
         snapshot_id=metadata["snapshot_id"],
         created_at=metadata["created_at"],
         strategy=metadata["strategy"],
-        chunk_sets=chunk_sets,
-        transformed_chunk_sets=indexed_chunk_sets,
+        indexed_chunk_sets=indexed_chunk_sets,
         base_config=base_config,
         prompts_config=prompts_config,
     )
