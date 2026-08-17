@@ -9,6 +9,9 @@ from ..data.preprocessor import Recipe
 
 @dataclass
 class Chunk:
+    # Globally unique within a snapshot. Used as the FAISS id for dense
+    # indices, so collisions across chunk sets would silently resolve a
+    # hit to the wrong chunk.
     chunk_id: int
     recipe_id: int
     chunk_type: str
@@ -29,21 +32,21 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
     chunk_id = count()
 
     if strategy == "whole_recipe":
-        return [ChunkSet(
+        result = [ChunkSet(
             name="whole_recipe",
             chunks=_chunk_whole(recipes, chunk_id)
         )]
-    
+
     elif strategy == "instructions_ingredients":
-        return [ChunkSet(
+        result = [ChunkSet(
             name="instructions_ingredients",
             chunks=_chunk_it_ing(recipes, chunk_id)
         )]
-    
+
     elif strategy == "hybrid":
         sprase_chunks = _chunk_it_ing(recipes, chunk_id)
         dense_chunks = _chunk_info(recipes, chunk_id)
-        return [
+        result = [
             ChunkSet(
                 name="sparse",
                 chunks=sprase_chunks
@@ -53,6 +56,18 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
                 chunks=dense_chunks
             )
         ]
+
+    # Enforce the Chunk.chunk_id global-uniqueness contract. FAISS uses
+    # chunk_id as the index id, so a collision would silently resolve a hit
+    # to the wrong chunk in dense/retriever.py.
+    all_ids = [c.chunk_id for cs in result for c in cs.chunks]
+    if len(set(all_ids)) != len(all_ids):
+        raise ValueError(
+            "chunk_recipes produced duplicate chunk_ids — "
+            "Chunk.chunk_id must be globally unique within a snapshot."
+        )
+
+    return result
 
     
 def _chunk_whole(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
