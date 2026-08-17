@@ -32,7 +32,7 @@ But for inference, the retriever is loaded in one step using load_snapshot.
 class Snapshot:
     snapshot_id: str | None
     created_at: str | None
-    strategy: str
+    retrieval_strategy: str
     indexed_chunk_sets: list[IndexedChunkSet] # carries chunks in IndexedChunkSet.chunks
     bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] # carries chunks in BM25IndexedChunkSet.chunks
     base_config: dict[str, any] # configs for initialising retriever components for inference, in pipeline
@@ -139,7 +139,7 @@ def save_bm25_index_chunk_sets(bm25_index_chunk_sets: list[BM25IndexedChunkSet],
     """ Save BM25-indexed chunk sets.
 
     The BM25 index is reconstructed on load from the serialized tokenized chunks,
-    so no raw index file is needed — only the manifest and tokenized data.
+    so no raw index file is needed - only the manifest and tokenized data.
     """
     save_path = Path(save_path)
     save_path.mkdir(parents=True, exist_ok=True)
@@ -407,7 +407,7 @@ def load_snapshot(path: str) -> Snapshot:
     return Snapshot(
         snapshot_id=metadata["snapshot_id"],
         created_at=metadata["created_at"],
-        strategy=strategy,
+        retrieval_strategy=strategy,
         indexed_chunk_sets=indexed_chunk_sets,
         bm25_indexed_chunk_sets=bm25_indexed_chunk_sets,
         base_config=base_config,

@@ -63,7 +63,7 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
     all_ids = [c.chunk_id for cs in result for c in cs.chunks]
     if len(set(all_ids)) != len(all_ids):
         raise ValueError(
-            "chunk_recipes produced duplicate chunk_ids — "
+            "chunk_recipes produced duplicate chunk_ids - "
             "Chunk.chunk_id must be globally unique within a snapshot."
         )
 

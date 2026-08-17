@@ -139,7 +139,7 @@ class Indexer:
         """
         if not self.indexed_sets:
             raise RuntimeError(
-                "Indexer has no indexed sets — "
+                "Indexer has no indexed sets - "
                 "call index_embeddings() first."
             )
 

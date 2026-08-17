@@ -9,6 +9,7 @@ class BM25Retriever:
         self.tokenizer = tokenizer
 
     def retrieve(self, query: str, k: int = 10) -> list[RetrievalResult]:
+        """Return the top-k BM25 hits for the query."""
         query_tokens = self.tokenizer.tokenize(query)
 
         scores = self.indexed_chunk_set.index.get_scores(query_tokens)

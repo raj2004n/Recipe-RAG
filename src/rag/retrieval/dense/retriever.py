@@ -22,7 +22,7 @@ class Retriever:
         Args:
             encoder: Encoder used to encode the query.
             indexer: Indexer used to search for nearest neighbors. The
-                     indexer owns chunk resolution — the retriever just
+                     indexer owns chunk resolution - the retriever just
                      consumes its hits.
             top_k: default number of results to return.
 
@@ -36,6 +36,7 @@ class Retriever:
 
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievalResult]:
+        """Return the top-k dense hits for the query."""
         top_k = top_k or self.top_k
 
         # encode query into dense vector

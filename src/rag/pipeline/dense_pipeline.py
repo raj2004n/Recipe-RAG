@@ -49,7 +49,7 @@ class DensePipeline:
 
 
     def _correct_strategy(self, snapshot: Snapshot) -> bool:
-        if snapshot.strategy != "dense":
+        if snapshot.retrieval_strategy != "dense":
             return False
         return True
 
