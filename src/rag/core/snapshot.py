@@ -15,7 +15,6 @@ import faiss
 import json
 import yaml
 import shutil
-import numpy as np
 
 """ 
 Contains snapshot save logic. 
@@ -35,6 +34,7 @@ class Snapshot:
     created_at: str | None
     strategy: str
     indexed_chunk_sets: list[IndexedChunkSet] # carries chunks in IndexedChunkSet.chunks
+    bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] # carries chunks in BM25IndexedChunkSet.chunks
     base_config: dict[str, any] # configs for initialising retriever components for inference, in pipeline
     prompts_config: dict[str, any]
 
@@ -136,8 +136,95 @@ def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path
 
 
 def save_bm25_index_chunk_sets(bm25_index_chunk_sets: list[BM25IndexedChunkSet], save_path: str):
-    # first make sure that the bm25 indexed chunk set makes sense
-    pass
+    """ Save BM25-indexed chunk sets.
+
+    The BM25 index is reconstructed on load from the serialized tokenized chunks,
+    so no raw index file is needed — only the manifest and tokenized data.
+    """
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    manifest = []
+
+    for chunk_set in bm25_index_chunk_sets:
+        # store tokenized chunks inline in manifest - BM25 index is rebuilt on load
+        manifest.append({
+            "name": chunk_set.name,
+            "tokenized_chunks": [
+                {
+                    "chunk": asdict(tc.chunk),
+                    "tokens": tc.tokens,
+                }
+                for tc in chunk_set.tokenized_chunks
+            ],
+        })
+
+    with open(save_path / "bm25_index_chunk_sets.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+
+
+def load_bm25_index_chunk_sets(
+    save_path: str,
+    chunks_save_path: str | None = None,
+) -> tuple[list[BM25IndexedChunkSet], dict[str, dict[int, "Chunk"]]]:
+    """ Load BM25-indexed chunk sets.
+
+    Args:
+        save_path: directory holding the bm25_index_chunk_sets.json manifest.
+        chunks_save_path: directory holding chunk_sets.json. If provided,
+            also load chunks and group them by set name so the caller can
+            attach them to the returned BM25IndexedChunkSets.
+
+    Returns:
+        (bm25_index_chunk_sets, chunks_by_set_name) where chunks_by_set_name
+        is keyed by chunk-set name -> chunk_id -> Chunk. Empty if
+        chunks_save_path is None.
+    """
+    from rank_bm25 import BM25Okapi
+
+    save_path = Path(save_path)
+    manifest_path = save_path / "bm25_index_chunk_sets.json"
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"BM25 index manifest not found at {manifest_path}.")
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    bm25_index_chunk_sets = []
+
+    for entry in manifest:
+        tokenized_chunks = [
+            TokenizedChunk(
+                chunk=Chunk(**tc["chunk"]),
+                tokens=tc["tokens"],
+            )
+            for tc in entry["tokenized_chunks"]
+        ]
+
+        chunks_by_id: dict[int, Chunk] = {
+            tc.chunk.chunk_id: tc.chunk for tc in tokenized_chunks
+        }
+
+        tokenized_documents = [tc.tokens for tc in tokenized_chunks]
+        bm25 = BM25Okapi(tokenized_documents)
+
+        bm25_index_chunk_sets.append(
+            BM25IndexedChunkSet(
+                name=entry["name"],
+                index=bm25,
+                tokenized_chunks=tokenized_chunks,
+                chunks=chunks_by_id,
+            )
+        )
+
+    chunks_by_set_name: dict[str, dict[int, Chunk]] = {}
+    if chunks_save_path is not None:
+        chunk_sets = load_chunk_sets(chunks_save_path)
+        for cs in chunk_sets:
+            chunks_by_set_name[cs.name] = {c.chunk_id: c for c in cs.chunks}
+
+    return bm25_index_chunk_sets, chunks_by_set_name
 
 
 def load_indexed_chunk_sets(
@@ -291,24 +378,38 @@ def load_snapshot(path: str) -> Snapshot:
     with open(path_obj / "configs" / "prompts_config.yaml") as f:
         prompts_config = yaml.safe_load(f)
 
-    # load chunks (used to attach Chunks to IndexedChunkSets so the
-    # indexer can resolve hits at query time)
-    indexed_chunk_sets, chunks_by_set_name = load_indexed_chunk_sets(
-        path_obj / "index",
-        chunks_save_path=path_obj / "chunks",
-    )
-    for indexed in indexed_chunk_sets:
-        indexed.chunks = chunks_by_set_name.get(indexed.name, {})
-
-    # load metadata
+    # load metadata first to determine strategy
     with open(path_obj / "metadata.json") as f:
         metadata = json.load(f)
+
+    strategy = metadata["strategy"]
+    indexed_chunk_sets: list[IndexedChunkSet] = []
+    bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] = []
+
+    # dense strategies include "dense" or "hybrid"
+    if "dense" in strategy or strategy == "hybrid":
+        indexed_chunk_sets, chunks_by_set_name = load_indexed_chunk_sets(
+            path_obj / "index",
+            chunks_save_path=path_obj / "chunks",
+        )
+        for indexed in indexed_chunk_sets:
+            indexed.chunks = chunks_by_set_name.get(indexed.name, {})
+
+    # sparse/BM25 strategies include "sparse", "bm25", or "hybrid"
+    if strategy == "hybrid":
+        bm25_indexed_chunk_sets, bm25_chunks_by_set_name = load_bm25_index_chunk_sets(
+            path_obj / "index",
+            chunks_save_path=path_obj / "chunks",
+        )
+        for indexed in bm25_indexed_chunk_sets:
+            indexed.chunks = bm25_chunks_by_set_name.get(indexed.name, {})
 
     return Snapshot(
         snapshot_id=metadata["snapshot_id"],
         created_at=metadata["created_at"],
-        strategy=metadata["strategy"],
+        strategy=strategy,
         indexed_chunk_sets=indexed_chunk_sets,
+        bm25_indexed_chunk_sets=bm25_indexed_chunk_sets,
         base_config=base_config,
         prompts_config=prompts_config,
     )
