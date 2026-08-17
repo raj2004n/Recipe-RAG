@@ -24,7 +24,7 @@ class DensePipeline:
         )
         # IndexedChunkSet.chunks was populated by load_snapshot, so the
         # indexer has everything it needs to resolve hits.
-        indexer.set_indexed_sets(snapshot.transformed_chunk_sets)
+        indexer.set_indexed_sets(snapshot.indexed_chunk_sets)
 
         self.retriever = Retriever(
             encoder=encoder,
