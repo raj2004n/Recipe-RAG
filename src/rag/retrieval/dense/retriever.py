@@ -64,8 +64,9 @@ class Retriever:
             if chunk_id is None or chunk_id == -1:
                 continue
 
-            if self.score_threshold and score < self.score_threshold:
-                continue
+            # results are sorted descending, so a miss means the rest also miss
+            if self.score_threshold is not None and score < self.score_threshold:
+                break
 
             # get chunk from dict
             chunk = self.chunks_dict.get(int(chunk_id))
@@ -78,8 +79,4 @@ class Retriever:
                     score=float(score),
                 )
             )
-
-            # break if enough results are found
-            if len(results) >= top_k:
-                break
         return results
