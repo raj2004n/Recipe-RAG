@@ -64,7 +64,7 @@ class BaseStrategy(ABC):
 
 
     @abstractmethod
-    def transform(self, chunk_sets):
+    def transform(self):
         pass
     # calling this transform to respect the naming conventions 
     # dense / sparse retriever encodes / tokenizes, so this 
