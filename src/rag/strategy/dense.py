@@ -60,7 +60,7 @@ class DenseStrategy(BaseStrategy):
 
 
     def index(self):
-        encoded_chunks_sets = load_encoded_chunk_sets(
+        encoded_chunk_sets = load_encoded_chunk_sets(
             save_path=TEST_PATH["encoded_chunks"]
         )
 
@@ -69,7 +69,7 @@ class DenseStrategy(BaseStrategy):
             dimension=INDEXER_CONFIG["dimension"]
         )
     
-        indexed_chunks_sets = indexer.index_embeddings(encoded_chunks_sets)
+        indexed_chunks_sets = indexer.index_embeddings(encoded_chunk_sets)
     
         save_indexed_chunk_sets(
             indexed_chunk_sets=indexed_chunks_sets,
