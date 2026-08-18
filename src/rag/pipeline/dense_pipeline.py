@@ -1,3 +1,7 @@
+"""
+Pipeline classes are used to load the model snapshot and run inference.
+"""
+
 from ..retrieval.dense.retriever import Retriever, RetrievalResult
 from ..retrieval.dense.encoder import Encoder
 from ..retrieval.dense.indexer import Indexer
@@ -8,9 +12,16 @@ from ..core.snapshot import Snapshot
 
 
 class DensePipeline:
+    ALLOWED_STRATEGIES = ("dense",)
+
     def __init__(self, snapshot: Snapshot):
-        assert self._correct_strategy, "Invalide snapshot. DensePipeline requires the dense strategy"
-        
+        if snapshot.retrieval_strategy not in self.ALLOWED_STRATEGIES:
+            raise ValueError(
+                f"DensePipeline requires retrieval_strategy in "
+                f"{self.ALLOWED_STRATEGIES}, got "
+                f"{snapshot.retrieval_strategy!r}"
+            )
+
         encoder = Encoder(
             model_id=snapshot.base_config["encoder"]["model_id"],
             batch_size=snapshot.base_config["encoder"]["batch_size"],
@@ -46,12 +57,6 @@ class DensePipeline:
             snapshot.base_config["generator"]["return_tensors"],
             snapshot.base_config["generator"]["adapter_path"]
         )
-
-
-    def _correct_strategy(self, snapshot: Snapshot) -> bool:
-        if snapshot.retrieval_strategy != "dense":
-            return False
-        return True
 
 
     def query(self, query: str, k: int = 3):
