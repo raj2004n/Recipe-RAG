@@ -10,15 +10,20 @@ class Generator:
             max_new_tokens: int,
             truncation: bool,
             return_tensors: str,
-            adapter_path: str | None = None
+            adapter_path: str | None = None,
+            tokenizer: AutoTokenizer | None = None,
     ):
         self.max_input_tokens = max_input_tokens
         self.max_new_tokens = max_new_tokens
         self.truncation = truncation
         self.return_tensors = return_tensors
 
+        # pipeline laods a tokenizer for PromptBuilder, use if there
+        if tokenizer is None:
+            tokenizer = AutoTokenizer.from_pretrained(model_id)
+        self.tokenizer = tokenizer
+
         # load base model
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_id,
             dtype="auto",

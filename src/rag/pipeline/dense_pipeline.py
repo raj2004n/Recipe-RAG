@@ -46,8 +46,13 @@ class DensePipeline:
             top_k=snapshot.base_config["retriever"]["top_k"],
         )
 
+        # load the tokenizer once and share it with both PromptBuilder
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            snapshot.base_config["generator"]["model_id"]
+        )
+
         self.prompt_builder = PromptBuilder(
-            tokenizer=AutoTokenizer.from_pretrained(snapshot.base_config["generator"]["model_id"]),
+            tokenizer=self.tokenizer,
             max_context_tokens=snapshot.prompts_config["settings"]["max_context_tokens"],
             prompt_templates=snapshot.prompts_config["template"]
         )
@@ -66,6 +71,7 @@ class DensePipeline:
                 truncation=gen_cfg["truncation"],
                 return_tensors=gen_cfg["return_tensors"],
                 adapter_path=gen_cfg["adapter_path"],
+                tokenizer=self.tokenizer,
             )
         return self.generator
 
