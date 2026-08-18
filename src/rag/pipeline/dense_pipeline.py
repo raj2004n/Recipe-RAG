@@ -22,6 +22,9 @@ class DensePipeline:
                 f"{snapshot.retrieval_strategy!r}"
             )
 
+        # lets load_generator read generator config later
+        self._snapshot = snapshot
+
         encoder = Encoder(
             model_id=snapshot.base_config["encoder"]["model_id"],
             batch_size=snapshot.base_config["encoder"]["batch_size"],
@@ -49,42 +52,48 @@ class DensePipeline:
             prompt_templates=snapshot.prompts_config["template"]
         )
 
-        self.generator = Generator(
-            snapshot.base_config["generator"]["model_id"],
-            snapshot.base_config["generator"]["max_input_tokens"],
-            snapshot.base_config["generator"]["max_new_tokens"],
-            snapshot.base_config["generator"]["truncation"],
-            snapshot.base_config["generator"]["return_tensors"],
-            snapshot.base_config["generator"]["adapter_path"]
-        )
+        self.generator = None
+
+
+    def load_generator(self) -> Generator:
+        """Lazily construct and cache the Generator from snapshot config"""
+        if self.generator is None:
+            gen_cfg = self._snapshot.base_config["generator"]
+            self.generator = Generator(
+                model_id=gen_cfg["model_id"],
+                max_input_tokens=gen_cfg["max_input_tokens"],
+                max_new_tokens=gen_cfg["max_new_tokens"],
+                truncation=gen_cfg["truncation"],
+                return_tensors=gen_cfg["return_tensors"],
+                adapter_path=gen_cfg["adapter_path"],
+            )
+        return self.generator
 
 
     def query(self, query: str, k: int = 3):
         """Full RAG query: retrieve + generate"""
         results = self.retriever.retrieve(query, k)
-        
-        # format prompt with retrieved context
-        prompt = self.prompt_builder.build_prompt(query, retrieval_results=results)
-        
-        # generate answer
-        answer = self.generator.generate(prompt)
-        
-        # query, and prompt used are not used in this method
+
+        # build_prompt returns (system, user) for chat-template generation
+        system_prompt, user_prompt = self.prompt_builder.build_prompt(
+            query, retrieval_results=results
+        )
+
+        # generate answer (loads the model on first call, cached afterwards)
+        answer = self.load_generator().generate(system_prompt, user_prompt)
+
         return {
             "query": query,
             "answer": answer,
-            "prompt_used": prompt
+            "prompt_used": (system_prompt, user_prompt),
         }
 
 
-    def debug_query(self, query: str, k: int = 3) -> tuple[list[RetrievalResult], str, str]:
-        """ Query used for debugging purposes, returns retrieved results, query, and prompt used"""
+    def debug_query(self, query: str, k: int = 3) -> tuple[list[RetrievalResult], str, tuple[str, str]]:
         results = self.retriever.retrieve(query, k)
-        
-        # format prompt with retrieved context
-        prompt = self.prompt_builder.build_prompt(query, retrieval_results=results)
-        
-        # generate answer
-        #response = self.generator.generate(prompt)
-        response = ""
-        return results, response, prompt
+
+        prompts = self.prompt_builder.build_prompt(
+            query, retrieval_results=results
+        )
+
+        return results, "", prompts
