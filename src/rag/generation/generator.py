@@ -31,15 +31,12 @@ class Generator:
                 adapter_path
             )
         
-    def generate(self, prompt: str) -> str:
-        """ Generate recipe response from prompt """
-        # TODO: Fix prompt format
-        messages = [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+    def generate(self, system: str, user: str) -> str:
+        """Generate a response from a (system, user) prompt pair"""
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": user})
 
         text = self.tokenizer.apply_chat_template(
             messages,
