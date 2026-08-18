@@ -3,38 +3,104 @@ settings:
   max_context_tokens: 4000
 
 template:
-  generation: |
-    Use the RELEVANT RECIPES and USER QUERY to answer the question.
+  # each persona is designed for a specific objective. 
+  # e.g. suggest a recipe, generation a recipe, etc.
+  # under each persona, 'generate' produces the response and 'judge'
+  # is the promopt to evaluate it.
+  personas:
+    # Persona: suggest existing recipes that match the query (original objective).
+    suggestion:
+      generate:
+        system: |
+          Use the RELEVANT RECIPES and USER QUERY to answer the question.
+        user: |
+          RELEVANT RECIPES: {context}
 
-    RELEVANT RECIPES: {context}
+          USER QUERY: {query}
+      judge:
+        system: |
+          You are a judge for a recipe RAG model.
 
-    USER QUERY: {query}
+          Score the following:
+          1. Query relevance (0 - 2)
+          0 = irrelevant
+          1 = partially relevant
+          2 = relevant
 
-  judge: |
-    You are a judge for a recipe RAG model.
+          2. Faithfulness (0 - 2)
+          0 = irrelevant
+          1 = partially relevant
+          2 = relevant
 
-    User Query: {query}
+          Return JSON:
+          {{
+              "query_relevance": int,
+              "faithfulness": int
+          }}
+        user: |
+          User Query: {query}
 
-    Retrieved Recipe: 
-    Name: {recipe["name"]}
-    Ingredients: {ingredients}
-    Instructions: {recipe["instructions"]}
+          Retrieved Recipe:
+          Name: {recipe["name"]}
+          Ingredients: {ingredients}
+          Instructions: {recipe["instructions"]}
 
-    Response: {response}
+          Response: {response}
 
-    Score the following:
-    1. Query relevance (0 - 2)
-    0 = irrelevant
-    1 = partially relevant
-    2 = relevant
+    generation:
+      generate:
+        system: |
+          You are a recipe developer. Using the REFERENCE RECIPES as inspiration
+          for techniques, ingredient combinations, and proportions, create a NEW
+          recipe that satisfies the USER REQUEST. Do not reproduce an existing
+          recipe — adapt and combine ideas from the references to produce
+          something new that meets the request's requirements and constraints.
+        user: |
+          REFERENCE RECIPES:
+          {context}
 
-    2. Faithfulness (0 - 2)
-    0 = irrelevant
-    1 = partially relevant
-    2 = relevant
+          USER REQUEST: {query}
 
-    Return JSON:
-    {{
-        "query_relevance": int,
-        "faithfulness": int
-    }}
+          Generate a complete recipe: a name, ingredients with amounts, and
+          step-by-step instructions.
+      judge:
+        system: |
+          You are a judge for a recipe generation system. The system retrieves
+          reference recipes and generates a NEW recipe in response to a user
+          request. Score the generated recipe on the following dimensions:
+
+          1. Constraint satisfaction (0 - 2): Does the recipe satisfy the user's
+             explicit requirements and constraints (e.g. substitutions, excluded
+             ingredients)?
+             0 = violates a constraint
+             1 = partially satisfies
+             2 = fully satisfies
+
+          2. Query relevance (0 - 2): Is the recipe on-topic for the user's
+             request?
+             0 = irrelevant
+             1 = partially relevant
+             2 = relevant
+
+          3. Faithfulness (0 - 2): Is the recipe grounded in the reference
+             recipes (techniques, proportions, combinations) rather than
+             hallucinated?
+             0 = hallucinated
+             1 = partially grounded
+             2 = well grounded
+
+          Return JSON:
+          {{
+              "constraint_satisfaction": int,
+              "query_relevance": int,
+              "faithfulness": int
+          }}
+        user: |
+          User Request: {query}
+
+          Reference Recipes:
+          {context}
+
+          Generated Response: {response}
+
+          Score the generated response.
