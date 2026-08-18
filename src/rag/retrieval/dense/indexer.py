@@ -71,6 +71,27 @@ class Indexer:
         self.indexed_sets = indexed_sets
 
 
+    def search_one(
+        self,
+        query_vector: np.ndarray,
+        k: int,
+    ) -> list[tuple[float, Chunk | None]]:
+        """Convenience wrapper around search() for the single-query case.
+
+        Returns the top-k hits as (score, Chunk) tuples for one query, so
+        callers don't have to unpack search()'s batched list-of-lists
+        shape themselves. Equivalent to search(query_vector, k)[0] but
+        raises IndexError if the underlying call somehow returns an empty
+        list (i.e. no queries were processed), which would mask bugs.
+        """
+        results = self.search(query_vector, k)
+        if not results:
+            raise RuntimeError(
+                "Indexer.search returned no results for a single query."
+            )
+        return results[0]
+
+
     def index_embeddings(self, encoded_chunk_sets: list[EncodedChunkSet]) -> list[IndexedChunkSet]:
         """ Assign ids to the embeddings. """
         indexed_chunk_sets: list[IndexedChunkSet] = []

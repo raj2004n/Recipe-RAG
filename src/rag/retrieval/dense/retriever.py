@@ -43,7 +43,9 @@ class Retriever:
         query_vector = self.encoder.encode_query(query)
 
         # indexer handles the k-cut, score-threshold, and chunk resolution
-        hits = self.indexer.search(query_vector, top_k)[0]
+        # search_one unpacks the per-query batch shape so don't need to depend
+        # on the indexer always returning exactly one result row
+        hits = self.indexer.search_one(query_vector, top_k)
 
         results: list[RetrievalResult] = []
         for score, chunk in hits:
