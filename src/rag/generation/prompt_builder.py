@@ -53,8 +53,8 @@ class PromptBuilder:
     ) -> tuple[str, str]:
         """Build the (system, user) prompt pair for the generation persona.
 
-        Returns a tuple so the caller (Generator) can construct a proper
-        chat template message list with both roles
+        Used by the DensePipeline. The chunks in retrieval results contain 
+        the whole recipe formatted, so no recipes passed in.
         """
         context_parts = []
         current_tokens = 0
@@ -99,7 +99,7 @@ class PromptBuilder:
 
         `recipe_to_string` is injected rather than imported so this module
         stays decoupled from the data layer and the same helper can be
-        reused by notebooks (`notebook/debug/rerank.py`).
+        reused by notebooks.
         """
         context_parts = []
         current_tokens = 0
