@@ -14,6 +14,13 @@ stages:
     outs:
     - data/processed/cleaned_recipes.json
 
+  set_strategy:
+    cmd: python -m scripts.build_rag --run set_strategy
+    deps:
+    - configs/base_config.yaml
+    outs:
+    - snapshots/building/
+
   chunk:
     cmd: python -m scripts.build_rag --run chunk
     deps:
@@ -22,13 +29,13 @@ stages:
     outs:
     - snapshots/building/chunks/
 
-  encode:
-    cmd: python -m scripts.build_rag --run encode
+  transform:
+    cmd: python -m scripts.build_rag --run transform
     deps:
     - snapshots/building/chunks/
     - configs/base_config.yaml
     outs:
-    - snapshots/building/encoded_chunks/
+    - snapshots/building/transformed_chunks/
 
   index:
     cmd: python -m scripts.build_rag --run index
@@ -38,7 +45,7 @@ stages:
     outs:
     - snapshots/building/index/
   
-  finalise_snapshot:
+  finalise_build:
     cmd: python -m scripts.build_rag --run finalise_snapshot
     deps:
     - configs/base_config.yaml
