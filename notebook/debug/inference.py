@@ -1,8 +1,3 @@
-""" 
-Test script for hybrid strategy inference. Uses dense retriever.
-"""
-
-
 from src.rag.core.snapshot import load_snapshot, Snapshot
 from src.rag.core.utils import load_config
 from src.rag.pipeline import DensePipeline, HybridPipeline
@@ -26,19 +21,17 @@ def _build_pipeline(snapshot: Snapshot):
             f"known: {sorted(_PIPELINES)}"
         ) from exc
 
-    # HybridPipeline needs the cleaned recipes too; load them lazily from
-    # paths_config so the script doesn't grow a CLI just for this.
+
     if pipeline_cls is HybridPipeline:
         paths = load_config("configs/paths_config.yaml")
         return pipeline_cls(
             snapshot,
-            recipes_path=paths["files"]["cleaned_recipes"],
+            recipes_path=paths["data"]["cleaned_recipes"],
         )
     return pipeline_cls(snapshot)
 
 
 def run():
-    # load snapshot
     snapshot = load_snapshot("temp/latest")
     return _build_pipeline(snapshot)
 

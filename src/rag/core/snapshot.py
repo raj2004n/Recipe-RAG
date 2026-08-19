@@ -1,7 +1,19 @@
+""" 
+Contains snapshot save logic. 
+
+Usage:
+The retriever is built in modular steps; chunks, encode chunks, index chunks, ...
+At the end of each step, the respsective save mehtod is called.
+
+Therefore, a 'one-does-it-all' function, e.g. save_snapshot, does not exist.
+
+But for inference, the retriever is loaded in one step using load_snapshot.
+"""
+
+
 from pathlib import Path
 from dataclasses import dataclass, asdict
 
-from .utils import load_config
 from ..retrieval.chunker import Chunk, ChunkSet
 from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
 from ..retrieval.dense.indexer import IndexedChunkSet
@@ -16,17 +28,6 @@ import json
 import yaml
 import shutil
 
-""" 
-Contains snapshot save logic. 
-
-Usage:
-The retriever is built in modular steps; chunks, encode chunks, index chunks, ...
-At the end of each step, the respsective save mehtod is called.
-
-Therefore, a 'one-does-it-all' function, e.g. save_snapshot, does not exist.
-
-But for inference, the retriever is loaded in one step using load_snapshot.
-"""
 
 @dataclass
 class Snapshot:
@@ -37,11 +38,6 @@ class Snapshot:
     bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] # carries chunks in BM25IndexedChunkSet.chunks
     base_config: dict[str, any] # configs for initialising retriever components for inference, in pipeline
     prompts_config: dict[str, any]
-
-SAVE_PATH = os.path.join("snapshots/building")
-
-#TODO: load TEST PATH here, (watch for circular imports), and change save config for finalise 
-PATHS_CONFIG = load_config("configs/paths_config.yaml")
 
 
 def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
@@ -292,8 +288,7 @@ def save_config(save_path: str, config_path: str):
 
 def rename_latest_snapshot():
     # change the name of the latest snapshot to its id
-    #latest_snapshot_path = os.path.join("snapshots", "latest")
-    latest_snapshot_path = os.path.join("temp", "latest")
+    latest_snapshot_path = os.path.join("snapshots", "latest")
     if not os.path.exists(latest_snapshot_path):
         # no latest snapshot
         return
@@ -310,7 +305,7 @@ def rename_latest_snapshot():
     new_snapshot_path = os.path.join("snapshots", snapshot_id)
 
     if os.path.exists(new_snapshot_path):
-        # an archive with this id already exists; disambiguate with a timestamp
+        # if an archive with this id already exists then add a timestamp
         # suffix rather than overwriting or aborting the build
         suffix = time.strftime("%Y%m%d%H%M%S")
         new_snapshot_path = os.path.join("snapshots", f"{snapshot_id}_{suffix}")
@@ -325,18 +320,15 @@ def rename_latest_snapshot():
 def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
     """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
     Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
-    #building = Path("snapshots/building")
-    #latest = Path("snapshots/latest")
-    building = Path("temp/building")
-    latest = Path("temp/latest")
+    building = Path("snapshots/building")
+    latest = Path("snapshots/latest")
 
     if not building.exists():
         raise FileNotFoundError(f"Building directory not found at {building}")
 
     rename_latest_snapshot()
 
-    #configs_save_path = "snapshots/building/configs"
-    configs_save_path = "temp/building/configs"
+    configs_save_path = "snapshots/building/configs"
     save_config(
         save_path=configs_save_path,
         config_path="configs/base_config.yaml"

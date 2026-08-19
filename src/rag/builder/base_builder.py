@@ -46,7 +46,7 @@ class BaseBuilder(ABC):
         # import inside the method to avoid circular imports when dense inherits base
         # downside, builders dict duplicated in set_strategy, from_metadata
         from .dense import DenseBuilder
-        from .hybrid import HybridBuilder
+        from .hybrid_builder import HybridBuilder
 
         builders = {
             "dense": DenseBuilder,
@@ -85,7 +85,7 @@ class BaseBuilder(ABC):
         # import inside the method to avoid circular imports when dense inherits base
         # downside, builders dict duplicated in set_strategy, from_metadata
         from .dense import DenseBuilder
-        from .hybrid import HybridBuilder
+        from .hybrid_builder import HybridBuilder
 
         builders = {
             "dense": DenseBuilder,

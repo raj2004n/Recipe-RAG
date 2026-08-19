@@ -1,10 +1,16 @@
+"""  
+This script is currently dead (not up to date with the latest changes) 
+and will be updated later. Ignore for now.
+"""
+
+
 from typing import Sequence
 import mlflow
 from src.rag.core.utils import load_retriever, load_config, load_eval_dataset
 from src.rag.evaluation.retriever_evaluator import evaluate_strict
 
 mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("evaluation-experiment") #TODO Should not be a new experiment. Should be the same experiment as the one used for building.
+mlflow.set_experiment("evaluation-experiment")
 
 def evaluate_retriever(config_file: str = "models/retriever/config.yaml", evaluation_path: str = "data/evaluation/evaluation_dataset.json", ks: Sequence[int] = (1, 3, 5)):
     """ Evaluates a retriever on a dataset of queries and ground truths. """

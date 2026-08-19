@@ -2,6 +2,7 @@ from src.rag.core.snapshot import load_snapshot, Snapshot
 from src.rag.core.utils import load_config
 from src.rag.pipeline import DensePipeline, HybridPipeline
 
+
 # map snapshot retrieval_strategy to pipeline
 _PIPELINES = {
     "dense": DensePipeline,
@@ -24,7 +25,7 @@ def _build_pipeline(snapshot: Snapshot):
         paths = load_config("configs/paths_config.yaml")
         return pipeline_cls(
             snapshot,
-            recipes_path=paths["files"]["cleaned_recipes"],
+            recipes_path=paths["data"]["cleaned_recipes"],
         )
     return pipeline_cls(snapshot)
 

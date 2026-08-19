@@ -3,7 +3,7 @@ from src.rag.data.preprocessor import preprocess
 
 def run():
     config = load_config("configs/paths_config.yaml")
-    files = config["files"]
+    files = config["data"]
 
     preprocess(
         input_path=files["raw_recipes"],

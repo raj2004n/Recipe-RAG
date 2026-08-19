@@ -1,113 +1,92 @@
 import mlflow
 import argparse
 import subprocess
-
-from src.rag.retrieval.dense.encoder import Encoder
-from src.rag.retrieval.dense.indexer import Indexer
 from src.rag.core.utils import load_config
-from src.rag.retrieval.chunker import chunk_recipes
-from src.rag.core.snapshot import save_chunk_sets, save_encoded_chunk_sets, load_chunk_sets, load_encoded_chunk_sets, save_indexed_chunk_sets, finalise_snapshot
+from rag.builder.base_builder import BaseBuilder
 
-#TODO: Add logging
+# Add logging
+# Mlflow; calling it first-rag-experiement does not make sense. And should I be using Mlflow for every build?
+# Snapshot has too many hardcoded save locations. These should be derived from configs. 
+# What is going on with these the files config, files, dir?
+# consider refactor related to snapshot.py
+# take a look at dvc, this may have room for improvements
+# base builders have configs.. should have a look at this. I think it is better if all configs are used at one place
+# load_tokenized_chunk_sets, and load_encoded_chunk_sets can likely be combined into one, just need a key or extra parameter.
 
-""" 
-Should use a strategy object
-"""
+# after cleaning up, refactor configs.
 
-BASE_CONFIG = load_config("configs/base_config.yaml")
-PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
+# the strategy names; dense, hybrid, will be updated later. And thus the file names will be too.
+
 PATHS_CONFIG = load_config("configs/paths_config.yaml")
+BASE_CONFIG = load_config(PATHS_CONFIG["configs"]["base_config"])
+BUILDING = PATHS_CONFIG["building"]
 
-FILES = PATHS_CONFIG["files"]
-DIRECTORIES = PATHS_CONFIG["directories"]
-
-ENCODER_CONFIG = BASE_CONFIG["encoder"]
-INDEXER_CONFIG = BASE_CONFIG["indexer"]
-RETRIEVER_CONFIG = BASE_CONFIG["retriever"]
-GENERATOR_CONFIG = BASE_CONFIG["generator"]
-
-PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
-PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
-                        choices=["set_strategy", "chunk", "encode", "index", "seal_snapshot", "build"],
+                        choices=["set_strategy", "chunk", "transform", "index", "seal_snapshot", "build"],
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
-def set_strategy() -> None: # will return strategy object
-    # save into building/metadata.
-    pass
 
-# following should use strategy.
+# TODO: set_strategy should not live here.
+def set_strategy() -> None:
+    # get strategy from config
+    strategy_name = BASE_CONFIG["rag"]["strategy"]
+
+    BaseBuilder.set_strategy(
+        strategy_name=strategy_name,
+        metadata_path=BUILDING["metadata"]
+    )
+
+
 def chunk() -> None:
-    chunk_sets = chunk_recipes(BASE_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
+    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder.chunk()
 
-    save_chunk_sets(
-        chunk_sets=chunk_sets, 
-        save_path=PATHS_CONFIG["building"]["chunks"]
-    )
 
-def encode_chunk() -> None:
-    chunks_path = PATHS_CONFIG["building"]["chunks"]
+def transform() -> None:
+    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder.transform()
 
-    chunks_sets = load_chunk_sets(chunks_path)
     
-    encoder = Encoder(
-        model_id=ENCODER_CONFIG["model_id"],
-        batch_size=ENCODER_CONFIG["batch_size"],
-        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
-    )
+def index_embeddings()-> None:
+    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder.index()
+    
 
-    encoded_chunks_sets = encoder.encode_chunks(chunks_sets)
+def finalise_build() -> None:
+    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder.seal_snapshot()
 
-    save_encoded_chunk_sets(
-        encoded_chunks_sets=encoded_chunks_sets,
-        save_path=PATHS_CONFIG["building"]["encoded_chunks"]
-    )
-
-def index_embeddings() -> None:
-    encoded_chunks_sets = load_encoded_chunk_sets(PATHS_CONFIG["building"]["encoded_chunks"])
-
-    indexer = Indexer(
-        index_type=INDEXER_CONFIG["type"],
-        dimension=INDEXER_CONFIG["dimension"]
-    )
-
-    indexed_chunks_sets = indexer.index_embeddings(encoded_chunks_sets)
-
-    save_indexed_chunk_sets(
-        indexed_chunk_sets=indexed_chunks_sets,
-        save_path=PATHS_CONFIG["building"]["index"]
-    )
-
-def complete_snapshot():
-    return finalise_snapshot(
-        snapshot_id=None,
-        created_at=None
-    )
 
 def build_rag():
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("first-rag-experiment")
 
+    subprocess.run(["dvc", "repro", "set_strategy"])
     subprocess.run(["dvc", "repro", "chunk"])
-    subprocess.run(["dvc", "repro", "encode"])
+    subprocess.run(["dvc", "repro", "transform"])
     subprocess.run(["dvc", "repro", "index"])
-    subprocess.run(["dvc", "repro", "finalise_snapshot"])
+    subprocess.run(["dvc", "repro", "finalise_build"])
 
     mlflow.log_artifact("snapshots/latest")
 
 if __name__ == "__main__":
     args = parse_args()
+
     if args.run == "chunk":
         chunk()
-    elif args.run == "encode":
-        encode_chunk()
+
+    elif args.run == "transform":
+        transform()
+
     elif args.run == "index":
         index_embeddings()
+
     elif args.run == "seal_snapshot":
-        complete_snapshot()
+        finalise_build()
+
     elif args.run == "build":
         build_rag()
