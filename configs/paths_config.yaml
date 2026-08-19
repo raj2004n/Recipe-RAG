@@ -1,25 +1,15 @@
-files:
-  base_config: configs/base_config.yaml
-  prompts_config: configs/prompts_config.yaml
+data:
   raw_recipes: data/raw/recipes.jsonl
   cleaned_recipes: data/processed/cleaned_recipes.json
   evaluation_queries: data/evaluation/evaluation_queries.json
-  
-  chunks: snapshots/latest/chunks.json
-  indexer: snapshots/latest/index.faiss
-  
+
+configs:
+  base_config: configs/base_config.yaml
+  prompts_config: configs/prompts_config.yaml
+
 building:
   chunks: snapshots/building/chunks
-  encoded_chunks: snapshots/building/encoded_chunks
+  transformed_chunks: snapshots/building/transformed_chunks
   index: snapshots/building/index
   configs: snapshots/building/configs
-
-test: # just for debugging, can delete files produced
-  chunks: temp/building/chunks
-  encoded_chunks: temp/building/transformed_chunks
-  tokenized_chunks: temp/building/transformed_chunks # Note, just combine into transformed_chunks instead of two different chunks pointing to the same space
-  index: temp/building/index
-  configs: temp/building/configs
-
-directories:
-  snapshots: snapshots
+  metadata: snapshots/building
