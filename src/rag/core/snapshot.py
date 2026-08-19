@@ -1,13 +1,12 @@
 from pathlib import Path
-from typing import Callable
 from dataclasses import dataclass, asdict
 
-from ..retrieval.dense.encoder import Encoder
-from ..retrieval.dense.indexer import Indexer
+from .utils import load_config
 from ..retrieval.chunker import Chunk, ChunkSet
-from ..retrieval.dense.retriever import Retriever
-from ..retrieval.dense.indexer import Indexer, IndexedChunkSet
 from ..retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
+from ..retrieval.dense.indexer import IndexedChunkSet
+from ..retrieval.sparse.bm25indexer import BM25IndexedChunkSet
+from ..retrieval.sparse.tokenizer import TokenizedChunk, TokenizedChunkSet
 
 import os
 import time
@@ -16,7 +15,6 @@ import faiss
 import json
 import yaml
 import shutil
-import numpy as np
 
 """ 
 Contains snapshot save logic. 
@@ -32,118 +30,254 @@ But for inference, the retriever is loaded in one step using load_snapshot.
 
 @dataclass
 class Snapshot:
-    # ids
     snapshot_id: str | None
     created_at: str | None
-
-    # retriever state is per-set, so multiple chunk sets can be carried together
-    chunk_sets: list[ChunkSet]
-    indexed_chunk_sets: list[IndexedChunkSet]
-
-    # configs
-    base_config: dict[str, any]
+    retrieval_strategy: str
+    indexed_chunk_sets: list[IndexedChunkSet] # carries chunks in IndexedChunkSet.chunks
+    bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] # carries chunks in BM25IndexedChunkSet.chunks
+    base_config: dict[str, any] # configs for initialising retriever components for inference, in pipeline
     prompts_config: dict[str, any]
 
 SAVE_PATH = os.path.join("snapshots/building")
 
+#TODO: load TEST PATH here, (watch for circular imports), and change save config for finalise 
+PATHS_CONFIG = load_config("configs/paths_config.yaml")
+
+
 def save_chunk_sets(chunk_sets: list[ChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
     os.makedirs(save_path, exist_ok=True)
-    for chunk_set in chunk_sets:
-        name = chunk_set.name
-        with open(os.path.join(save_path, f"{name}_chunks.json"), "w") as f:
-            json.dump([asdict(c) for c in chunk_set.chunks], f, indent=2)
+    with open(os.path.join(save_path, "chunk_sets.json"), "w") as f:
+        json.dump([asdict(cs) for cs in chunk_sets], f, indent=2)
 
-def load_chunk_sets(path: str) -> list[ChunkSet]:
-    path_obj = Path(path)
-    # check if chunks directory exists
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Chunks directory not found at {path}")
 
-    chunks_sets = []
+def load_chunk_sets(save_path: str) -> list[ChunkSet]:
+    with open(os.path.join(save_path, "chunk_sets.json")) as f:
+        data = json.load(f)
 
-    # load all chunk files from directory
-    for chunk_file in sorted(path_obj.glob("*.json")):
-        name = chunk_file.stem.removesuffix("_chunks")
-        with open(chunk_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            chunks = [Chunk(**c) for c in data]
-            chunks_sets.append(
-                ChunkSet(
-                    name=name,
-                    chunks=chunks
-                )
-            )
-    return chunks_sets
+    return [
+        ChunkSet(
+            name=cs["name"],
+            chunks=[Chunk(**chunk) for chunk in cs["chunks"]],
+        )
+        for cs in data
+    ]
 
-def save_encoded_chunk_sets(encoded_chunks_sets: list[EncodedChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
+
+def save_encoded_chunk_sets(encoded_chunk_sets: list[EncodedChunkSet], save_path: str):
     os.makedirs(save_path, exist_ok=True)
-    for encoded_chunks_set in encoded_chunks_sets:
-        name = encoded_chunks_set.name
-        with open(os.path.join(save_path, f"{name}_encoded_chunks.json"), "w") as f:
-            json.dump([asdict(c) for c in encoded_chunks_set.encoded_chunks], f, indent=2)
 
-def load_encoded_chunk_sets(path: str) -> list[EncodedChunkSet]:
-    path_obj = Path(path)
-    # check if chunks directory exists
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Chunks directory not found at {path}")
+    with open(os.path.join(save_path, "encoded_chunk_sets.json"), "w") as f:
+        json.dump([asdict(cs) for cs in encoded_chunk_sets], f, indent=2)
 
-    encoded_chunks_sets = []
 
-    # load all chunk files from directory
-    for chunk_file in sorted(path_obj.glob("*.json")):
-        name = chunk_file.stem.removesuffix("_encoded_chunks")
-        with open(chunk_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            encoded_chunks = [EncodedChunk(**c) for c in data]
-            encoded_chunks_sets.append(
-                EncodedChunkSet(
-                    name=name,
-                    encoded_chunks=encoded_chunks
+def save_tokenized_chunk_sets(tokenized_chunk_sets: list[TokenizedChunkSet], save_path: str):
+    os.makedirs(save_path, exist_ok=True)
+
+    with open(os.path.join(save_path, "tokenized_chunk_sets.json"), "w",) as f:
+        json.dump([asdict(cs) for cs in tokenized_chunk_sets], f, indent=2)
+
+
+def load_encoded_chunk_sets(save_path: str) -> list[EncodedChunkSet]:
+    with open(os.path.join(save_path, "encoded_chunk_sets.json"), "r") as f:
+        data = json.load(f)
+
+    return [
+        EncodedChunkSet(
+            name=chunk_set["name"],
+            encoded_chunks=[
+                EncodedChunk(**chunk)
+                for chunk in chunk_set["encoded_chunks"]
+            ],
+        )
+        for chunk_set in data
+    ]
+
+
+def load_tokenized_chunk_sets(save_path: str) -> list[TokenizedChunkSet]:
+    with open(os.path.join(save_path, "tokenized_chunk_sets.json"), "r") as f:
+        data = json.load(f)
+
+    return [
+        TokenizedChunkSet(
+            name=chunk_set["name"],
+            tokenized_chunks=[
+                TokenizedChunk(
+                    chunk=Chunk(**tokenized_chunk["chunk"]),
+                    tokens=tokenized_chunk["tokens"],
                 )
-            )
-    return encoded_chunks_sets
+                for tokenized_chunk in chunk_set["tokenized_chunks"]
+            ],
+        )
+        for chunk_set in data
+    ]
+
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):
-    save_path = os.path.join(save_path)
-    os.makedirs(save_path, exist_ok=True)
-    for indexed_chunk_set in indexed_chunk_sets:
-        name = indexed_chunk_set.name
-        faiss.write_index(indexed_chunk_set.index, os.path.join(save_path, f"{name}_index.faiss"))
-        np.save(
-            os.path.join(save_path, f"{name}_index.mapping.npy"),
-            indexed_chunk_set.id_mapping,
-            allow_pickle=True
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    manifest = []
+
+    for i, chunk_set in enumerate(indexed_chunk_sets):
+        index_filename = f"index_{i}.faiss"
+
+        faiss.write_index(
+            chunk_set.index,
+            str(save_path / index_filename),
         )
 
-def load_indexed_chunk_sets(path: str) -> list[IndexedChunkSet]:
-    path_obj = Path(path)
+        manifest.append({
+            "name": chunk_set.name,
+            "index": index_filename,
+        })
 
-    if not path_obj.exists():
-        raise FileNotFoundError(f"Index directory not found at {path}.")
+    with open(save_path / "indexed_chunk_sets.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+
+
+def save_bm25_index_chunk_sets(bm25_index_chunk_sets: list[BM25IndexedChunkSet], save_path: str):
+    """ Save BM25-indexed chunk sets.
+
+    The BM25 index is reconstructed on load from the serialized tokenized chunks,
+    so no raw index file is needed - only the manifest and tokenized data.
+    """
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    manifest = []
+
+    for chunk_set in bm25_index_chunk_sets:
+        # store tokenized chunks inline in manifest - BM25 index is rebuilt on load
+        manifest.append({
+            "name": chunk_set.name,
+            "tokenized_chunks": [
+                {
+                    "chunk": asdict(tc.chunk),
+                    "tokens": tc.tokens,
+                }
+                for tc in chunk_set.tokenized_chunks
+            ],
+        })
+
+    with open(save_path / "bm25_index_chunk_sets.json", "w") as f:
+        json.dump(manifest, f, indent=2)
+
+
+def load_bm25_index_chunk_sets(
+    save_path: str,
+    chunks_save_path: str | None = None,
+) -> tuple[list[BM25IndexedChunkSet], dict[str, dict[int, "Chunk"]]]:
+    """ Load BM25-indexed chunk sets.
+
+    Args:
+        save_path: directory holding the bm25_index_chunk_sets.json manifest.
+        chunks_save_path: directory holding chunk_sets.json. If provided,
+            also load chunks and group them by set name so the caller can
+            attach them to the returned BM25IndexedChunkSets.
+
+    Returns:
+        (bm25_index_chunk_sets, chunks_by_set_name) where chunks_by_set_name
+        is keyed by chunk-set name -> chunk_id -> Chunk. Empty if
+        chunks_save_path is None.
+    """
+    from rank_bm25 import BM25Okapi
+
+    save_path = Path(save_path)
+    manifest_path = save_path / "bm25_index_chunk_sets.json"
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"BM25 index manifest not found at {manifest_path}.")
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    bm25_index_chunk_sets = []
+
+    for entry in manifest:
+        tokenized_chunks = [
+            TokenizedChunk(
+                chunk=Chunk(**tc["chunk"]),
+                tokens=tc["tokens"],
+            )
+            for tc in entry["tokenized_chunks"]
+        ]
+
+        chunks_by_id: dict[int, Chunk] = {
+            tc.chunk.chunk_id: tc.chunk for tc in tokenized_chunks
+        }
+
+        tokenized_documents = [tc.tokens for tc in tokenized_chunks]
+        bm25 = BM25Okapi(tokenized_documents)
+
+        bm25_index_chunk_sets.append(
+            BM25IndexedChunkSet(
+                name=entry["name"],
+                index=bm25,
+                tokenized_chunks=tokenized_chunks,
+                chunks=chunks_by_id,
+            )
+        )
+
+    chunks_by_set_name: dict[str, dict[int, Chunk]] = {}
+    if chunks_save_path is not None:
+        chunk_sets = load_chunk_sets(chunks_save_path)
+        for cs in chunk_sets:
+            chunks_by_set_name[cs.name] = {c.chunk_id: c for c in cs.chunks}
+
+    return bm25_index_chunk_sets, chunks_by_set_name
+
+
+def load_indexed_chunk_sets(
+    save_path: str,
+    chunks_save_path: str | None = None,
+) -> tuple[list[IndexedChunkSet], dict[str, dict[int, "Chunk"]]]:
+    """ Load indexed chunk sets from a snapshot.
+
+    Args:
+        save_path: directory holding the index manifest and .faiss files.
+        chunks_save_path: directory holding chunk_sets.json. If provided,
+            also load chunks and group them by set name so the caller can
+            attach them to the returned IndexedChunkSets.
+
+    Returns:
+        (indexed_chunk_sets, chunks_by_set_name) where chunks_by_set_name
+        is keyed by chunk-set name -> chunk_id -> Chunk. Empty if
+        chunks_save_path is None.
+    """
+    save_path = Path(save_path)
+
+    manifest_path = save_path / "indexed_chunk_sets.json"
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"Index manifest not found at {manifest_path}."
+        )
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
 
     indexed_chunk_sets = []
 
-    for index_file in sorted(path_obj.glob("*_index.faiss")):
-        name = index_file.stem.removesuffix("_index")
-        index = faiss.read_index(str(index_file))
-
-        mapping = np.load(
-            path_obj / f"{name}_index.mapping.npy",
-            allow_pickle=True,
-        ).item()
+    for entry in manifest:
+        index = faiss.read_index(
+            str(save_path / entry["index"])
+        )
 
         indexed_chunk_sets.append(
             IndexedChunkSet(
-                name=name,
+                name=entry["name"],
                 index=index,
-                id_mapping=mapping,
             )
         )
 
-    return indexed_chunk_sets
+    chunks_by_set_name: dict[str, dict[int, Chunk]] = {}
+    if chunks_save_path is not None:
+        chunk_sets = load_chunk_sets(chunks_save_path)
+        for cs in chunk_sets:
+            chunks_by_set_name[cs.name] = {c.chunk_id: c for c in cs.chunks}
+
+    return indexed_chunk_sets, chunks_by_set_name
+
 
 def save_config(save_path: str, config_path: str):
     save_dir = Path(save_path)
@@ -155,89 +289,11 @@ def save_config(save_path: str, config_path: str):
 
     shutil.copy2(src_dir, dst)
 
-def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
-    """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
-    Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
-    building = Path("snapshots/building")
-    latest = Path("snapshots/latest")
-
-    if not building.exists():
-        raise FileNotFoundError(f"Building directory not found at {building}")
-
-    rename_latest_snapshot()
-
-    configs_save_path = "snapshots/building/configs"
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/base_config.yaml"
-    )
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/prompts_config.yaml"
-    )
-    save_config(
-        save_path=configs_save_path,
-        config_path="configs/paths_config.yaml"
-    )
-
-    # get id and timestamp if not provided
-    snapshot_id = snapshot_id or str(uuid.uuid4())
-    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
-
-    # add metadata
-    metadata_path = os.path.join("snapshots/building", "metadata.json")
-    with open(metadata_path, "w") as f:
-        json.dump({
-            "snapshot_id": snapshot_id,
-            "created_at": created_at,
-        }, f, indent=2)
-
-    building.rename(latest)
-
-def load_snapshot(path: str) -> Snapshot:
-    """Load a snapshot produced by the per-set build pipeline.
-
-    Layout (per-set):
-        <path>/configs/base_config.yaml
-        <path>/configs/prompts_config.yaml
-        <path>/configs/paths_config.yaml
-        <path>/chunks/<name>_chunks.json
-        <path>/encoded_chunks/<name>_encoded_chunks.json
-        <path>/index/<name>_index.faiss
-        <path>/index/<name>_index.mapping.npy
-        <path>/metadata.json
-    """
-    path_obj = Path(path)
-
-    # load configs
-    with open(path_obj / "configs" / "base_config.yaml") as f:
-        base_config = yaml.safe_load(f)
-    with open(path_obj / "configs" / "prompts_config.yaml") as f:
-        prompts_config = yaml.safe_load(f)
-
-    # load chunk sets
-    chunk_sets = load_chunk_sets(path_obj / "chunks")
-
-    # load indexed chunk sets
-    indexed_chunk_sets = load_indexed_chunk_sets(path_obj / "index")
-
-    # load metadata
-    with open(path_obj / "metadata.json") as f:
-        metadata = json.load(f)
-
-    return Snapshot(
-        snapshot_id=metadata["snapshot_id"],
-        created_at=metadata["created_at"],
-        chunk_sets=chunk_sets,
-        indexed_chunk_sets=indexed_chunk_sets,
-        base_config=base_config,
-        prompts_config=prompts_config,
-    )
 
 def rename_latest_snapshot():
     # change the name of the latest snapshot to its id
-    latest_snapshot_path = os.path.join("snapshots", "latest")
-
+    #latest_snapshot_path = os.path.join("snapshots", "latest")
+    latest_snapshot_path = os.path.join("temp", "latest")
     if not os.path.exists(latest_snapshot_path):
         # no latest snapshot
         return
@@ -265,48 +321,95 @@ def rename_latest_snapshot():
 
     os.rename(latest_snapshot_path, new_snapshot_path)
 
-def snapshot_retriever_indexer(
-    snapshot: Snapshot,
-    accepts: Callable[[IndexedChunkSet], bool] = lambda _: True,
-) -> Indexer:
-    """Build an Indexer whose indexed_sets match the snapshot's stored sets
-    and whose id_mapping matches each set's chunk ids.
 
-    The same accepts predicate used at build time must be passed in here so
-    the runtime indexer only contains the sets the retriever cares about.
-    """
-    base = snapshot.base_config
-    indexer = Indexer(
-        index_type=base["indexer"]["type"],
-        dimension=base["indexer"]["dimension"],
-        accepts=accepts,
-    )
-    # filter indexed sets to ensure retriever only recieves relevant chunks
-    indexer.indexed_sets = [
-        s for s in snapshot.indexed_chunk_sets if accepts(s)
-    ]
-    return indexer
+def finalise_snapshot(snapshot_id: str | None = None, created_at: str | None = None):
+    """ Used at the last step of building retriever to finalise the 'building' snapshot to 'latest' snapshot.
+    Saves config, adds metadata containing snapshot id and date. Renames the building snapshot to latest."""
+    #building = Path("snapshots/building")
+    #latest = Path("snapshots/latest")
+    building = Path("temp/building")
+    latest = Path("temp/latest")
 
-def dense_accepts_for(snapshot: Snapshot):
-    """Build the dense-set accepts predicate from the snapshot's config."""
-    names = set(snapshot.base_config.get("retriever", {}).get("dense_sets", ["dense"]))
-    return lambda s: s.name in names
+    if not building.exists():
+        raise FileNotFoundError(f"Building directory not found at {building}")
 
-def load_dense_retriever(snapshot: Snapshot) -> Retriever:
-    accepts = dense_accepts_for(snapshot)
-    encoder = Encoder(
-        snapshot.base_config["encoder"]["model_id"],
-        snapshot.base_config["encoder"]["batch_size"],
-        snapshot.base_config["encoder"]["normalize_embeddings"],
-        accepts=accepts,
+    rename_latest_snapshot()
+
+    #configs_save_path = "snapshots/building/configs"
+    configs_save_path = "temp/building/configs"
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/base_config.yaml"
     )
-    indexer = snapshot_retriever_indexer(snapshot, accepts=accepts)
-    retriever = Retriever(
-        snapshot.chunk_sets,
-        encoder,
-        indexer,
-        snapshot.base_config["retriever"]["top_k"],
-        snapshot.base_config["retriever"]["score_threshold"],
-        accepts=accepts,
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/prompts_config.yaml"
     )
-    return retriever
+    save_config(
+        save_path=configs_save_path,
+        config_path="configs/paths_config.yaml"
+    )
+
+    # get id and timestamp if not provided
+    snapshot_id = snapshot_id or str(uuid.uuid4())
+    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
+
+    metadata_path = os.path.join("temp/building", "metadata.json")
+    with open(metadata_path, "r") as f:
+        metadata = json.load(f)
+
+    metadata.update({
+        "snapshot_id": snapshot_id,
+        "created_at": created_at,
+    })
+
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    building.rename(latest)
+
+
+def load_snapshot(path: str) -> Snapshot:
+    path_obj = Path(path)
+
+    # load configs
+    with open(path_obj / "configs" / "base_config.yaml") as f:
+        base_config = yaml.safe_load(f)
+    with open(path_obj / "configs" / "prompts_config.yaml") as f:
+        prompts_config = yaml.safe_load(f)
+
+    # load metadata first to determine strategy
+    with open(path_obj / "metadata.json") as f:
+        metadata = json.load(f)
+
+    strategy = metadata["strategy"]
+    indexed_chunk_sets: list[IndexedChunkSet] = []
+    bm25_indexed_chunk_sets: list[BM25IndexedChunkSet] = []
+
+    # dense strategies include "dense" or "hybrid"
+    if "dense" in strategy or strategy == "hybrid":
+        indexed_chunk_sets, chunks_by_set_name = load_indexed_chunk_sets(
+            path_obj / "index",
+            chunks_save_path=path_obj / "chunks",
+        )
+        for indexed in indexed_chunk_sets:
+            indexed.chunks = chunks_by_set_name.get(indexed.name, {})
+
+    # sparse/BM25 strategies include "sparse", "bm25", or "hybrid"
+    if strategy == "hybrid":
+        bm25_indexed_chunk_sets, bm25_chunks_by_set_name = load_bm25_index_chunk_sets(
+            path_obj / "index",
+            chunks_save_path=path_obj / "chunks",
+        )
+        for indexed in bm25_indexed_chunk_sets:
+            indexed.chunks = bm25_chunks_by_set_name.get(indexed.name, {})
+
+    return Snapshot(
+        snapshot_id=metadata["snapshot_id"],
+        created_at=metadata["created_at"],
+        retrieval_strategy=strategy,
+        indexed_chunk_sets=indexed_chunk_sets,
+        bm25_indexed_chunk_sets=bm25_indexed_chunk_sets,
+        base_config=base_config,
+        prompts_config=prompts_config,
+    )

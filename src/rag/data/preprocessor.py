@@ -7,9 +7,7 @@ from datetime import datetime
 from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 
-#TODO: Move to core
 
-# TODO: create dataclass
 @dataclass
 class Recipe:
     recipe_id: int = -1

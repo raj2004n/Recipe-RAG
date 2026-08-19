@@ -1,6 +1,5 @@
 from sentence_transformers import SentenceTransformer
 from dataclasses import dataclass
-from typing import Callable
 from ..chunker import Chunk, ChunkSet
 import numpy as np
 
@@ -10,6 +9,9 @@ class EncodedChunk:
     text: str
     recipe_id: int
     chunk_id: int
+    # Carried from Chunk so the indexer can rebuild a full Chunk on the
+    # other side without needing to re-look-up the source chunk.
+    chunk_type: str = ""
 
     @classmethod
     def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
@@ -17,7 +19,8 @@ class EncodedChunk:
             vector=vector,
             text=chunk.text,
             recipe_id=chunk.recipe_id,
-            chunk_id=chunk.chunk_id
+            chunk_id=chunk.chunk_id,
+            chunk_type=chunk.chunk_type,
         )
 
 @dataclass
@@ -30,13 +33,11 @@ class Encoder:
         self,
         model_id: str,
         batch_size: int,
-        normalize_embeddings: bool,
-        accepts: Callable[[ChunkSet], bool] = lambda _: True,
+        normalize_embeddings: bool
     ):
         self.model = SentenceTransformer(model_id)
         self.batch_size = batch_size
         self.normalize_embeddings = normalize_embeddings
-        self.accepts = accepts
 
     def _encode_documents(self, documents: list[str]) -> np.ndarray:
         """ Encode a list of documents into dense vectors. """
@@ -50,11 +51,8 @@ class Encoder:
 
     def encode_chunks(self, chunks_set_list: list[ChunkSet]) -> list[EncodedChunkSet]:
         """ Encode list of chunks into dense vectors. """
-        # filter chunk sets 
-        selected = [s for s in chunks_set_list if self.accepts(s)]
-
-        encoded_chunks_set_list = []
-        for chunks_set in selected:
+        encoded_chunks_sets : list[EncodedChunkSet] = []
+        for chunks_set in chunks_set_list:
             chunks = chunks_set.chunks
             texts = [c.text for c in chunks]
             embeddings = self._encode_documents(texts)
@@ -67,13 +65,15 @@ class Encoder:
                 for chunk, embedding in zip(chunks, embeddings)
             ]
 
-            encoded_chunks_set_list.append(
+            # name is kept the same as chunk set name
+            # "encoded_chunks" is added at the end when saving
+            encoded_chunks_sets.append(
                 EncodedChunkSet(
                     name=chunks_set.name,
                     encoded_chunks=encoded_chunks
                 )
             )
-        return encoded_chunks_set_list
+        return encoded_chunks_sets
 
     def encode_query(self, query: str) -> np.ndarray:
         """ Encode a single query into a dense vector. """

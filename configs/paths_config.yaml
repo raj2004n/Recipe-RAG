@@ -13,6 +13,13 @@ building:
   encoded_chunks: snapshots/building/encoded_chunks
   index: snapshots/building/index
   configs: snapshots/building/configs
-  
+
+test: # just for debugging, can delete files produced
+  chunks: temp/building/chunks
+  encoded_chunks: temp/building/transformed_chunks
+  tokenized_chunks: temp/building/transformed_chunks # Note, just combine into transformed_chunks instead of two different chunks pointing to the same space
+  index: temp/building/index
+  configs: temp/building/configs
+
 directories:
   snapshots: snapshots

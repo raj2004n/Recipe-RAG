@@ -10,6 +10,10 @@ from src.rag.core.snapshot import save_chunk_sets, save_encoded_chunk_sets, load
 
 #TODO: Add logging
 
+""" 
+Should use a strategy object
+"""
+
 BASE_CONFIG = load_config("configs/base_config.yaml")
 PROMPTS_CONFIG = load_config("configs/prompts_config.yaml")
 PATHS_CONFIG = load_config("configs/paths_config.yaml")
@@ -25,20 +29,18 @@ GENERATOR_CONFIG = BASE_CONFIG["generator"]
 PROMPT_TEMPLATES = PROMPTS_CONFIG["template"]
 PROMPT_SETTINGS = PROMPTS_CONFIG["settings"]
 
-DENSE_SETS = set(RETRIEVER_CONFIG.get("dense_sets", ["dense"]))
-SPARSE_SETS = set(RETRIEVER_CONFIG.get("sparse_sets", ["sparse"]))
-
-# anonymous function to accept or reject chunks
-dense_accepts = lambda s: s.name in DENSE_SETS
-sparse_accepts = lambda s: s.name in SPARSE_SETS
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
-                        choices=["chunk", "encode", "index", "finalise_snapshot", "build"],
+                        choices=["set_strategy", "chunk", "encode", "index", "seal_snapshot", "build"],
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
+def set_strategy() -> None: # will return strategy object
+    # save into building/metadata.
+    pass
+
+# following should use strategy.
 def chunk() -> None:
     chunk_sets = chunk_recipes(BASE_CONFIG["rag"]["strategy"], FILES["cleaned_recipes"])
 
@@ -51,12 +53,11 @@ def encode_chunk() -> None:
     chunks_path = PATHS_CONFIG["building"]["chunks"]
 
     chunks_sets = load_chunk_sets(chunks_path)
-
+    
     encoder = Encoder(
         model_id=ENCODER_CONFIG["model_id"],
         batch_size=ENCODER_CONFIG["batch_size"],
-        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"],
-        accepts=dense_accepts,
+        normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
     )
 
     encoded_chunks_sets = encoder.encode_chunks(chunks_sets)
@@ -71,8 +72,7 @@ def index_embeddings() -> None:
 
     indexer = Indexer(
         index_type=INDEXER_CONFIG["type"],
-        dimension=INDEXER_CONFIG["dimension"],
-        accepts=dense_accepts,
+        dimension=INDEXER_CONFIG["dimension"]
     )
 
     indexed_chunks_sets = indexer.index_embeddings(encoded_chunks_sets)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         encode_chunk()
     elif args.run == "index":
         index_embeddings()
-    elif args.run == "finalise_snapshot":
+    elif args.run == "seal_snapshot":
         complete_snapshot()
     elif args.run == "build":
         build_rag()

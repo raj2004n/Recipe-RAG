@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from itertools import count
+from typing import Iterator
 from dataclasses import dataclass
 from ..data.preprocessor import Recipe
 
@@ -8,37 +9,44 @@ from ..data.preprocessor import Recipe
 
 @dataclass
 class Chunk:
+    # Globally unique within a snapshot. Used as the FAISS id for dense
+    # indices, so collisions across chunk sets would silently resolve a
+    # hit to the wrong chunk.
     chunk_id: int
     recipe_id: int
     chunk_type: str
     text: str
+
 
 @dataclass
 class ChunkSet:
     name: str
     chunks: list[Chunk]
 
+
 def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
     # load recipes as recipe list[Recipe]
     with open(recipes_path) as f:
         recipes = [Recipe(**recipe) for recipe in json.load(f)]
-    
+
+    chunk_id = count()
+
     if strategy == "whole_recipe":
-        return [ChunkSet(
+        result = [ChunkSet(
             name="whole_recipe",
-            chunks=_chunk_whole(recipes)
+            chunks=_chunk_whole(recipes, chunk_id)
         )]
-    
+
     elif strategy == "instructions_ingredients":
-        return [ChunkSet(
+        result = [ChunkSet(
             name="instructions_ingredients",
-            chunks=_chunk_it_ing(recipes)
+            chunks=_chunk_it_ing(recipes, chunk_id)
         )]
-    
+
     elif strategy == "hybrid":
-        sprase_chunks = _chunk_it_ing(recipes)
-        dense_chunks = _chunk_info(recipes)
-        return [
+        sprase_chunks = _chunk_it_ing(recipes, chunk_id)
+        dense_chunks = _chunk_info(recipes, chunk_id)
+        result = [
             ChunkSet(
                 name="sparse",
                 chunks=sprase_chunks
@@ -49,10 +57,21 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
             )
         ]
 
+    # Enforce the Chunk.chunk_id global-uniqueness contract. FAISS uses
+    # chunk_id as the index id, so a collision would silently resolve a hit
+    # to the wrong chunk in dense/retriever.py.
+    all_ids = [c.chunk_id for cs in result for c in cs.chunks]
+    if len(set(all_ids)) != len(all_ids):
+        raise ValueError(
+            "chunk_recipes produced duplicate chunk_ids - "
+            "Chunk.chunk_id must be globally unique within a snapshot."
+        )
+
+    return result
+
     
-def _chunk_whole(recipes: list[Recipe]) -> list[Chunk]:
+def _chunk_whole(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         chunks.append(
             Chunk(
@@ -64,9 +83,9 @@ def _chunk_whole(recipes: list[Recipe]) -> list[Chunk]:
         )
     return chunks
 
-def _chunk_it_ing(recipes: list[Recipe]) -> list[Chunk]:
+
+def _chunk_it_ing(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         chunks.append(
             Chunk(
@@ -86,10 +105,9 @@ def _chunk_it_ing(recipes: list[Recipe]) -> list[Chunk]:
         )
     return chunks
 
-def _chunk_info(recipes: list[Recipe]) -> list[Chunk]:
-    # for dense retriever
+
+def _chunk_info(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
     chunks = []
-    chunk_id = count()
     for r in recipes:
         for i in r.info:
             chunks.append(
@@ -101,6 +119,7 @@ def _chunk_info(recipes: list[Recipe]) -> list[Chunk]:
                 )
         )
     return chunks
+
 
 def _format_ingredients(recipe: Recipe) -> str:
     lines = []
@@ -135,6 +154,7 @@ def _format_ingredients(recipe: Recipe) -> str:
 
     return "\n".join(lines).strip()
 
+
 def _format_instructions(recipe: Recipe) -> str:
     lines = []
 
@@ -149,6 +169,7 @@ def _format_instructions(recipe: Recipe) -> str:
     
     return "\n".join(lines)
 
+
 def _format_info(info: dict) -> str:
     lines = []
     
@@ -159,6 +180,7 @@ def _format_info(info: dict) -> str:
     
     return "\n".join(lines)
 
+
 def _format_whole_recipe(recipe: Recipe) -> str:
     """ Format recipe text for embedding. """
     lines = []
@@ -167,7 +189,7 @@ def _format_whole_recipe(recipe: Recipe) -> str:
     lines.append(f"Recipe Name: {recipe.recipe_name}")
 
     # sevings
-    servings = recipe.get("servings", 1)
+    servings = recipe.servings
     if servings:
         lines.append(f"Servings: {servings}")
 

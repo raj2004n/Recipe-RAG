@@ -16,11 +16,23 @@ indexer:
 retriever:
   top_k: 10
   score_threshold: 0.5
-  dense_sets:
-    - dense
-  sparse_sets:
-    - sparse
-  
+
+hybrid:
+  fusion:
+    strategy: rrf          # rrf | weighted_sum
+    rrf_k: 60
+    weight_dense: 1.0
+    weight_sparse: 1.0
+  retrieval:
+    top_k_dense: 50
+    top_k_sparse: 50
+  reranker:
+    model_id: BAAI/bge-reranker-v2-m3
+    max_length: 512
+    top_n: 10
+  prompt:
+    final_top_k: 3         # recipes after dedupe-by-recipe-id
+
 generator:
   model_id: google/gemma-3-1b-it
   max_input_tokens: 5000
