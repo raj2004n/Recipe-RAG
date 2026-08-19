@@ -1,14 +1,26 @@
-from ..retrieval.dense.retriever import RetrievalResult
-from transformers import AutoTokenizer
+""" 
+Dense Pipeline: dense retrieval, prompt, generate.
 
-# Persona name that build_prompt resolves against. Defined centrally so
-# the new prompts_config shape (template.personas.<name>.<generate|judge>.<user>)
-# is documented in one place.
+
+Note to self: rename to baseline or naive or something in the future, since
+this is a very basic pipeline. 
+"""
+
+
+from transformers import AutoTokenizer
+from ..retrieval.dense.retriever import RetrievalResult
+
+
 GENERATION_PERSONA = "generation"
 
 
 class PromptBuilder:
-    def __init__(self, tokenizer: AutoTokenizer, max_context_tokens: int, prompt_templates: dict):
+    def __init__(
+            self,
+            tokenizer: AutoTokenizer,
+            max_context_tokens: int,
+            prompt_templates: dict
+    ):
         self.tokenizer = tokenizer
         self.max_context_tokens = max_context_tokens
         self.prompt_templates = prompt_templates
@@ -42,13 +54,12 @@ class PromptBuilder:
         """Build the (system, user) prompt pair for the generation persona.
 
         Returns a tuple so the caller (Generator) can construct a proper
-        chat-template message list with both roles
+        chat template message list with both roles
         """
         context_parts = []
         current_tokens = 0
 
         for i, result in enumerate(retrieval_results):
-            # Chunk is a dataclass (see chunker.py), not a dict.
             chunk_text = result.chunk.text
 
             # break if context length exceeded
@@ -62,6 +73,48 @@ class PromptBuilder:
             current_tokens += len(tokens)
 
         # join context parts
+        context = "\n\n".join(context_parts)
+
+        user_prompt = self._persona_template(
+            GENERATION_PERSONA, "generate", "user"
+        ).format(context=context, query=query)
+        system_prompt = self._persona_template(
+            GENERATION_PERSONA, "generate", "system"
+        )
+
+        return system_prompt, user_prompt
+
+
+    def build_prompt_from_recipes(
+        self,
+        query: str,
+        recipes: list[dict],
+        recipe_to_string,
+    ) -> tuple[str, str]:
+        """Build the (system, user) prompt pair from whole recipe dicts.
+
+        Used by HybridPipeline after rerank: chunks are resolved back to
+        whole recipes before the prompt is built, so the LLM gets full
+        recipes instead of fragments.
+
+        `recipe_to_string` is injected rather than imported so this module
+        stays decoupled from the data layer and the same helper can be
+        reused by notebooks (`notebook/debug/rerank.py`).
+        """
+        context_parts = []
+        current_tokens = 0
+
+        for i, recipe in enumerate(recipes):
+            text = recipe_to_string(recipe)
+
+            tokens = self.tokenizer.encode(text)
+            if current_tokens + len(tokens) > self.max_context_tokens:
+                print(f"Max context tokens exceeded, breaking at recipe {i}")
+                break
+
+            context_parts.append(text)
+            current_tokens += len(tokens)
+
         context = "\n\n".join(context_parts)
 
         user_prompt = self._persona_template(
