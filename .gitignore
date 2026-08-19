@@ -65,6 +65,9 @@ Thumbs.db
 # Lavish skill output (generated artifacts)
 .lavish/
 
+# Temp working/output directory (build artifacts, debug configs, indices)
+temp/
+
 # DVC
 .dvc/tmp/
 .dvc/cache/
