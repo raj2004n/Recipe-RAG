@@ -1,5 +1,8 @@
 """
 Pipeline classes are used to load the model snapshot and run inference.
+
+The chunks passed in here contain formatted whole recipes.
+Thus, no formatting step is required as the one present in Hybrid Pipeline.
 """
 
 from ..retrieval.dense.retriever import Retriever, RetrievalResult
