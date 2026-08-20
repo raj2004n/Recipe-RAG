@@ -17,7 +17,11 @@ from .paths import SnapshotPaths
 
 
 def save_config(save_path: Path, config_path: str) -> None:
-    """Copy a config file into a snapshot's configs directory."""
+    """Copy a config file into a snapshot's configs directory.
+
+    'save_path' must point at an existing or creatable directory. 
+    The source filename is preserved as the destination filename.
+    """
     save_dir = Path(save_path)
     src = Path(config_path)
     save_dir.mkdir(parents=True, exist_ok=True)
