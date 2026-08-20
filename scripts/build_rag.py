@@ -6,7 +6,10 @@ from rag.builder.base_builder import BaseBuilder
 
 # Add logging
 # Mlflow; calling it first-rag-experiement does not make sense. And should I be using Mlflow for every build?
+
+"check"
 # Snapshot has too many hardcoded save locations. These should be derived from configs. 
+
 # What is going on with these the files config, files, dir?
 # consider refactor related to snapshot.py
 # take a look at dvc, this may have room for improvements
@@ -25,20 +28,13 @@ BUILDING = PATHS_CONFIG["building"]
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
-                        choices=["set_strategy", "chunk", "transform", "index", "seal_snapshot", "build"],
+                        choices=["set_strategy", "chunk", "transform", "index", "finalise_build", "build"],
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
 
-# TODO: set_strategy should not live here.
 def set_strategy() -> None:
-    # get strategy from config
-    strategy_name = BASE_CONFIG["rag"]["strategy"]
-
-    BaseBuilder.set_strategy(
-        strategy_name=strategy_name,
-        metadata_path=BUILDING["metadata"]
-    )
+    BaseBuilder.set_strategy_from_config(BASE_CONFIG, BUILDING["metadata"])
 
 
 def chunk() -> None:
@@ -75,8 +71,10 @@ def build_rag():
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.run == "set_straetgy":
+        set_strategy()
 
-    if args.run == "chunk":
+    elif args.run == "chunk":
         chunk()
 
     elif args.run == "transform":
@@ -85,7 +83,7 @@ if __name__ == "__main__":
     elif args.run == "index":
         index_embeddings()
 
-    elif args.run == "seal_snapshot":
+    elif args.run == "finalise_build":
         finalise_build()
 
     elif args.run == "build":

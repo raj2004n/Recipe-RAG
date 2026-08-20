@@ -29,9 +29,15 @@ import os
 
 class BaseBuilder(ABC):
     """Base class for build-time orchestration of a retrieval index."""
+    @classmethod
+    def set_strategy_from_config(cls, base_config: dict, metadata_path: str) -> None:
+        """Resolve strategy from a base_config dict and persist it to metadata."""
+        strategy_name = base_config["rag"]["strategy"]
+        cls._set_strategy(strategy_name=strategy_name, metadata_path=metadata_path)
+
 
     @classmethod
-    def set_strategy(cls, strategy_name: str, metadata_path: str) -> None:
+    def _set_strategy(cls, strategy_name: str, metadata_path: str) -> None:
         """Persist the chosen retrieval strategy to the build's metadata.
 
         Writes `{metadata_path}/metadata.json` containing a single
@@ -45,7 +51,7 @@ class BaseBuilder(ABC):
         """
         # import inside the method to avoid circular imports when dense inherits base
         # downside, builders dict duplicated in set_strategy, from_metadata
-        from .dense import DenseBuilder
+        from .dense_builder import DenseBuilder
         from .hybrid_builder import HybridBuilder
 
         builders = {
@@ -84,7 +90,7 @@ class BaseBuilder(ABC):
         """
         # import inside the method to avoid circular imports when dense inherits base
         # downside, builders dict duplicated in set_strategy, from_metadata
-        from .dense import DenseBuilder
+        from .dense_builder import DenseBuilder
         from .hybrid_builder import HybridBuilder
 
         builders = {
