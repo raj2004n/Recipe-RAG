@@ -40,18 +40,20 @@ stages:
   index:
     cmd: python -m scripts.build_rag --run index
     deps:
-    - snapshots/building/encoded_chunks/
+    - snapshots/building/transformed_chunks/
     - configs/base_config.yaml
     outs:
     - snapshots/building/index/
-  
+
   finalise_build:
-    cmd: python -m scripts.build_rag --run finalise_snapshot
+    cmd: python -m scripts.build_rag --run finalise_build
     deps:
     - configs/base_config.yaml
     - configs/paths_config.yaml
     - configs/prompts_config.yaml
-    - src/rag/core/snapshot.py
+    - src/rag/core/snapshot/
+    outs:
+    - snapshots/latest/
 
   generate_eval_dataset:
     cmd: python -m scripts.generate_eval_dataset
@@ -60,3 +62,4 @@ stages:
     - data/processed/cleaned_recipes.json
     outs:
     - data/evaluation/evaluation_dataset.json
+    - data/evaluation/evaluation_queries.json
