@@ -5,7 +5,8 @@ and will be updated later. Ignore for now.
 
 
 from src.rag.core.profiler import profile_model_memory, profile_dataset_tokenization
-from src.rag.core.utils import load_snapshot
+from src.rag.core.snapshot.loader import load_snapshot
+from src.rag.core.config import SNAPSHOT_PATHS
 import mlflow
 import argparse
 
@@ -23,7 +24,7 @@ def parse_args():
 
 def run(model_id: str, input_tokens: int) -> None:
     # load chunks
-    snapshot = load_snapshot("snapshots/latest")
+    snapshot = load_snapshot(str(SNAPSHOT_PATHS.latest))
     # IndexedChunkSet.chunks holds the same Chunk objects that used to be on
     # snapshot.chunk_sets - flatten them across all indexed sets.
     chunks = [
@@ -31,14 +32,15 @@ def run(model_id: str, input_tokens: int) -> None:
         for indexed in snapshot.indexed_chunk_sets
         for c in indexed.chunks.values()
     ]
-    
+
     with mlflow.start_run():
-        
+        mlflow.log_param("snapshot_id", snapshot.snapshot_id)
+
         memory_metrics =profile_model_memory(model_id, input_tokens)
         dataset_metrics = profile_dataset_tokenization(model_id, chunks)
-        
+
         status = memory_metrics.pop("status")
-        
+
         mlflow.set_tag("status", status)
         mlflow.log_param("input_tokens", input_tokens)
 
