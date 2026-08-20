@@ -1,6 +1,7 @@
 """Project-wide configuration singletons."""
 
 from .utils import load_config
+from .snapshot.paths import SnapshotPaths
 
 _PATHS_CONFIG_PATH = "configs/paths_config.yaml"
 _PATHS_CONFIG = load_config(_PATHS_CONFIG_PATH)
@@ -18,3 +19,6 @@ EVAL_DATASET_CONFIG: dict = BASE_CONFIG["evaluation dataset generator"]
 # PATHS_CONFIG sub-pieces
 DATA_PATHS: dict = PATHS_CONFIG["data"]
 BUILDING_PATHS: dict = PATHS_CONFIG["building"]
+
+# used when sealed snapshot directory needed
+SNAPSHOT_PATHS: SnapshotPaths = SnapshotPaths.from_paths_config(PATHS_CONFIG)

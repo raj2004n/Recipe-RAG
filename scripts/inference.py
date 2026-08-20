@@ -1,5 +1,5 @@
 from src.rag.core.snapshot.loader import load_snapshot, Snapshot
-from src.rag.core.config import DATA_PATHS
+from src.rag.core.config import SNAPSHOT_PATHS, DATA_PATHS
 from src.rag.pipeline import DensePipeline, HybridPipeline
 
 
@@ -31,7 +31,7 @@ def _build_pipeline(snapshot: Snapshot):
 
 def run():
     # load snapshot
-    snapshot = load_snapshot("snapshots/latest")
+    snapshot = load_snapshot(str(SNAPSHOT_PATHS.latest))
     return _build_pipeline(snapshot)
 
 

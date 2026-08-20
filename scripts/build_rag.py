@@ -2,7 +2,7 @@ import time
 import mlflow
 import argparse
 import subprocess
-from src.rag.core.config import BASE_CONFIG, BUILDING_PATHS
+from src.rag.core.config import BASE_CONFIG, BUILDING_PATHS, SNAPSHOT_PATHS
 from src.rag.core.mlflow_tracking import build_run_params
 from src.rag.builder.base_builder import BaseBuilder
 
@@ -71,7 +71,7 @@ def build_rag():
             subprocess.run(["dvc", "repro", stage], check=True)
         mlflow.log_metric("build.duration_sec", time.time() - t0)
 
-        mlflow.log_artifact(str(BUILDING_PATHS["latest"]), artifact_path="snapshot")
+        mlflow.log_artifact(str(SNAPSHOT_PATHS.latest), artifact_path="snapshot")
         mlflow.log_artifact("configs/base_config.yaml")
         mlflow.log_artifact("configs/paths_config.yaml")
         mlflow.log_artifact("configs/prompts_config.yaml")
