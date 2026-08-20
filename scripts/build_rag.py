@@ -8,7 +8,6 @@ from src.rag.core.logging import configure_logging
 from src.rag.core.mlflow_tracking import build_run_params
 from src.rag.builder.base_builder import BaseBuilder
 
-# take a look at dvc, this may have room for improvements
 
 logger = logging.getLogger(__name__)
 
