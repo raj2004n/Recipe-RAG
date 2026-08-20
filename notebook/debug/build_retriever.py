@@ -64,7 +64,7 @@ def test_index_embeddings():
     "test if index embeddings correctly produces IndexedChunkSets with Chunks dict"
 
     from src.rag.retrieval.dense.indexer import Indexer
-    from src.rag.core.snapshot import load_encoded_chunk_sets
+    from src.rag.core.snapshot.chunk_sets import load_encoded_chunk_sets
     from itertools import islice
 
     BASE_CONFIG = load_config("configs/base_config.yaml")
@@ -101,7 +101,7 @@ def test_index_embeddings():
 def test_load_index():
     # sanity check for loading bm25 index
     
-    from src.rag.core.snapshot import load_bm25_index_chunk_sets
+    from src.rag.core.snapshot.indices import load_bm25_index_chunk_sets
     from pathlib import Path
 
     path = "temp/building"

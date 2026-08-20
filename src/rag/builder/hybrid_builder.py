@@ -7,17 +7,20 @@ from ..retrieval.sparse.bm25indexer import BM25Indexer
 from ..retrieval.chunker import chunk_recipes
 
 from src.rag.core.utils import load_config
-from src.rag.core.snapshot import (
+from src.rag.core.snapshot.chunk_sets import (
     save_chunk_sets,
     load_chunk_sets,
     save_encoded_chunk_sets,
     save_tokenized_chunk_sets,
     load_encoded_chunk_sets,
     load_tokenized_chunk_sets,
+)
+from src.rag.core.snapshot.indices import (
     save_indexed_chunk_sets,
     save_bm25_index_chunk_sets,
-    finalise_snapshot
 )
+from src.rag.core.snapshot.lifecycle import finalise_snapshot
+from src.rag.core.snapshot.paths import SnapshotPaths
 
 
 BASE_CONFIG = load_config("configs/base_config.yaml")
@@ -29,6 +32,8 @@ RETRIEVER_CONFIG = BASE_CONFIG["retriever"]
 
 FILES = PATHS_CONFIG["data"]
 BUILDING = PATHS_CONFIG["building"]
+
+SNAPSHOT_PATHS = SnapshotPaths.from_paths_config(PATHS_CONFIG)
 
 
 class HybridBuilder(BaseBuilder):
@@ -105,4 +110,4 @@ class HybridBuilder(BaseBuilder):
 
     def seal_snapshot(self):
         # TODO: need some checks:
-        finalise_snapshot()
+        finalise_snapshot(SNAPSHOT_PATHS)

@@ -6,6 +6,7 @@ data:
 configs:
   base_config: configs/base_config.yaml
   prompts_config: configs/prompts_config.yaml
+  paths_config: configs/paths_config.yaml # self references so lifecycle.py can save paths_config without hardcoding path 
 
 building:
   chunks: snapshots/building/chunks

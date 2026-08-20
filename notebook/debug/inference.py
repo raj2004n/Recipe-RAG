@@ -1,4 +1,4 @@
-from src.rag.core.snapshot import load_snapshot, Snapshot
+from src.rag.core.snapshot.loader import load_snapshot, Snapshot
 from src.rag.core.utils import load_config
 from src.rag.pipeline import DensePipeline, HybridPipeline
 

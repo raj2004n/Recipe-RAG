@@ -1,7 +1,7 @@
 import json
 import mlflow
 import pandas as pd
-from src.rag.core.snapshot import load_snapshot
+from src.rag.core.snapshot.loader import load_snapshot
 from src.rag.core.utils import load_retriever
 from sentence_transformers import CrossEncoder
 

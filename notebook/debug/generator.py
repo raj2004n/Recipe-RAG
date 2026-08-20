@@ -1,6 +1,6 @@
 import argparse
 import mlflow
-from src.rag.core.snapshot import load_snapshot
+from src.rag.core.snapshot.loader import load_snapshot
 from src.rag.core.utils import flatten_config_dict
 from rag.pipeline.dense_pipeline import RAGPipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer
