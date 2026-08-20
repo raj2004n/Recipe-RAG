@@ -1,59 +1,45 @@
 import mlflow
 import argparse
 import subprocess
-from src.rag.core.utils import load_config
-from rag.builder.base_builder import BaseBuilder
+from src.rag.core.config import BASE_CONFIG, BUILDING_PATHS
+from src.rag.builder.base_builder import BaseBuilder
 
 # Add logging
 # Mlflow; calling it first-rag-experiement does not make sense. And should I be using Mlflow for every build?
-
-"check"
-# Snapshot has too many hardcoded save locations. These should be derived from configs. 
-
-# What is going on with these the files config, files, dir?
-# consider refactor related to snapshot.py
 # take a look at dvc, this may have room for improvements
-# base builders have configs.. should have a look at this. I think it is better if all configs are used at one place
 # load_tokenized_chunk_sets, and load_encoded_chunk_sets can likely be combined into one, just need a key or extra parameter.
-
-# after cleaning up, refactor configs.
-
 # the strategy names; dense, hybrid, will be updated later. And thus the file names will be too.
-
-PATHS_CONFIG = load_config("configs/paths_config.yaml")
-BASE_CONFIG = load_config(PATHS_CONFIG["configs"]["base_config"])
-BUILDING = PATHS_CONFIG["building"]
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=str, required=True,
-                        choices=["set_strategy", "chunk", "transform", "index", "finalise_build", "build"],
+                        choices=["set_strategy", "chunk", "transform", "index", "finalise_build", "build", "test_build"], # test_build does not use dvc or mlflow
                         help="The RAG pipeline step to run.")
     return parser.parse_args()
 
 
 def set_strategy() -> None:
-    BaseBuilder.set_strategy_from_config(BASE_CONFIG, BUILDING["metadata"])
+    BaseBuilder.set_strategy_from_config(BASE_CONFIG, BUILDING_PATHS["metadata"])
 
 
 def chunk() -> None:
-    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder = BaseBuilder.from_metadata(BUILDING_PATHS["metadata"])
     builder.chunk()
 
 
 def transform() -> None:
-    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder = BaseBuilder.from_metadata(BUILDING_PATHS["metadata"])
     builder.transform()
 
-    
-def index_embeddings()-> None:
-    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+
+def index()-> None:
+    builder = BaseBuilder.from_metadata(BUILDING_PATHS["metadata"])
     builder.index()
-    
+
 
 def finalise_build() -> None:
-    builder = BaseBuilder.from_metadata(BUILDING["metadata"])
+    builder = BaseBuilder.from_metadata(BUILDING_PATHS["metadata"])
     builder.seal_snapshot()
 
 
@@ -69,6 +55,15 @@ def build_rag():
 
     mlflow.log_artifact("snapshots/latest")
 
+
+def test_build_rag():
+    set_strategy()
+    chunk()
+    transform()
+    index()
+    finalise_build()
+
+
 if __name__ == "__main__":
     args = parse_args()
     if args.run == "set_straetgy":
@@ -81,10 +76,13 @@ if __name__ == "__main__":
         transform()
 
     elif args.run == "index":
-        index_embeddings()
+        index()
 
     elif args.run == "finalise_build":
         finalise_build()
 
     elif args.run == "build":
         build_rag()
+
+    elif args.run == "test_build":
+        test_build_rag()

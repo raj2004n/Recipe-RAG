@@ -1,5 +1,5 @@
 from src.rag.core.snapshot.loader import load_snapshot, Snapshot
-from src.rag.core.utils import load_config
+from src.rag.core.config import DATA_PATHS
 from src.rag.pipeline import DensePipeline, HybridPipeline
 
 
@@ -22,10 +22,9 @@ def _build_pipeline(snapshot: Snapshot):
         ) from exc
 
     if pipeline_cls is HybridPipeline:
-        paths = load_config("configs/paths_config.yaml")
         return pipeline_cls(
             snapshot,
-            recipes_path=paths["data"]["cleaned_recipes"],
+            recipes_path=DATA_PATHS["cleaned_recipes"],
         )
     return pipeline_cls(snapshot)
 

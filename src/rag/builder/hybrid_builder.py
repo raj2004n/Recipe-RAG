@@ -6,7 +6,10 @@ from ..retrieval.sparse.tokenizer import Tokenizer
 from ..retrieval.sparse.bm25indexer import BM25Indexer
 from ..retrieval.chunker import chunk_recipes
 
-from src.rag.core.utils import load_config
+from src.rag.core.config import (
+    ENCODER_CONFIG, INDEXER_CONFIG,
+    DATA_PATHS, BUILDING_PATHS, PATHS_CONFIG,
+)
 from src.rag.core.snapshot.chunk_sets import (
     save_chunk_sets,
     load_chunk_sets,
@@ -23,16 +26,6 @@ from src.rag.core.snapshot.lifecycle import finalise_snapshot
 from src.rag.core.snapshot.paths import SnapshotPaths
 
 
-BASE_CONFIG = load_config("configs/base_config.yaml")
-PATHS_CONFIG = load_config("configs/paths_config.yaml")
-
-ENCODER_CONFIG = BASE_CONFIG["encoder"]
-INDEXER_CONFIG = BASE_CONFIG["indexer"]
-RETRIEVER_CONFIG = BASE_CONFIG["retriever"]
-
-FILES = PATHS_CONFIG["data"]
-BUILDING = PATHS_CONFIG["building"]
-
 SNAPSHOT_PATHS = SnapshotPaths.from_paths_config(PATHS_CONFIG)
 
 
@@ -40,18 +33,18 @@ class HybridBuilder(BaseBuilder):
     def chunk(self):
         chunk_sets = chunk_recipes(
             strategy="hybrid",
-            recipes_path=FILES["cleaned_recipes"]
+            recipes_path=DATA_PATHS["cleaned_recipes"]
         )
 
         save_chunk_sets(
-                    chunk_sets=chunk_sets,
-                    save_path=BUILDING["chunks"]
-                )
+            chunk_sets=chunk_sets,
+            save_path=BUILDING_PATHS["chunks"]
+        )
 
 
     def transform(self):
         chunk_sets = load_chunk_sets(
-            save_path=BUILDING["chunks"],
+            save_path=BUILDING_PATHS["chunks"],
         )
 
         sparse = [cs for cs in chunk_sets if cs.name == "sparse"]
@@ -71,27 +64,27 @@ class HybridBuilder(BaseBuilder):
 
         save_tokenized_chunk_sets(
             tokenized_chunk_sets=tokenized_chunk_sets,
-            save_path=BUILDING["transformed_chunks"]
+            save_path=BUILDING_PATHS["transformed_chunks"]
         )
         save_encoded_chunk_sets(
             encoded_chunk_sets=encoded_chunk_sets,
-            save_path=BUILDING["transformed_chunks"]
+            save_path=BUILDING_PATHS["transformed_chunks"]
         )
 
-    
+
     def index(self):
         tokenized_chunk_sets = load_tokenized_chunk_sets(
-            save_path=BUILDING["transformed_chunks"]
+            save_path=BUILDING_PATHS["transformed_chunks"]
         )
         encoded_chunk_sets = load_encoded_chunk_sets(
-            save_path=BUILDING["transformed_chunks"]
+            save_path=BUILDING_PATHS["transformed_chunks"]
         )
 
         # index sparse
         indexer = BM25Indexer()
         bm25_index = indexer.build(tokenized_chunk_sets[0])
 
-        # index dense 
+        # index dense
         indexer = Indexer(
             index_type=INDEXER_CONFIG["type"],
             dimension=INDEXER_CONFIG["dimension"]
@@ -100,11 +93,11 @@ class HybridBuilder(BaseBuilder):
 
         save_bm25_index_chunk_sets(
             bm25_index_chunk_sets=bm25_index,
-            save_path=BUILDING["index"]
+            save_path=BUILDING_PATHS["index"]
         )
         save_indexed_chunk_sets(
             indexed_chunk_sets=indexed_chunks_sets,
-            save_path=BUILDING["index"]
+            save_path=BUILDING_PATHS["index"]
         )
 
 
