@@ -19,7 +19,7 @@ stages:
     deps:
     - configs/base_config.yaml
     outs:
-    - snapshots/building/
+    - snapshots/building/metadata.json
 
   chunk:
     cmd: python -m scripts.build_rag --run chunk
