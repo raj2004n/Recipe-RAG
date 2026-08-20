@@ -1,6 +1,10 @@
+import logging
 from src.rag.core.snapshot.loader import load_snapshot, Snapshot
 from src.rag.core.config import SNAPSHOT_PATHS, DATA_PATHS
+from src.rag.core.logging import configure_logging
 from src.rag.pipeline import DensePipeline, HybridPipeline
+
+logger = logging.getLogger(__name__)
 
 
 # map snapshot retrieval_strategy to pipeline
@@ -36,10 +40,11 @@ def run():
 
 
 if __name__ == "__main__":
+    configure_logging()
     rag = run()
 
-    print(f"Recipe RAG System Ready!  (strategy: {rag._snapshot.retrieval_strategy})")
-    print("Type 'quit' to exit")
+    logger.info("Recipe RAG System Ready!  (strategy: %s)", rag._snapshot.retrieval_strategy)
+    logger.info("Type 'quit' to exit")
 
     while True:
         question = input("\nWhat would you like to cook? > ")
@@ -47,4 +52,4 @@ if __name__ == "__main__":
             break
 
         result = rag.query(question)
-        print(f"\n📝 Answer:\n{result['answer']}")
+        logger.info("\U0001f4dd Answer:\n%s", result['answer'])

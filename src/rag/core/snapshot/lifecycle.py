@@ -7,6 +7,7 @@ Renmaes 'building' (current snapshot) to 'latest'
 """
 
 import json
+import logging
 import os
 import shutil
 import time
@@ -14,6 +15,8 @@ import uuid
 from pathlib import Path
 
 from .paths import SnapshotPaths
+
+logger = logging.getLogger(__name__)
 
 
 def save_config(save_path: Path, config_path: str) -> None:
@@ -53,9 +56,10 @@ def _archive_existing_latest(paths: SnapshotPaths) -> None:
     if archive_path.exists():
         suffix = time.strftime("%Y%m%d%H%M%S")
         archive_path = paths.latest.parent / f"{snapshot_id}_{suffix}"
-        print(
-            f"Warning: snapshot with id {snapshot_id} already exists; "
-            f"archiving latest to {archive_path.name}"
+        logger.warning(
+            "snapshot with id %s already exists; archiving latest to %s",
+            snapshot_id,
+            archive_path.name,
         )
 
     os.rename(paths.latest, archive_path)

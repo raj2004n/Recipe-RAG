@@ -1,15 +1,16 @@
 import time
+import logging
 import mlflow
 import argparse
 import subprocess
 from src.rag.core.config import BASE_CONFIG, BUILDING_PATHS, SNAPSHOT_PATHS
+from src.rag.core.logging import configure_logging
 from src.rag.core.mlflow_tracking import build_run_params
 from src.rag.builder.base_builder import BaseBuilder
 
-# Add logging
 # take a look at dvc, this may have room for improvements
-# load_tokenized_chunk_sets, and load_encoded_chunk_sets can likely be combined into one, just need a key or extra parameter.
-# the strategy names; dense, hybrid, will be updated later. And thus the file names will be too.
+
+logger = logging.getLogger(__name__)
 
 
 _MLFLOW_TRACKING_URI = "http://localhost:5000"
@@ -62,14 +63,18 @@ def build_rag():
 
     strategy = BASE_CONFIG["rag"]["strategy"]
     run_name = f"build-{strategy}-{time.strftime('%Y%m%d-%H%M%S')}"
+    logger.info("starting build run %s", run_name)
 
     with mlflow.start_run(run_name=run_name):
         mlflow.log_params(build_run_params())
 
         t0 = time.time()
         for stage in _DVC_STAGES:
+            logger.info("running dvc stage %s", stage)
             subprocess.run(["dvc", "repro", stage], check=True)
-        mlflow.log_metric("build.duration_sec", time.time() - t0)
+        duration = time.time() - t0
+        mlflow.log_metric("build.duration_sec", duration)
+        logger.info("build finished in %.1fs", duration)
 
         mlflow.log_artifact(str(SNAPSHOT_PATHS.latest), artifact_path="snapshot")
         mlflow.log_artifact("configs/base_config.yaml")
@@ -86,6 +91,7 @@ def test_build_rag():
 
 
 if __name__ == "__main__":
+    configure_logging()
     args = parse_args()
     if args.run == "set_strategy":
         set_strategy()
