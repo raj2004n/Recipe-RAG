@@ -95,12 +95,12 @@ def finalise_build() -> None:
     )
     # Register the completed snapshot with DVC so its contents are
     # content-hashed and tracked for reproducibility. Skip silently if dvc
-    # is not installed or the working tree is not a DVC repo.
+    # is not installed or the working tree is not a DVC repo. Pass an
+    # absolute path so dvc does not interpret a relative path under cwd.
     try:
         subprocess.run(
-            ["dvc", "add", str(paths.building)],
+            ["dvc", "add", str(paths.building.resolve())],
             check=True,
-            cwd=str(_SNAPSHOTS_DIR),
         )
     except FileNotFoundError:
         logger.warning("dvc not on PATH; skipping dvc add for %s", paths.building)

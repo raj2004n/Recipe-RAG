@@ -61,6 +61,7 @@ Thumbs.db
 # Claude Code / agent harness state (per-user, not project source)
 .agents/
 .claude/
+CLAUDE.md
 
 # Lavish skill output (generated artifacts)
 .lavish/
@@ -82,4 +83,7 @@ logs/
 #MlFlow
 mlruns/
 mlartifacts/
-/snapshots
+# DVC auto-manages the contents of snapshots/ via dvc add. Each versioned
+# snapshot folder gets added to .gitignore by dvc; the .dvc pointer files
+# (created alongside the snapshots) are git-tracked.
+snapshots/registry.json
