@@ -1,6 +1,6 @@
 import logging
-from src.rag.core.snapshot.loader import load_snapshot, Snapshot
-from src.rag.core.config import SNAPSHOT_PATHS, DATA_PATHS
+from src.rag.core.snapshot.loader import load_snapshot_by_target, Snapshot
+from src.rag.core.config import DATA_PATHS
 from src.rag.core.logging import configure_logging
 from src.rag.pipeline import DensePipeline, HybridPipeline
 
@@ -34,8 +34,9 @@ def _build_pipeline(snapshot: Snapshot):
 
 
 def run():
-    # load snapshot
-    snapshot = load_snapshot(str(SNAPSHOT_PATHS.latest))
+    # load snapshot by target name; the registry resolves it to a folder
+    # and refuses to load folders whose status is not "complete"
+    snapshot = load_snapshot_by_target("latest")
     return _build_pipeline(snapshot)
 
 
