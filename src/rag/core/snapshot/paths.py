@@ -68,7 +68,7 @@ class SnapshotPaths:
             transformed_chunks_dir = building_root / "transformed_chunks"
             index_dir = building_root / "index"
             configs_dir = building_root / "configs"
-            metadata_dir = building_root / "metadata"
+            metadata_dir = building_root
         else:
             building_root = _SNAPSHOTS_ROOT / "building"
             chunks_dir = Path(building_cfg.get("chunks", "snapshots/building/chunks"))

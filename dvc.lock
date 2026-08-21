@@ -1,0 +1,13 @@
+schema: '2.0'
+stages:
+  set_strategy:
+    cmd: python -m scripts.build_rag --run set_strategy
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 268304a0f3d9c2eb27df9b551b032141
+      size: 1010
+    - path: configs/paths_config.yaml
+      hash: md5
+      md5: ef8ae3776fe9ad13e454640f36dc3e80
+      size: 379
