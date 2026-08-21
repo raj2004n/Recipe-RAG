@@ -3,6 +3,11 @@
 A 'Snapshot' is the read-only artefact Pipelines consume at inference time.
 Each strategy declares which index loaders to run, so adding a strategy is a
 matter of adding a row to `_STRATEGY_LOADERS`.
+
+Loading is target-based: pass a target name (`'latest'`, `'current'`, or a
+build name) to `load_snapshot_by_target`. The registry is consulted to
+resolve the target to a folder, and the folder's status must be `"complete"`
+for the load to proceed.
 """
 
 import json
@@ -10,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+from .paths import SnapshotPaths
+from . import registry
 
 from ...retrieval.dense.indexer import IndexedChunkSet
 from ...retrieval.sparse.bm25indexer import BM25IndexedChunkSet
@@ -18,7 +25,6 @@ from .indices import load_bm25_index_chunk_sets, load_indexed_chunk_sets
 
 @dataclass
 class Snapshot:
-    snapshot_id: str | None
     created_at: str | None
     retrieval_strategy: str
     indexed_chunk_sets: list[IndexedChunkSet]  # carries chunks in IndexedChunkSet.chunks
@@ -35,17 +41,43 @@ _STRATEGY_LOADERS = {
 }
 
 
-def load_snapshot(path: str) -> Snapshot:
-    path_obj = Path(path)
+def _resolve_snapshot_dir(folder: str | Path) -> Path:
+    """Return the absolute path to a snapshot folder, raising if it is missing.
+    """
+    folder_path = Path(folder)
+    if not folder_path.is_dir():
+        raise FileNotFoundError(f"Snapshot folder not found at {folder_path}")
+    return folder_path
 
-    # load configs
-    with open(path_obj / "configs" / "base_config.yaml") as f:
+
+def _enforce_complete(registry_file: Path, folder: str) -> None:
+    """Refuse to load a snapshot whose registry status is not `"complete"`.
+    """
+    status = registry.get_status_for_folder(registry_file, folder)
+    if status != "complete":
+        raise RuntimeError(
+            f"Cannot load snapshot {folder!r}: registry status is {status!r}, "
+            f"expected 'complete'. Run finalise_build to seal the snapshot."
+        )
+
+
+def load_snapshot(folder: str | Path) -> Snapshot:
+    """Load a snapshot directly from a folder path.
+
+    Looks up the folder's name in the registry and refuses to load if the
+    status is not `"complete"`. Use `load_snapshot_by_target` to resolve a
+    target name (e.g. `"latest"`) to a folder.
+    """
+    folder_path = _resolve_snapshot_dir(folder)
+    registry_file = SnapshotPaths.from_paths_config({}).registry_file
+    _enforce_complete(registry_file, folder_path.name)
+
+    with open(folder_path / "configs" / "base_config.yaml") as f:
         base_config = yaml.safe_load(f)
-    with open(path_obj / "configs" / "prompts_config.yaml") as f:
+    with open(folder_path / "configs" / "prompts_config.yaml") as f:
         prompts_config = yaml.safe_load(f)
 
-    # load metadata first to determine strategy
-    with open(path_obj / "metadata.json") as f:
+    with open(folder_path / "metadata.json") as f:
         metadata = json.load(f)
 
     strategy = metadata["strategy"]
@@ -62,8 +94,8 @@ def load_snapshot(path: str) -> Snapshot:
 
     for loader in loaders:
         chunk_sets, chunks_by_set_name = loader(
-            path_obj / "index",
-            chunks_save_path=path_obj / "chunks",
+            folder_path / "index",
+            chunks_save_path=folder_path / "chunks",
         )
         if loader is load_bm25_index_chunk_sets:
             bm25_indexed_chunk_sets = chunk_sets
@@ -75,11 +107,38 @@ def load_snapshot(path: str) -> Snapshot:
                 indexed.chunks = chunks_by_set_name.get(indexed.name, {})
 
     return Snapshot(
-        snapshot_id=metadata["snapshot_id"],
-        created_at=metadata["created_at"],
+        created_at=metadata.get("created_at"),
         retrieval_strategy=strategy,
         indexed_chunk_sets=indexed_chunk_sets,
         bm25_indexed_chunk_sets=bm25_indexed_chunk_sets,
         base_config=base_config,
         prompts_config=prompts_config,
     )
+
+
+def load_snapshot_by_target(target: str = "latest") -> Snapshot:
+    """Resolve a target name (e.g. `'latest'`) to a snapshot folder and load it.
+
+    Raises:
+        FileNotFoundError: If the target has no folder mapped in the registry.
+        RuntimeError: If the resolved snapshot's status is not `"complete"`.
+    """
+    paths = SnapshotPaths.from_paths_config({})
+    folder = registry.get_folder_for_target(paths.registry_file, target)
+    if not folder:
+        raise FileNotFoundError(
+            f"No snapshot folder mapped to target {target!r} in registry"
+        )
+
+    folder_path = paths.building.parent / folder
+    return load_snapshot(folder_path)
+
+
+def load_current_snapshot() -> Snapshot:
+    """Load the snapshot mapped to the `'current'` target.
+
+    The `'current'` target points at the most recently finalised build. It is
+    kept after finalisation so the build stages can resume / rebuild against
+    it.
+    """
+    return load_snapshot_by_target("current")

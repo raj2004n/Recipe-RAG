@@ -1,9 +1,11 @@
 """Snapshot lifecycle.
 
-Archives any existing 'latest' snapshot to its id
-Copies build configs into snapshot
-Stamps metadata with snapshot_id and created_at
-Renmaes 'building' (current snapshot) to 'latest'
+Each build gets a versioned folder (`{strategy}_{YYYYMMDD_HHMM}_{index}`) at
+`set_strategy` time. Subsequent stages write directly into that folder, so
+no rename is ever required. The registry (`registry.json`) is the single
+source of truth for which folder is the active build and which is the latest
+sealed snapshot. The legacy `snapshots/latest` directory and rename-based
+finalisation are no longer used.
 """
 
 import json
@@ -11,10 +13,10 @@ import logging
 import os
 import shutil
 import time
-import uuid
 from pathlib import Path
 
 from .paths import SnapshotPaths
+from . import registry
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 def save_config(save_path: Path, config_path: str) -> None:
     """Copy a config file into a snapshot's configs directory.
 
-    'save_path' must point at an existing or creatable directory. 
+    'save_path' must point at an existing or creatable directory.
     The source filename is preserved as the destination filename.
     """
     save_dir = Path(save_path)
@@ -31,75 +33,72 @@ def save_config(save_path: Path, config_path: str) -> None:
     shutil.copy2(src, save_dir / src.name)
 
 
-def _archive_existing_latest(paths: SnapshotPaths) -> None:
-    """Move `snapshots/latest` to 'snapshots/<snapshot_id>' if it exists.
-
-    If 'paths.latest' does not exist than does nothing.
-    
-    If target id is already taken, then add timestap suffix.
-    This would never be the case if an id is automatically generated (default),
-    unless a snapshot is saved with custom id.
-    """
-    if not paths.latest.exists():
-        return
-
-    metadata_file = paths.latest / "metadata.json"
-    if not metadata_file.exists():
-        raise FileNotFoundError(f"No metadata file found at {metadata_file}")
-
-    with open(metadata_file, "r") as f:
-        metadata = json.load(f)
-
-    snapshot_id = metadata["snapshot_id"]
-    archive_path = paths.latest.parent / snapshot_id
-
-    if archive_path.exists():
-        suffix = time.strftime("%Y%m%d%H%M%S")
-        archive_path = paths.latest.parent / f"{snapshot_id}_{suffix}"
-        logger.warning(
-            "snapshot with id %s already exists; archiving latest to %s",
-            snapshot_id,
-            archive_path.name,
-        )
-
-    os.rename(paths.latest, archive_path)
-
-
 def _copy_configs_into(paths: SnapshotPaths) -> None:
     """Copy each config listed in `paths.config_files` into the snapshot.
-
-    Source paths are resolved at `SnapshotPaths` construction time from
-    `PATHS_CONFIG["configs"]` — see `configs/paths_config.yaml`.
     """
     for config_path in paths.config_files:
         save_config(save_path=paths.configs, config_path=config_path)
 
 
+def start_new_build(
+    snapshots_dir: Path,
+    registry_file: Path,
+    strategy: str,
+) -> str:
+    """Claim a new versioned folder for a build and register it as `current`.
+
+    Returns the versioned folder name (e.g. `dense_20260821_1430_0`).
+    The folder is created, `metadata.json` is written with the strategy,
+    and the registry's `current` target and `status` are updated.
+    """
+    snapshots_dir = Path(snapshots_dir)
+    registry_file = Path(registry_file)
+
+    name = registry.claim_snapshot_name(snapshots_dir, strategy)
+    folder = snapshots_dir / name
+    metadata_path = folder / "metadata.json"
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(metadata_path, "w") as f:
+        json.dump({"strategy": strategy}, f, indent=2)
+
+    registry.update_target(registry_file, "current", name)
+    registry.update_status(registry_file, name, "building")
+
+    return name
+
+
 def finalise_snapshot(
     paths: SnapshotPaths,
-    snapshot_id: str | None = None,
-    created_at: str | None = None,
+    registry_file: Path,
+    versioned_name: str,
 ) -> None:
-    """Seal the 'building' snapshot into 'latest'."""
-    if not paths.building.exists():
-        raise FileNotFoundError(f"Building directory not found at {paths.building}")
+    """Seal the snapshot in `paths.building` (a versioned folder) and mark it complete.
 
-    _archive_existing_latest(paths)
+    No rename: the versioned folder is the same folder the build has been
+    writing to. Copies configs, stamps `created_at`, makes the snapshot
+    read-only, and updates the registry so `latest` resolves to this build.
+    """
+    registry_file = Path(registry_file)
+
+    if not paths.building.exists():
+        raise FileNotFoundError(f"Snapshot folder not found at {paths.building}")
+
     _copy_configs_into(paths)
 
-    snapshot_id = snapshot_id or str(uuid.uuid4())
-    created_at = created_at or time.strftime("%Y-%m-%d %H:%M:%S")
-
+    created_at = time.strftime("%Y-%m-%d %H:%M:%S")
     with open(paths.metadata, "r") as f:
         metadata = json.load(f)
-
-    metadata.update({
-        "snapshot_id": snapshot_id,
-        "created_at": created_at,
-    })
-
+    metadata["created_at"] = created_at
     with open(paths.metadata, "w") as f:
         json.dump(metadata, f, indent=2)
 
-    # finalise by renaming 'building' to 'latest'
-    paths.building.rename(paths.latest)
+    registry.update_status(registry_file, versioned_name, "complete")
+    registry.update_target(registry_file, "latest", versioned_name)
+
+    # Make the snapshot read-only. Directories stay user-writable (0o755)
+    # so the user can still delete the tree if needed; only files and the
+    # root folder are locked down.
+    for root, _, files in os.walk(paths.building):
+        for f in files:
+            os.chmod(Path(root) / f, 0o444)
+    os.chmod(paths.building, 0o555)
