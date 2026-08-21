@@ -4,74 +4,69 @@ from ..retrieval.dense.encoder import Encoder
 from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import chunk_recipes
 
-from src.rag.core.config import (
-    ENCODER_CONFIG, INDEXER_CONFIG,
-    DATA_PATHS, BUILDING_PATHS, PATHS_CONFIG,
-)
-from src.rag.core.snapshot.chunk_sets import (
+from ..core.config import DATA_PATHS, ENCODER_CONFIG, INDEXER_CONFIG
+from ..core.snapshot.paths import SnapshotPaths
+from ..core.snapshot.lifecycle import finalise_snapshot
+from ..core.snapshot.chunk_sets import (
     save_chunk_sets,
     load_chunk_sets,
     save_encoded_chunk_sets,
     load_encoded_chunk_sets,
 )
-from src.rag.core.snapshot.indices import save_indexed_chunk_sets
-from src.rag.core.snapshot.lifecycle import finalise_snapshot
-from src.rag.core.snapshot.paths import SnapshotPaths
-
-
-SNAPSHOT_PATHS = SnapshotPaths.from_paths_config(PATHS_CONFIG)
+from ..core.snapshot.indices import save_indexed_chunk_sets
 
 
 class DenseBuilder(BaseBuilder):
-    def chunk(self):
+    def chunk(self, paths: SnapshotPaths):
         chunk_sets = chunk_recipes(
             strategy="whole_recipe",
-            recipes_path=DATA_PATHS["cleaned_recipes"]
+            recipes_path=DATA_PATHS["cleaned_recipes"],
         )
 
         save_chunk_sets(
             chunk_sets=chunk_sets,
-            save_path=BUILDING_PATHS["chunks"]
+            save_path=paths.chunks,
         )
 
-
-    def transform(self):
+    def transform(self, paths: SnapshotPaths):
         chunk_sets = load_chunk_sets(
-            save_path=BUILDING_PATHS["chunks"],
+            save_path=paths.chunks,
         )
 
         encoder = Encoder(
             model_id=ENCODER_CONFIG["model_id"],
             batch_size=ENCODER_CONFIG["batch_size"],
-            normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"]
+            normalize_embeddings=ENCODER_CONFIG["normalize_embeddings"],
         )
         # returns list containing one encoded chunk set
         encoded_chunk_sets = encoder.encode_chunks(chunk_sets)
 
         save_encoded_chunk_sets(
             encoded_chunk_sets=encoded_chunk_sets,
-            save_path=BUILDING_PATHS["transformed_chunks"]
+            save_path=paths.transformed_chunks,
         )
 
-
-    def index(self):
+    def index(self, paths: SnapshotPaths):
         encoded_chunk_sets = load_encoded_chunk_sets(
-            save_path=BUILDING_PATHS["transformed_chunks"]
+            save_path=paths.transformed_chunks,
         )
 
         indexer = Indexer(
             index_type=INDEXER_CONFIG["type"],
-            dimension=INDEXER_CONFIG["dimension"]
+            dimension=INDEXER_CONFIG["dimension"],
         )
 
         indexed_chunks_sets = indexer.index_embeddings(encoded_chunk_sets)
 
         save_indexed_chunk_sets(
             indexed_chunk_sets=indexed_chunks_sets,
-            save_path=BUILDING_PATHS["index"]
+            save_path=paths.index,
         )
 
-
-    def seal_snapshot(self):
-        # TODO: need some checks:
-        finalise_snapshot(SNAPSHOT_PATHS)
+    def seal_snapshot(self, paths: SnapshotPaths, registry_file, versioned_name: str):
+        # TODO: add checks (e.g. ensure all stages produced expected outputs).
+        finalise_snapshot(
+            paths=paths,
+            registry_file=registry_file,
+            versioned_name=versioned_name,
+        )
