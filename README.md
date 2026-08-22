@@ -50,7 +50,7 @@ hybrid path beat either single retriever on realistic recipe queries.
 git clone <repo-url>
 cd Project_Ramsay
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements/dev.txt
 
 # Pull data and build the index end-to-end
 dvc repro
