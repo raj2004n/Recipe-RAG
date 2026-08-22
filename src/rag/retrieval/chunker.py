@@ -5,7 +5,6 @@ from typing import Iterator
 from dataclasses import dataclass
 from ..data.preprocessor import Recipe
 
-# TODO: Gracefully handle when recipes not found for loading
 
 @dataclass
 class Chunk:
