@@ -1,0 +1,15 @@
+# Runtime dependencies for the RAG pipeline.
+# Anything that needs to be installed for the API to load a snapshot and answer a query.
+
+numpy==2.4.2
+faiss-gpu==1.14.3
+sentence-transformers==5.6.0
+transformers==5.12.1
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+torchaudio==2.6.0+cu124
+peft==0.18.0
+pydantic==2.12.5
+rank-bm25==0.2.2
+PyYAML==6.0.3
+tqdm==4.68.2

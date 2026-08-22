@@ -1,0 +1,18 @@
+# Build-time tools. Anything you need to produce a snapshot but never to serve one.
+
+dvc==3.67.1
+dvc-data==3.18.3
+dvc-http==2.32.0
+dvc-objects==5.2.0
+dvc-render==1.0.2
+dvc-studio-client==0.23.0
+dvc-task==0.40.2
+mlflow==3.14.0
+mlflow-skinny==3.14.0
+mlflow-tracing==3.14.0
+Scrapy==2.16.0
+Twisted==26.4.0
+itemadapter==0.12.2
+w3lib==2.4.1
+ollama==0.6.1
+jsonlines==4.0.0

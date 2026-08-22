@@ -1,0 +1,8 @@
+# API surface. Layered on top of base.
+# Only what the FastAPI service needs to accept and serve queries.
+
+-r base.txt
+
+fastapi==0.137.2
+uvicorn==0.49.0
+httpx==0.28.1

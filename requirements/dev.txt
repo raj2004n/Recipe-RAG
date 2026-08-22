@@ -1,0 +1,8 @@
+# Test and lint tooling. Layered on top of serve so tests can hit the running API.
+# Pull this in for local dev and CI; production images should install only serve.txt.
+
+-r serve.txt
+
+pytest==9.1.1
+ruff==0.14.7
+black==25.12.0
