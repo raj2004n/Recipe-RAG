@@ -1,0 +1,33 @@
+"""Tests for the BM25 regex tokenizer.
+
+The tokenizer is the foundation of the sparse retrieval path. It must be
+deterministic (same input -> same tokens), case-insensitive (so "Chicken"
+matches "chicken" in queries), and split on word boundaries (so punctuation
+and hyphens don't glue words together).
+"""
+
+from src.rag.retrieval.sparse.tokenizer import Tokenizer
+
+
+def test_tokenizer_is_deterministic():
+    t = Tokenizer()
+    text = "Chicken tikka masala with basmati rice."
+    assert t.tokenize(text) == t.tokenize(text)
+
+
+def test_tokenizer_lowercases_and_strips_punctuation():
+    t = Tokenizer()
+    tokens = t.tokenize("Chicken, Tikka-Masala! (with basmati)")
+    assert tokens == ["chicken", "tikka", "masala", "with", "basmati"]
+
+
+def test_tokenizer_returns_empty_on_empty_input():
+    assert Tokenizer().tokenize("") == []
+    assert Tokenizer().tokenize("!!! --- ...") == []
+
+
+def test_tokenizer_keeps_digits_as_tokens():
+    t = Tokenizer()
+    tokens = t.tokenize("Bake at 180C for 30 minutes")
+    assert "180c" in tokens
+    assert "30" in tokens
