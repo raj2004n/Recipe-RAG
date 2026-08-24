@@ -16,6 +16,19 @@ class RegistryData(TypedDict):
     status: dict[str, str]   # folder_name -> status ("building" | "complete" | "abandoned")
 
 
+class DatasetEntry(TypedDict, total=False):
+    """A registered dataset. Either `path` or `uri` must be set.
+
+    `path` is a project-relative or absolute local path; `uri` is reserved for
+    cloud backends (S3, GCS) that arrive in a later step.
+    """
+    path: str
+    uri: str
+    created_at: str
+    checksum: str   # "sha256:<hex>"
+    size_bytes: int
+
+
 def _migrate_legacy(data: dict) -> dict:
     """Convert a legacy {current, status} registry into the {targets, status} shape.
 
@@ -24,7 +37,11 @@ def _migrate_legacy(data: dict) -> dict:
     Idempotent: returns the new shape unchanged if already migrated.
     """
     if "targets" in data and "status" in data:
-        return {"targets": dict(data["targets"]), "status": dict(data["status"])}
+        return {
+            "targets": dict(data["targets"]),
+            "status": dict(data["status"]),
+            "datasets": dict(data.get("datasets", {})),
+        }
 
     if "current" in data:
         folder = data["current"]
@@ -32,9 +49,10 @@ def _migrate_legacy(data: dict) -> dict:
         return {
             "targets": {"current": folder, "latest": folder} if folder else {"current": folder},
             "status": {folder: status} if folder else {},
+            "datasets": {},
         }
 
-    return {"targets": {}, "status": {}}
+    return {"targets": {}, "status": {}, "datasets": {}}
 
 
 def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
@@ -63,19 +81,23 @@ def _read_registry(registry_path: Path) -> RegistryData:
     """Read the registry file, migrating legacy shapes to the current one.
     """
     if not registry_path.exists():
-        return {"targets": {}, "status": {}}
+        return {"targets": {}, "status": {}, "datasets": {}}
 
     try:
         with open(registry_path, "r") as f:
             raw = json.load(f)
     except (json.JSONDecodeError, KeyError):
-        return {"targets": {}, "status": {}}
+        return {"targets": {}, "status": {}, "datasets": {}}
 
     if not isinstance(raw, dict):
-        return {"targets": {}, "status": {}}
+        return {"targets": {}, "status": {}, "datasets": {}}
 
     migrated = _migrate_legacy(raw)
-    return {"targets": dict(migrated.get("targets", {})), "status": dict(migrated.get("status", {}))}
+    return {
+        "targets": dict(migrated.get("targets", {})),
+        "status": dict(migrated.get("status", {})),
+        "datasets": dict(migrated.get("datasets", {})),
+    }
 
 
 def _write_registry(registry_path: Path, data: RegistryData) -> None:
@@ -122,6 +144,39 @@ def list_status_for_folders(registry_path: Path) -> dict[str, str]:
     """Return the folder -> status mapping.
     """
     return _read_registry(registry_path)["status"]
+
+
+def get_dataset(registry_path: Path, key: str) -> Optional[DatasetEntry]:
+    """Return a dataset entry by key, or None if not registered.
+    """
+    return _read_registry(registry_path)["datasets"].get(key)
+
+
+def list_datasets(registry_path: Path) -> dict[str, DatasetEntry]:
+    """Return the full datasets section as a key -> entry mapping.
+    """
+    return dict(_read_registry(registry_path)["datasets"])
+
+
+def upsert_dataset(registry_path: Path, key: str, entry: DatasetEntry) -> None:
+    """Insert or replace a dataset entry by key.
+
+    Atomic write, same as the other registry helpers.
+    """
+    data = _read_registry(registry_path)
+    data["datasets"][key] = entry
+    _write_registry(registry_path, data)
+
+
+def remove_dataset(registry_path: Path, key: str) -> bool:
+    """Remove a dataset entry by key. Returns True if it existed.
+    """
+    data = _read_registry(registry_path)
+    if key not in data["datasets"]:
+        return False
+    del data["datasets"][key]
+    _write_registry(registry_path, data)
+    return True
 
 
 def sweep_stale_building_builds(

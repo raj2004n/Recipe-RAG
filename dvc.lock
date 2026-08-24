@@ -9,8 +9,8 @@ stages:
       size: 1010
     - path: configs/paths_config.yaml
       hash: md5
-      md5: ef8ae3776fe9ad13e454640f36dc3e80
-      size: 379
+      md5: 4b0001175112d9b3be5f3b963b793ec3
+      size: 407
   collect:
     cmd: python -m scripts.collect_data
     deps:
@@ -59,3 +59,48 @@ stages:
       hash: md5
       md5: bb8ca9b5a4a9064c40f0910b1da3f701
       size: 518646
+  chunk:
+    cmd: python -m scripts.build_rag --run chunk
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 268304a0f3d9c2eb27df9b551b032141
+      size: 1010
+    - path: data/processed/cleaned_recipes.json
+      hash: md5
+      md5: 8eab36d61aad1983ec16cdcbd871b78f
+      size: 19627371
+  transform:
+    cmd: python -m scripts.build_rag --run transform
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 268304a0f3d9c2eb27df9b551b032141
+      size: 1010
+  index:
+    cmd: python -m scripts.build_rag --run index
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 268304a0f3d9c2eb27df9b551b032141
+      size: 1010
+  finalise_build:
+    cmd: python -m scripts.build_rag --run finalise_build
+    deps:
+    - path: configs/base_config.yaml
+      hash: md5
+      md5: 268304a0f3d9c2eb27df9b551b032141
+      size: 1010
+    - path: configs/paths_config.yaml
+      hash: md5
+      md5: 4b0001175112d9b3be5f3b963b793ec3
+      size: 407
+    - path: configs/prompts_config.yaml
+      hash: md5
+      md5: f4d5beda7c746c7321a48a2510199255
+      size: 3326
+    - path: src/rag/core/snapshot/
+      hash: md5
+      md5: 2f8a39e8009ff97f47e252c9df96ce8b.dir
+      size: 74139
+      nfiles: 14
