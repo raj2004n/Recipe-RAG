@@ -27,7 +27,7 @@ def _write_yaml(path: Path, payload: dict) -> None:
         yaml.safe_dump(payload, f)
 
 
-def _seed_snapshot(snapshot_dir: Path, strategy: str) -> Path:
+def _seed_snapshot(snapshot_dir: Path, strategy: str, dataset_key: str = "test-dataset") -> Path:
     """Lay down the minimum files a sealed snapshot needs and finalise it.
 
     Returns the snapshot folder path.
@@ -35,7 +35,7 @@ def _seed_snapshot(snapshot_dir: Path, strategy: str) -> Path:
     snapshot_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = snapshot_dir / "metadata.json"
-    metadata.write_text(json.dumps({"strategy": strategy}))
+    metadata.write_text(json.dumps({"strategy": strategy, "dataset_key": dataset_key}))
 
     # chunks/ and index/ directories are required to exist (lifecycle
     # makes the snapshot read-only on finalise). They can be empty for
@@ -120,7 +120,7 @@ def test_dense_snapshot_roundtrip(tmp_path: Path, monkeypatch):
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=True, hybrid=False)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense")
+    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense", dataset_key="test-dataset")
     snapshot = snapshots_dir / folder_name
     _seed_snapshot(snapshot, "dense")
 
@@ -144,7 +144,7 @@ def test_hybrid_snapshot_roundtrip(tmp_path: Path, monkeypatch):
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=False, hybrid=True)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "hybrid")
+    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "hybrid", dataset_key="test-dataset")
     snapshot = snapshots_dir / folder_name
     _seed_snapshot(snapshot, "hybrid")
 
@@ -169,7 +169,7 @@ def test_load_refuses_non_complete_snapshot(tmp_path: Path, monkeypatch):
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=True, hybrid=False)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense")
+    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense", dataset_key="test-dataset")
     snapshot = snapshots_dir / folder_name
     _seed_snapshot(snapshot, "dense")
     # No finalise_snapshot - the registry still has status='building'.

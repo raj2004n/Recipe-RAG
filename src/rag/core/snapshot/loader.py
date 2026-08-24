@@ -31,6 +31,7 @@ class Snapshot:
     bm25_indexed_chunk_sets: list[BM25IndexedChunkSet]  # carries chunks in BM25IndexedChunkSet.chunks
     base_config: dict[str, any]  # configs for initialising retriever components for inference, in pipeline
     prompts_config: dict[str, any]
+    dataset_key: str  # registry key for the dataset this snapshot was built against
 
 
 # Strategy -> ordered list of index loaders. Each loader returns
@@ -113,6 +114,7 @@ def load_snapshot(folder: str | Path) -> Snapshot:
         bm25_indexed_chunk_sets=bm25_indexed_chunk_sets,
         base_config=base_config,
         prompts_config=prompts_config,
+        dataset_key=metadata["dataset_key"],
     )
 
 

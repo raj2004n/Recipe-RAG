@@ -1,12 +1,12 @@
-from .base_builder import BaseBuilder
+from .base_builder import BaseBuilder, _log_dataset_identity
 
 from ..retrieval.dense.encoder import Encoder
 from ..retrieval.dense.indexer import Indexer
 from ..retrieval.chunker import chunk_recipes
 
-from ..core.config import DATA_PATHS, ENCODER_CONFIG, INDEXER_CONFIG
+from ..core.config import ENCODER_CONFIG, INDEXER_CONFIG
 from ..core.snapshot.paths import SnapshotPaths
-from ..core.snapshot.lifecycle import finalise_snapshot
+from ..core.snapshot.lifecycle import finalise_snapshot, sha256_of
 from ..core.snapshot.chunk_sets import (
     save_chunk_sets,
     load_chunk_sets,
@@ -17,10 +17,11 @@ from ..core.snapshot.indices import save_indexed_chunk_sets
 
 
 class DenseBuilder(BaseBuilder):
-    def chunk(self, paths: SnapshotPaths):
+    def chunk(self, paths: SnapshotPaths, recipes_path):
+        _log_dataset_identity("chunk", paths, recipes_path)
         chunk_sets = chunk_recipes(
             strategy="whole_recipe",
-            recipes_path=DATA_PATHS["cleaned_recipes"],
+            recipes_path=recipes_path,
         )
 
         save_chunk_sets(
@@ -29,6 +30,7 @@ class DenseBuilder(BaseBuilder):
         )
 
     def transform(self, paths: SnapshotPaths):
+        _log_dataset_identity("transform", paths)
         chunk_sets = load_chunk_sets(
             save_path=paths.chunks,
         )
@@ -47,6 +49,7 @@ class DenseBuilder(BaseBuilder):
         )
 
     def index(self, paths: SnapshotPaths):
+        _log_dataset_identity("index", paths)
         encoded_chunk_sets = load_encoded_chunk_sets(
             save_path=paths.transformed_chunks,
         )

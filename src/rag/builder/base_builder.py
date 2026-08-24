@@ -19,9 +19,39 @@ module-level path singleton.
 """
 
 from abc import ABC, abstractmethod
+import json
+import logging
 
 from ..core.snapshot.paths import SnapshotPaths
 from ..core.snapshot import lifecycle
+
+logger = logging.getLogger(__name__)
+
+
+def _log_dataset_identity(stage: str, paths: SnapshotPaths, recipes_path=None) -> None:
+    """Emit a single log line that pins the snapshot to its dataset.
+
+    At the chunk stage we pass the recipes_path explicitly so the log shows
+    the path being read right now. At later stages we re-read metadata.json
+    instead, because what matters is the identity captured at set_strategy —
+    not the file's current state. This is what makes a mid-build preprocessing
+    swap visible in the log trail.
+    """
+    metadata = json.loads(paths.metadata.read_text())
+    key = metadata.get("dataset_key", "<unset>")
+
+    if recipes_path is not None:
+        from pathlib import Path
+        try:
+            checksum = lifecycle.sha256_of(Path(recipes_path))
+        except OSError as e:
+            checksum = f"<unreadable: {e}>"
+        logger.info(
+            "%s: dataset_key=%s recipes_path=%s checksum=%s",
+            stage, key, recipes_path, checksum,
+        )
+    else:
+        logger.info("%s: dataset_key=%s", stage, key)
 
 
 class BaseBuilder(ABC):
