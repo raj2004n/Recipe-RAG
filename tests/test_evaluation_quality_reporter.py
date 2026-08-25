@@ -1,7 +1,7 @@
 """Tests for the dataset-quality reporter.
 
 All fixtures are synthetic and live under tmp_path. The reporter's contract is
-"two datasets reported separately, never blended" — the tests below exercise
+"two datasets reported separately, never blended" - the tests below exercise
 each metric in isolation against that contract.
 """
 

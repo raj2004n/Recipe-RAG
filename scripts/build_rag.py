@@ -97,7 +97,7 @@ def set_strategy(recipes_path: Path | None = None, dataset_name: str | None = No
 
     The dataset is registered first (so the registry is the source of truth
     for what datasets exist), then `start_new_build` pins the key into the
-    snapshot metadata. Capturing the key at this point — not at finalise —
+    snapshot metadata. Capturing the key at this point - not at finalise -
     is what protects the build from a mid-flight preprocessing swap.
     """
     recipes = Path(recipes_path) if recipes_path is not None else Path(DATA_PATHS["cleaned_recipes"])

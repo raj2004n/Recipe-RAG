@@ -1,9 +1,9 @@
-"""GET /info — read-only snapshot metadata for operators.
+"""GET /info - read-only snapshot metadata for operators.
 
 Returns the same data /info consumers would want when triaging a deploy:
 which snapshot is loaded, which dataset it was built against, which
 model ids it carries, and the chunk-set names. Deliberately excludes
-retrieval hits and prompts — those are /query's concern, not /info's.
+retrieval hits and prompts - those are /query's concern, not /info's.
 """
 
 from fastapi import APIRouter, Depends, Request

@@ -33,7 +33,7 @@ def _log_dataset_identity(stage: str, paths: SnapshotPaths, recipes_path=None) -
 
     At the chunk stage we pass the recipes_path explicitly so the log shows
     the path being read right now. At later stages we re-read metadata.json
-    instead, because what matters is the identity captured at set_strategy —
+    instead, because what matters is the identity captured at set_strategy -
     not the file's current state. This is what makes a mid-build preprocessing
     swap visible in the log trail.
     """

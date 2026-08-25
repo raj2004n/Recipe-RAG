@@ -6,20 +6,20 @@ The lifespan does the following, in order:
 2. Load the latest sealed snapshot via `load_snapshot_by_target("latest")`.
    If no snapshot is complete, exit 2.
 3. Resolve the snapshot's `dataset_key` through `LocalDatasetResolver`.
-   If the file is gone or the checksum has drifted, exit 2 — there is no
+   If the file is gone or the checksum has drifted, exit 2 - there is no
    degraded mode for hybrid. (Dense also fails closed for consistency;
    the dataset is part of the snapshot's identity either way.)
 4. Construct the Pipeline. Hybrid takes the resolved `recipes_path`;
    dense does not need it.
 5. Warm the cross-encoder reranker for hybrid (the cold-start tax users
-   actually feel). The generator stays lazy — its forward pass cannot
+   actually feel). The generator stays lazy - its forward pass cannot
    share VRAM with an already-resident cross-encoder on small GPUs.
 6. Store the warm Pipeline on `app.state.pipeline`.
 
 On shutdown, call `getattr(pipeline, "close", lambda: None)()` so the
 Pipeline has a future-friendly shutdown hook without forcing one today.
 
-The whole pipeline is `def` (sync) — FastAPI runs sync handlers in a
+The whole pipeline is `def` (sync) - FastAPI runs sync handlers in a
 threadpool so they do not block the event loop. With `--workers 1`, each
 pod runs a single worker process.
 """
@@ -110,7 +110,7 @@ def _build_pipeline(snapshot, recipes_path: Path | None) -> Any:
 
 def _eager_load_models(pipeline: Any) -> None:
     """Warm the cross-encoder reranker so the first user request does not
-    pay the cold-start tax. The generator stays lazy — its forward pass
+    pay the cold-start tax. The generator stays lazy - its forward pass
     needs VRAM headroom that some GPU classes (notably 6 GiB) cannot
     satisfy with the cross-encoder already resident. Failures here are
     fatal: the service refuses to start without a warm reranker, since
@@ -131,7 +131,7 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         logger.info("lifespan: starting Recipe-RAG service")
 
-        # 1. API keys — fail closed at startup if missing or malformed.
+        # 1. API keys - fail closed at startup if missing or malformed.
         try:
             auth_module._load_api_keys()
         except Exception as exc:

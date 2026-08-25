@@ -21,7 +21,7 @@ from src.rag.retrieval.sparse.bm25indexer import BM25IndexedChunkSet
 def _seed_minimum_files(snapshot_dir: Path, strategy: str) -> None:
     """Lay down the empty chunks/index/configs subdirs finalise expects.
 
-    Metadata is left alone — `start_new_build` writes it. Clobbering it
+    Metadata is left alone - `start_new_build` writes it. Clobbering it
     here would erase the dataset_key pinned at set_strategy, which is
     exactly what the rest of these tests are checking.
     """
@@ -102,7 +102,7 @@ def test_start_new_build_writes_dataset_key_at_set_strategy(tmp_path: Path):
 
 def test_start_new_build_without_dataset_key_writes_only_strategy(tmp_path: Path):
     """The dataset_key arg is required for new builds. Without it the
-    metadata only carries the strategy — and load_snapshot will fail to
+    metadata only carries the strategy - and load_snapshot will fail to
     load that snapshot because the dataclass field is required."""
     snapshots_dir = tmp_path / "snapshots"
     registry_file = snapshots_dir / "registry.json"

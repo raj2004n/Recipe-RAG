@@ -5,12 +5,12 @@ A recipe question-answering system built around a versioned retrieval pipeline.
 It crawls recipes from [recipetin eats](https://www.recipetineats.com), cleans them into a
 normalised form, and serves a query interface that pulls relevant chunks out of the
 corpus and writes a short answer in the voice of the original site. Two retrieval
-strategies — dense and hybrid — are implemented and selectable per build.
+strategies - dense and hybrid - are implemented and selectable per build.
 
 ## What this is
 
 The interesting part isn't the recipe corpus; it's the pipeline underneath it. Each
-build produces a **sealed snapshot** — an immutable, content-hashed folder containing
+build produces a **sealed snapshot** - an immutable, content-hashed folder containing
 the chunk sets, the FAISS and BM25 indices, the model config, and a copy of the configs
 that produced it. A central registry tracks which snapshot is `current` and which is
 `latest`. Nothing in the snapshot folder ever changes after it's sealed; new builds
@@ -93,8 +93,8 @@ sealed snapshot under snapshots/<name>/
 answer
 ```
 
-The build side is orchestrator-only — chunk-set assembly happens here. The
-inference side is naive about chunk-set filtering — it loads whatever the
+The build side is orchestrator-only - chunk-set assembly happens here. The
+inference side is naive about chunk-set filtering - it loads whatever the
 registry points at. The cross-encoder reranker is a per-query inference
 concern; it doesn't live in the build.
 

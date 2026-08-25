@@ -149,7 +149,7 @@ def test_lifespan_exits_2_when_api_keys_missing(tmp_path, monkeypatch):
     monkeypatch.delenv("RECIPE_RAG_API_KEYS", raising=False)
 
     # Use the existing stub pipeline so the snapshot subsystem is not
-    # exercised — we only care that the auth check trips first.
+    # exercised - we only care that the auth check trips first.
     from src.rag.serve import app as app_module
 
     class _StubPipeline:

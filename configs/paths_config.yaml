@@ -5,8 +5,8 @@ data:
   # eval-quality reporter's coverage denominator is self-documenting.
   eval_corpus_recipes: data/processed/cleaned_recipes.json
   # Two eval datasets, reported separately (never blended).
-  #   golden — small hand-verified set, the gate; lives at data/eval/golden.jsonl
-  #   llm_generated — large LLM-drafted set, coverage/trend signal; lives at data/eval/llm_generated.jsonl
+  #   golden - small hand-verified set, the gate; lives at data/eval/golden.jsonl
+  #   llm_generated - large LLM-drafted set, coverage/trend signal; lives at data/eval/llm_generated.jsonl
   eval_golden: data/eval/golden.jsonl
   eval_llm_generated: data/eval/llm_generated.jsonl
 

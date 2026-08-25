@@ -47,7 +47,7 @@ def test_concurrent_lock_blocks(tmp_path: Path):
     """Two holders should not both think they own the lock. We acquire it
     in the main thread, spawn a second thread that tries to acquire with
     LOCK_EX (exclusive) and a short timeout, then release. The second
-    attempt must time out — that is what makes the lock observable."""
+    attempt must time out - that is what makes the lock observable."""
     import fcntl
     recipes = _make_recipes(tmp_path)
     lock_path = recipes.with_suffix(recipes.suffix + ".buildlock")

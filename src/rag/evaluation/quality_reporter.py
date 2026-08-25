@@ -2,7 +2,7 @@
 
 Computes summary statistics over the two eval datasets (golden and LLM-generated)
 and renders them as both a human-readable table and a machine-readable JSON file.
-The two datasets are always reported separately, never blended — golden is small
+The two datasets are always reported separately, never blended - golden is small
 and human-verified, LLM-generated is large and unverified, and any aggregate
 metric would obscure that distinction.
 
@@ -52,7 +52,7 @@ class QualityReport:
 def _read_rows(path: str) -> tuple[list[Mapping], str | None]:
     """Read a JSONL file into a list of dicts.
 
-    Missing file or empty file is not an error — it returns zero rows and a
+    Missing file or empty file is not an error - it returns zero rows and a
     descriptive warning so the caller can render the empty state.
     """
     p = Path(path)
@@ -169,7 +169,7 @@ def _corpus_size(corpus_path: str) -> int:
     p = Path(corpus_path)
     if not p.exists():
         raise FileNotFoundError(
-            f"corpus file not found: {corpus_path} — coverage denominator would be wrong"
+            f"corpus file not found: {corpus_path} - coverage denominator would be wrong"
         )
     with p.open() as f:
         recipes = json.load(f)
@@ -220,7 +220,7 @@ def report_quality(
 ) -> QualityReport:
     """Build a QualityReport from the two eval datasets and a corpus file.
 
-    The corpus file must exist — see _corpus_size. The two eval datasets
+    The corpus file must exist - see _corpus_size. The two eval datasets
     are tolerated as missing or empty, with a warning recorded per dataset.
     """
     corpus_size = _corpus_size(corpus_path)

@@ -31,7 +31,7 @@ class ResolvedDataset:
     key: str
     path: Path
     checksum: str
-    source: str   # "local" | "s3" | "gcs" — included so /info can report provenance
+    source: str   # "local" | "s3" | "gcs" - included so /info can report provenance
 
 
 class DatasetResolver(Protocol):

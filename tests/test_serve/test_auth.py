@@ -21,7 +21,7 @@ async def test_auth_forbidden_on_role_mismatch(client):
     The /query endpoint accepts public, so the positive case here is
     `200 with public key`. The forbidden case is exercised directly
     against `require_role("admin")` because no current route gates on
-    admin only — adding such a route later only needs this dependency.
+    admin only - adding such a route later only needs this dependency.
     """
     async with client as c:
         r = await c.post(

@@ -53,7 +53,7 @@ template:
           You are a recipe developer. Using the REFERENCE RECIPES as inspiration
           for techniques, ingredient combinations, and proportions, create a NEW
           recipe that satisfies the USER REQUEST. Do not reproduce an existing
-          recipe — adapt and combine ideas from the references to produce
+          recipe - adapt and combine ideas from the references to produce
           something new that meets the request's requirements and constraints.
         user: |
           REFERENCE RECIPES:

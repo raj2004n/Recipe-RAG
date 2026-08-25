@@ -43,7 +43,7 @@ def test_register_new_dataset(tmp_path: Path):
 def test_register_is_idempotent_for_same_file(tmp_path: Path):
     """Re-registering the same file must return the original key and not
     create a duplicate registry entry. This is what keeps many-to-one
-    snapshots-datasets honest — a build that uses the same dataset twice
+    snapshots-datasets honest - a build that uses the same dataset twice
     registers it once."""
     registry_file = tmp_path / "registry.json"
     dataset_path = tmp_path / "recipes.json"

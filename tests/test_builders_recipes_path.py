@@ -5,7 +5,7 @@ made it impossible to build against anything but the configured default.
 Commit 2 lifts that: each builder takes the path as an argument and logs
 its dataset identity at stage start.
 
-These tests stub out the chunker so we don't need a real recipes file —
+These tests stub out the chunker so we don't need a real recipes file -
 the contract under test is the signature and the logging, not the
 chunking behaviour.
 """
@@ -91,7 +91,7 @@ def test_hybrid_builder_chunk_takes_recipes_path(tmp_path: Path, monkeypatch, ca
 
 
 def test_log_dataset_identity_no_recipes_path_at_later_stages(tmp_path, caplog):
-    """At transform/index we don't re-pass the recipes_path — the log
+    """At transform/index we don't re-pass the recipes_path - the log
     line must still emit, drawing the key from metadata.json only."""
     snapshot = tmp_path / "snapshots" / "dense_x"
     paths = _paths_for(snapshot)
@@ -101,7 +101,7 @@ def test_log_dataset_identity_no_recipes_path_at_later_stages(tmp_path, caplog):
         _log_dataset_identity("transform", paths)
 
     assert any("dataset_key=later-stage-key" in r.message for r in caplog.records)
-    # No checksum at later stages — that would imply re-reading the file.
+    # No checksum at later stages - that would imply re-reading the file.
     assert not any("checksum=" in r.message for r in caplog.records)
 
 

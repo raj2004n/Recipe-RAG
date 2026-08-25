@@ -23,7 +23,7 @@ from .errors import ForbiddenError, UnauthenticatedError
 def _load_api_keys() -> dict[str, str]:
     """Parse `RECIPE_RAG_API_KEYS` into a `{key: role}` mapping.
 
-    Raises RuntimeError on missing or malformed input — the lifespan catches
+    Raises RuntimeError on missing or malformed input - the lifespan catches
     this and exits 2 so the service refuses to start with a bad config.
     """
     raw = os.environ.get("RECIPE_RAG_API_KEYS")
