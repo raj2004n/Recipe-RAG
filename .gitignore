@@ -80,6 +80,10 @@ logs/
 
 *.json
 
+# Generated dataset-quality reports (regenerated on every CLI run; the root
+# *.json rule also catches these, but the explicit line is defence-in-depth).
+data/eval/.quality_report.json
+
 #MlFlow
 mlruns/
 mlartifacts/

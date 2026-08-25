@@ -1,6 +1,9 @@
 data:
   raw_recipes: data/raw/recipes.jsonl
   cleaned_recipes: data/processed/cleaned_recipes.json
+  # Same file as cleaned_recipes, declared under a domain-specific name so the
+  # eval-quality reporter's coverage denominator is self-documenting.
+  eval_corpus_recipes: data/processed/cleaned_recipes.json
   # Two eval datasets, reported separately (never blended).
   #   golden — small hand-verified set, the gate; lives at data/eval/golden.jsonl
   #   llm_generated — large LLM-drafted set, coverage/trend signal; lives at data/eval/llm_generated.jsonl
