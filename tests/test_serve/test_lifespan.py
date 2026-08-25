@@ -77,7 +77,7 @@ def test_lifespan_exits_2_when_dataset_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="latest": _Stub())
 
-    monkeypatch.setenv("RAMSAY_API_KEYS", '{"demo-public-2026": "public"}')
+    monkeypatch.setenv("RECIPE_RAG_API_KEYS", '{"demo-public-2026": "public"}')
     app = app_module.create_app()
 
     # Drive the lifespan by entering the async context manager and
@@ -129,7 +129,7 @@ def test_lifespan_exits_2_on_checksum_drift(tmp_path, monkeypatch):
         bm25_indexed_chunk_sets = []
 
     monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="latest": _Stub())
-    monkeypatch.setenv("RAMSAY_API_KEYS", '{"demo-public-2026": "public"}')
+    monkeypatch.setenv("RECIPE_RAG_API_KEYS", '{"demo-public-2026": "public"}')
     app = app_module.create_app()
 
     import asyncio
@@ -144,9 +144,9 @@ def test_lifespan_exits_2_on_checksum_drift(tmp_path, monkeypatch):
 
 
 def test_lifespan_exits_2_when_api_keys_missing(tmp_path, monkeypatch):
-    """The service refuses to start without RAMSAY_API_KEYS. This is what
+    """The service refuses to start without RECIPE_RAG_API_KEYS. This is what
     stops the deploy workflow from rolling out an open service."""
-    monkeypatch.delenv("RAMSAY_API_KEYS", raising=False)
+    monkeypatch.delenv("RECIPE_RAG_API_KEYS", raising=False)
 
     # Use the existing stub pipeline so the snapshot subsystem is not
     # exercised — we only care that the auth check trips first.

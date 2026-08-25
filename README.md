@@ -1,4 +1,4 @@
-# Project_Ramsay
+# Recipe-RAG
 
 A recipe question-answering system built around a versioned retrieval pipeline.
 
@@ -48,7 +48,7 @@ hybrid path beat either single retriever on realistic recipe queries.
 ```bash
 # Clone and set up
 git clone <repo-url>
-cd Project_Ramsay
+cd Recipe-RAG
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
 

@@ -1,8 +1,8 @@
-"""FastAPI app + lifespan for the Project_Ramsay service.
+"""FastAPI app + lifespan for the Recipe-RAG service.
 
 The lifespan does the following, in order:
 
-1. Parse `RAMSAY_API_KEYS`. If missing or malformed, exit 2.
+1. Parse `RECIPE_RAG_API_KEYS`. If missing or malformed, exit 2.
 2. Load the latest sealed snapshot via `load_snapshot_by_target("latest")`.
    If no snapshot is complete, exit 2.
 3. Resolve the snapshot's `dataset_key` through `LocalDatasetResolver`.
@@ -129,13 +129,13 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        logger.info("lifespan: starting Project_Ramsay service")
+        logger.info("lifespan: starting Recipe-RAG service")
 
         # 1. API keys — fail closed at startup if missing or malformed.
         try:
             auth_module._load_api_keys()
         except Exception as exc:
-            _exit_2_on_failure("RAMSAY_API_KEYS not configured", exc)
+            _exit_2_on_failure("RECIPE_RAG_API_KEYS not configured", exc)
 
         # 2. Load latest sealed snapshot.
         snapshot = _load_snapshot_or_exit()
@@ -166,7 +166,7 @@ def create_app() -> FastAPI:
                 close()
 
     app = FastAPI(
-        title="Project_Ramsay",
+        title="Recipe-RAG",
         version="0.1.0",
         lifespan=lifespan,
         docs_url=None,

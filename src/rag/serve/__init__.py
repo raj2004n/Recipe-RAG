@@ -1,4 +1,4 @@
-"""FastAPI service package for Project_Ramsay.
+"""FastAPI service package for Recipe-RAG.
 
 The service wraps the existing Pipeline classes in an HTTP surface. The
 lifespan loads the latest sealed snapshot, resolves its dataset through

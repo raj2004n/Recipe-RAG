@@ -17,7 +17,7 @@ TEST_KEYS = {
 # Set the env var at module import so tests that don't use the `client`
 # fixture (e.g. test_auth.py asserting on auth directly) still have the
 # keys configured. monkeypatch overrides this within the fixture scope.
-os.environ.setdefault("RAMSAY_API_KEYS", json.dumps(TEST_KEYS))
+os.environ.setdefault("RECIPE_RAG_API_KEYS", json.dumps(TEST_KEYS))
 
 
 class StubSnapshot:
@@ -110,9 +110,9 @@ async def client(stub_pipeline, monkeypatch):
     default, so we enter `app.router.lifespan_context(app)` ourselves.
 
     The resulting `app.state.pipeline` is the StubPipeline patched above.
-    RAMSAY_API_KEYS is set so the lifespan's auth check passes.
+    RECIPE_RAG_API_KEYS is set so the lifespan's auth check passes.
     """
-    monkeypatch.setenv("RAMSAY_API_KEYS", repr(TEST_KEYS).replace("'", '"'))
+    monkeypatch.setenv("RECIPE_RAG_API_KEYS", repr(TEST_KEYS).replace("'", '"'))
     from src.rag.serve.app import create_app
 
     app = create_app()

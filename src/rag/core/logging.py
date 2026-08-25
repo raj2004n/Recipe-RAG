@@ -4,7 +4,7 @@ import sys
 
 
 _DEFAULT_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
-_DEFAULT_LEVEL = os.environ.get("RAMSAY_LOG_LEVEL", "INFO").upper()
+_DEFAULT_LEVEL = os.environ.get("RECIPE_RAG_LOG_LEVEL", "INFO").upper()
 
 
 _configured = False
@@ -18,7 +18,7 @@ def configure_logging(
 
     Args:
         level: logging level name or numeric value. Defaults to
-            `RAMSAY_LOG_LEVEL` env var, then `INFO`.
+            `RECIPE_RAG_LOG_LEVEL` env var, then `INFO`.
         stream: target stream. Defaults to `sys.stderr`.
     """
     global _configured

@@ -1,9 +1,9 @@
 """X-API-Key auth with role-based access control.
 
 Every request carries an `X-API-Key` header. The service looks up the key
-in a `dict[str, str]` built from the `RAMSAY_API_KEYS` env var:
+in a `dict[str, str]` built from the `RECIPE_RAG_API_KEYS` env var:
 
-    RAMSAY_API_KEYS='{"demo-public-2026": "public", "ops-admin-2026": "admin"}'
+    RECIPE_RAG_API_KEYS='{"demo-public-2026": "public", "ops-admin-2026": "admin"}'
 
 If the env var is missing or malformed, the service fails closed at
 startup (the lifespan raises before the app starts serving). The keys
@@ -21,40 +21,40 @@ from .errors import ForbiddenError, UnauthenticatedError
 
 
 def _load_api_keys() -> dict[str, str]:
-    """Parse `RAMSAY_API_KEYS` into a `{key: role}` mapping.
+    """Parse `RECIPE_RAG_API_KEYS` into a `{key: role}` mapping.
 
     Raises RuntimeError on missing or malformed input — the lifespan catches
     this and exits 2 so the service refuses to start with a bad config.
     """
-    raw = os.environ.get("RAMSAY_API_KEYS")
+    raw = os.environ.get("RECIPE_RAG_API_KEYS")
     if not raw:
         raise RuntimeError(
-            "RAMSAY_API_KEYS env var is missing. The service refuses to "
+            "RECIPE_RAG_API_KEYS env var is missing. The service refuses to "
             "start without API keys configured."
         )
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError as e:
         raise RuntimeError(
-            f"RAMSAY_API_KEYS is not valid JSON: {e}. Refusing to start."
+            f"RECIPE_RAG_API_KEYS is not valid JSON: {e}. Refusing to start."
         ) from e
 
     if not isinstance(parsed, dict):
         raise RuntimeError(
-            "RAMSAY_API_KEYS must be a JSON object mapping keys to roles."
+            "RECIPE_RAG_API_KEYS must be a JSON object mapping keys to roles."
         )
 
     out: dict[str, str] = {}
     for key, role in parsed.items():
         if not isinstance(key, str) or not isinstance(role, str):
             raise RuntimeError(
-                "RAMSAY_API_KEYS entries must be string keys and string roles."
+                "RECIPE_RAG_API_KEYS entries must be string keys and string roles."
             )
         out[key] = role
 
     if not out:
         raise RuntimeError(
-            "RAMSAY_API_KEYS parsed to an empty mapping. Refusing to start."
+            "RECIPE_RAG_API_KEYS parsed to an empty mapping. Refusing to start."
         )
 
     return out
