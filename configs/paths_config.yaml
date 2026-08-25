@@ -9,6 +9,9 @@ data:
   #   llm_generated - large LLM-drafted set, coverage/trend signal; lives at data/eval/llm_generated.jsonl
   eval_golden: data/eval/golden.jsonl
   eval_llm_generated: data/eval/llm_generated.jsonl
+  # Drafter output: candidates for the golden subset. Lives next to the
+  # golden.jsonl so the batch-review CLI can read it without extra config.
+  eval_golden_candidates: data/eval/golden_candidates.jsonl
 
 datasets:
   dir: datasets/
