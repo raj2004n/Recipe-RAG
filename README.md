@@ -62,8 +62,11 @@ python -m scripts.build_rag --run transform
 python -m scripts.build_rag --run index
 python -m scripts.build_rag --run finalise_build
 
-# Ask it things
-python -m scripts.inference
+# Serve queries over HTTP
+export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
+python -m src.rag.serve.app
+# then: curl -H 'X-API-Key: dev-public-key' -H 'content-type: application/json' \
+#   -d '{"query":"quick chicken dinner"}' http://localhost:8000/query
 ```
 
 You'll need a local Ollama instance running `gemma3:4b` for the eval-dataset
@@ -118,10 +121,12 @@ loops all run; snapshots seal and load cleanly.
 
 Not done yet:
 
-- HTTP service (currently a REPL).
 - Dockerfile and containerised deploy.
 - CI / CD and a held-out eval stage for promotion gating.
-- Public API surface with auth.
+
+The HTTP service (`/health`, `/info`, `POST /query`) and the two-role API key
+auth are already wired up; the gap between "runs on a developer machine" and
+"deployed" is now the eval stage, the container, and the workflows.
 
 A deployment plan for the above lives in `.lavish/deployment-readiness.html`.
 The short version: README → split requirements → tests → FastAPI service
