@@ -32,10 +32,10 @@ def evaluate_strict(retriever: Retriever, evaluation_dataset: list[dict], ks: Se
 
     for eval in evaluation_dataset:
         query = eval["query"]
-        ground_truth_id = eval["recipe_id"]
+        ground_truth_ids = list(eval["recipe_ids"])
 
         results = retriever.retrieve(query, max_k)
-        
+
         # assign retrieved ids to a list
         retrieved_ids = []
         for r in results:
@@ -43,7 +43,7 @@ def evaluate_strict(retriever: Retriever, evaluation_dataset: list[dict], ks: Se
 
         # calculate recall@k for each k
         for k in ks:
-            score = strict_recall_at_k(retrieved_ids, ground_truth_id, k)
+            score = strict_recall_at_k(retrieved_ids, ground_truth_ids, k)
             recall_at_ks[k].append(score)
     
     return {

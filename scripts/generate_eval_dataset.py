@@ -6,7 +6,7 @@ from src.rag.core.config import DATA_PATHS, EVAL_DATASET_CONFIG
 def run() -> None:
     generate_dataset(
         recipes_path=Path(DATA_PATHS["cleaned_recipes"]),
-        output_path=Path(DATA_PATHS["evaluation_queries"]),
+        output_path=Path(DATA_PATHS["eval_llm_generated"]),
         model_name=EVAL_DATASET_CONFIG["model"],
         max_workers=EVAL_DATASET_CONFIG["max_workers"],
         request_timeout=EVAL_DATASET_CONFIG["request_timeout"],

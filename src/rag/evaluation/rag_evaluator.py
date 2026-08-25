@@ -38,7 +38,7 @@ def judge(recipe: dict, query: str, response: str, config_file: str = "models/re
 
 def evaluate_rag(retriever: Retriever,
                  config_file: str = "models/retriever/config.yaml",
-                 evaluation_path: str = "data/evaluation/evaluation_dataset.json",
+                 evaluation_path: str = "data/eval/llm_generated.jsonl",
                  ks: Sequence[int] = (1, 3, 5)
                  ):
 
@@ -56,7 +56,7 @@ def evaluate_rag(retriever: Retriever,
 
     for i, eval in enumerate(evaluation_dataset):
         query = eval["query"]
-        ground_truth_id = eval["recipe_id"]
+        ground_truth_id = eval["recipe_ids"][0]  # rag_evaluator uses top-1 only; revisit in workstream 3
 
         retrieved_results= retriever.retrieve(query, top_k=1) # retrieve only one result
 

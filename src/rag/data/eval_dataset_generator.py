@@ -96,10 +96,11 @@ def load_processed_ids(output_path: Path) -> set[int]:
                 continue
             try:
                 row = json.loads(line)
-                processed.add(row["recipe_id"])
-            except (json.JSONDecodeError, KeyError):
+                ids = row.get("recipe_ids") or [row.get("recipe_id")]
+                processed.update(int(i) for i in ids if i is not None)
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
                 continue
-        return processed
+    return processed
 
 def generate_dataset(recipes_path: Path,
                      output_path: Path,
@@ -147,9 +148,12 @@ def generate_dataset(recipes_path: Path,
 
             for q in queries:
                 out_f.write(json.dumps({
-                    "recipe_id": recipe_id,
-                    "recipe_name": recipe["recipe_name"],
+                    "recipe_ids": [recipe_id],
                     "query": q,
+                    "query_type": "unknown",  # generator does not tag; PR 2 verifier / PR 4 human can fix
+                    "source": "llm-draft",
+                    "verified": False,
+                    "reference_answer": None,
                 }) + "\n")
             out_f.flush()
         

@@ -12,7 +12,7 @@ from src.rag.evaluation.retriever_evaluator import evaluate_strict
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("evaluation-experiment")
 
-def evaluate_retriever(config_file: str = "models/retriever/config.yaml", evaluation_path: str = "data/evaluation/evaluation_dataset.json", ks: Sequence[int] = (1, 3, 5)):
+def evaluate_retriever(config_file: str = "models/retriever/config.yaml", evaluation_path: str = "data/eval/llm_generated.jsonl", ks: Sequence[int] = (1, 3, 5)):
     """ Evaluates a retriever on a dataset of queries and ground truths. """
     # load saved config
     config = load_config(config_file)

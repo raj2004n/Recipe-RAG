@@ -50,5 +50,4 @@ stages:
     - scripts/generate_eval_dataset.py
     - data/processed/cleaned_recipes.json
     outs:
-    - data/evaluation/evaluation_dataset.json
-    - data/evaluation/evaluation_queries.json
+    - data/eval/llm_generated.jsonl

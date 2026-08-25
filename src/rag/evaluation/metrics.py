@@ -17,10 +17,12 @@ def recall_at_k(retrieved_ids: Sequence[int], ground_truth_ids: Sequence[int], k
     return hits / len(ground_truths)
 
 
-def strict_recall_at_k(retrieved_ids: Sequence[int], ground_truth_id: int, k: int) -> float:
-    """ Wrapper for strict recal_at_k."""
+def strict_recall_at_k(retrieved_ids: Sequence[int], ground_truth_ids: int | Sequence[int], k: int) -> float:
+    """ Wrapper for strict recall_at_k. Accepts a single id or a sequence of ids."""
+    if isinstance(ground_truth_ids, int):
+        ground_truth_ids = [ground_truth_ids]
     return recall_at_k(
         retrieved_ids=retrieved_ids,
-        ground_truth_ids=[ground_truth_id],
+        ground_truth_ids=ground_truth_ids,
         k=k,
     )
