@@ -10,14 +10,14 @@ sibling chunks.
 import json
 import random
 from dataclasses import dataclass, field
-from itertools import count
 from pathlib import Path
 from typing import Any
 
 from ...retrieval.chunker import (
     Chunk,
-    _chunk_it_ing,
-    _chunk_whole,
+    instruction_chunks,
+    ingredient_chunks,
+    whole_recipe_chunks,
 )
 from ...retrieval.dense.encoder import Encoder
 from ..preprocessor import Recipe
@@ -53,23 +53,16 @@ def load_recipes(recipes_path: Path) -> list[Recipe]:
         return [Recipe(**r) for r in json.load(f)]
 
 
-def _chunker_id_stream() -> count:
-    """A fresh chunk_id iterator. Real chunks use non-negative ids; the
-    info-section wrapper uses negative ids in ``INFO_SECTION_CHUNK_ID_BASE``
-    so the two spaces never collide when sharing a corpus-level key."""
-    return count()
-
-
 def _build_whole_chunks(recipes: list[Recipe]) -> list[Chunk]:
-    return _chunk_whole(recipes, _chunker_id_stream())
+    return whole_recipe_chunks(recipes)
 
 
 def _build_ingredient_chunks(recipes: list[Recipe]) -> list[Chunk]:
-    return [c for c in _chunk_it_ing(recipes, _chunker_id_stream()) if c.chunk_type == "ingredients"]
+    return ingredient_chunks(recipes)
 
 
 def _build_instruction_chunks(recipes: list[Recipe]) -> list[Chunk]:
-    return [c for c in _chunk_it_ing(recipes, _chunker_id_stream()) if c.chunk_type == "instructions"]
+    return instruction_chunks(recipes)
 
 
 @dataclass

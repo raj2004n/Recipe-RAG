@@ -4,7 +4,23 @@ Format whole recipes into a single text block for prompts / reranking.
 
 
 def recipe_to_string(recipe: dict) -> str:
-    """Flatten a recipe dict into a clean, searchable text block"""
+    """Flatten a recipe dict into a clean, searchable text block.
+
+    Consumes the raw recipe dict (as returned by the JSON corpus or the
+    preprocessor's `asdict`) and emits a single markdown-ish string with
+    sections for the name, ingredients, instructions, optional notes, and
+    servings. Used by the hybrid pipeline: after rerank, chunks are
+    resolved back to whole recipe dicts and this helper renders them into
+    the prompt context that `PromptBuilder` token-budgets before sending to
+    the generator.
+
+    The shape overlaps with the chunker's `_format_whole_recipe` but is
+    deliberately simpler: instructions are listed as bullets rather than
+    re-numbered, ingredient lines drop the alt-amount/alt-unit branch, and
+    the section ordering (name, ingredients, instructions, notes, servings)
+    is fixed so rerank hits read consistently regardless of which recipe
+    produced them.
+    """
     parts: list[str] = [f"Recipe Name: {recipe.get('recipe_name', '')}"]
 
     parts.append("Ingredients:")

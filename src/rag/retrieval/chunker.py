@@ -69,7 +69,39 @@ def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:
     return result
 
     
+def whole_recipe_chunks(recipes: list[Recipe]) -> list[Chunk]:
+    """Public wrapper around ``_chunk_whole`` for callers outside the build pipeline.
+
+    Allocates a fresh id stream so the returned ``Chunk.chunk_id`` values
+    are unique within this call. Used by the prompts drafter, which needs
+    whole-recipe chunks for nearest-neighbour selection but does not need
+    the build-time ``ChunkSet`` wrapper or the global id-uniqueness contract.
+    """
+    return _chunk_whole(recipes, count())
+
+
+def ingredient_chunks(recipes: list[Recipe]) -> list[Chunk]:
+    """Public wrapper around the ingredients half of ``_chunk_it_ing``.
+
+    Allocates a fresh id stream and returns only the chunks with
+    ``chunk_type == "ingredients"``. Used by the prompts drafter.
+    """
+    return [c for c in _chunk_it_ing(recipes, count()) if c.chunk_type == "ingredients"]
+
+
+def instruction_chunks(recipes: list[Recipe]) -> list[Chunk]:
+    """Public wrapper around the instructions half of ``_chunk_it_ing``.
+
+    Allocates a fresh id stream and returns only the chunks with
+    ``chunk_type == "instructions"``. Used by the prompts drafter.
+    """
+    return [c for c in _chunk_it_ing(recipes, count()) if c.chunk_type == "instructions"]
+
+
 def _chunk_whole(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
+    """Produce one chunk per recipe holding the full recipe rendered as a single block of text.
+    Used by the dense strategy, where each recipe is a single retrieval unit.
+    """
     chunks = []
     for r in recipes:
         chunks.append(
@@ -84,6 +116,9 @@ def _chunk_whole(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
 
 
 def _chunk_it_ing(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
+    """Produce one ingredients chunk and one instructions chunk per recipe.
+    Used by the sparse strategy and as the sparse half of the hybrid strategy, where ingredients and instructions are tokenised separately for BM25.
+    """
     chunks = []
     for r in recipes:
         chunks.append(
@@ -106,6 +141,9 @@ def _chunk_it_ing(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]
 
 
 def _chunk_info(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
+    """Produce one chunk per entry in each recipe's info section, so an entry can be retrieved on its own.
+    Used as the dense half of the hybrid strategy, where the entry-level granularity gives the cross-encoder finer rerank signal than a joined section would.
+    """
     chunks = []
     for r in recipes:
         for i in r.info:
@@ -121,6 +159,10 @@ def _chunk_info(recipes: list[Recipe], chunk_id: Iterator[int]) -> list[Chunk]:
 
 
 def _format_ingredients(recipe: Recipe) -> str:
+    """Render a recipe's ingredient groups into a markdown-ish block. 
+    Each group gets an `##` heading when it has a name; each ingredient becomes a `- amount unit name (notes) or alt_amount alt_unit` line. 
+    The trailing blank line per group keeps the rendered text readable when groups are concatenated.
+    """
     lines = []
 
     for group in recipe.ingredient_groups:
@@ -155,6 +197,10 @@ def _format_ingredients(recipe: Recipe) -> str:
 
 
 def _format_instructions(recipe: Recipe) -> str:
+    """Render a recipe's instruction groups into a single block. 
+    Group headings are emitted only when the group has a name; steps are written as plain lines, 
+    preserving whatever numbering the source already carries (no renumbering is applied here, unlike `_format_whole_recipe`).
+    """
     lines = []
 
     for group in recipe.instruction_groups:
@@ -165,23 +211,30 @@ def _format_instructions(recipe: Recipe) -> str:
 
         for it in group.get("instructions", []):
             lines.append(f"{it}")
-    
+
     return "\n".join(lines)
 
 
 def _format_info(info: dict) -> str:
+    """Render a single info entry as a `## group_name` heading followed by the entry content, or just the content when no group name is set. 
+    This is the per-entry shape the hybrid dense index embeds.
+    """
     lines = []
-    
+
     group_name = info.get("group_name")
     if group_name:
         lines.append(f"## {group_name}")
     lines.append(f"{info.get("content", "")}")
-    
+
     return "\n".join(lines)
 
 
 def _format_whole_recipe(recipe: Recipe) -> str:
-    """ Format recipe text for embedding. """
+    """Render a recipe as a single block of text suitable for dense embedding: a header line with the name and servings, 
+    then the ingredient groups, then numbered instructions, then optional notes. 
+    Instruction group headings named `Full Recipe`, `Abbreviated Recipe`, `Abbreviated`, or `Main` are suppressed, 
+    since those labels carry no semantic content and would only add noise to the embedding.
+    """
     lines = []
 
     # header
