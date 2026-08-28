@@ -48,10 +48,20 @@ evaluation dataset generator:
   backoff_base: 2
   max_workers: 4
 
-# Golden-subset drafter (PR 3). Same Ollama knobs as the query-only generator,
-# but a bigger model because reference answers need factual grounding.
-golden_drafter:
-  model_id: gemma3:12b
+# Drafts the user-question prompts half of the eval-data golden subset. Eight
+# rows per query type produce the 72-row hand-verified dataset. max_workers=2
+# because the model is a cloud provider with a per-minute token cap.
+prompts_drafter:
+  model_id: minimax-m3:cloud
   max_retries: 3
   backoff_base: 2
-  max_workers: 4
+  max_workers: 2
+  per_type_count: 8
+
+# Drafts reference answers for the verified prompts, once prompts have been
+# approved in the review step.
+answers_drafter:
+  model_id: minimax-m3:cloud
+  max_retries: 3
+  backoff_base: 2
+  max_workers: 2

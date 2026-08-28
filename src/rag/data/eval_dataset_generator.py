@@ -96,7 +96,7 @@ def load_processed_ids(output_path: Path) -> set[int]:
                 continue
             try:
                 row = json.loads(line)
-                ids = row.get("recipe_ids") or [row.get("recipe_id")]
+                ids = row.get("recipe_ids") or []
                 processed.update(int(i) for i in ids if i is not None)
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
                 continue
