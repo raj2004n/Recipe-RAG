@@ -23,12 +23,10 @@ from pathlib import Path
 from tqdm import tqdm
 
 from _draft_common import build_encoder, draft_kwargs, resolve_paths
-from src.rag.data.prompts_drafter import (
-    QUERY_TYPES,
-    _call_model,
-    _selections_for_type,
-    _selection_to_row,
-)
+from src.rag.data.prompts_drafter import QUERY_TYPES
+from src.rag.data.prompts_drafter.drafter import _selection_to_row
+from src.rag.data.prompts_drafter.rendering import call_model
+from src.rag.data.prompts_drafter.selection import selections_for_type
 
 
 def _parse_types(spec: str) -> dict[str, int]:
@@ -85,8 +83,8 @@ def run(args: argparse.Namespace) -> int:
     corpus_path, prompts_path = resolve_paths(args)
     type_counts = _parse_types(args.types)
 
-    from src.rag.data.prompts_drafter import _load_recipes
-    recipes = _load_recipes(corpus_path)
+    from src.rag.data.prompts_drafter.selection import load_recipes
+    recipes = load_recipes(corpus_path)
     if not recipes:
         raise ValueError(f"no recipes in {corpus_path}")
 
@@ -105,7 +103,7 @@ def run(args: argparse.Namespace) -> int:
             already_used = existing.get(query_type, set())
             # Ask for several times the wanted count so collision filtering has room.
             oversample = max(wanted * 6, 12)
-            selections = _selections_for_type(
+            selections = selections_for_type(
                 query_type=query_type,
                 per_type_count=oversample,
                 recipes=recipes,
@@ -120,7 +118,7 @@ def run(args: argparse.Namespace) -> int:
                 )
             for sel in fresh[:wanted]:
                 futures[executor.submit(
-                    _call_model,
+                    call_model,
                     sel.query_type,
                     sel.primary_text,
                     sel.sibling_texts,
