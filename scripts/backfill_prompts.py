@@ -22,22 +22,13 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
+from _draft_common import build_encoder, draft_kwargs, resolve_paths
 from src.rag.data.prompts_drafter import (
     QUERY_TYPES,
     _call_model,
     _selections_for_type,
     _selection_to_row,
 )
-from src.rag.retrieval.dense.encoder import Encoder
-
-
-def _encoder() -> Encoder:
-    return Encoder(
-        model_id=ENCODER_CONFIG["model_id"],
-        batch_size=int(ENCODER_CONFIG["batch_size"]),
-        normalize_embeddings=bool(ENCODER_CONFIG["normalize_embeddings"]),
-    )
 
 
 def _parse_types(spec: str) -> dict[str, int]:
@@ -82,16 +73,6 @@ def _load_existing_primary_ids(prompts_path: Path) -> dict[str, set[int]]:
     return by_type
 
 
-def _draft_kwargs() -> dict:
-    cfg = BASE_CONFIG.get("prompts_drafter", {})
-    return {
-        "model_id": cfg.get("model_id", "minimax-m3:cloud"),
-        "max_retries": int(cfg.get("max_retries", 3)),
-        "backoff_base": float(cfg.get("backoff_base", 2)),
-        "max_workers": int(cfg.get("max_workers", 2)),
-    }
-
-
 def run(args: argparse.Namespace) -> int:
     """Draft the requested rows and append them to ``prompts.jsonl``.
 
@@ -101,9 +82,7 @@ def run(args: argparse.Namespace) -> int:
     model is called for those survivors in parallel and the resulting rows
     are appended to the output file.
     """
-    corpus_path = Path(DATA_PATHS["cleaned_recipes"])
-    prompts_path = Path(args.output or DATA_PATHS["eval_prompts"])
-    prompts_path.parent.mkdir(parents=True, exist_ok=True)
+    corpus_path, prompts_path = resolve_paths(args)
     type_counts = _parse_types(args.types)
 
     from src.rag.data.prompts_drafter import _load_recipes
@@ -113,8 +92,8 @@ def run(args: argparse.Namespace) -> int:
 
     existing = _load_existing_primary_ids(prompts_path)
     rng = random.Random(args.seed)
-    encoder = _encoder()
-    call_kwargs = _draft_kwargs()
+    encoder = build_encoder()
+    call_kwargs = draft_kwargs()
     # A small number of rows never needs the full worker pool.
     call_kwargs["max_workers"] = min(call_kwargs["max_workers"], len(type_counts) * 4 or 1)
 
