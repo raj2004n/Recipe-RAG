@@ -16,12 +16,12 @@ def run() -> int:
     because the coverage metric would otherwise be wrong.
     """
     report = report_quality(
-        golden_path=DATA_PATHS["eval_golden"],
+        golden_path=DATA_PATHS["eval_golden_prompts"],
         llm_generated_path=DATA_PATHS["eval_llm_generated"],
         corpus_path=DATA_PATHS["eval_corpus_recipes"],
     )
     print(format_table(report), end="")
-    output_path = Path(DATA_PATHS["eval_golden"]).parent / ".quality_report.json"
+    output_path = Path(DATA_PATHS["eval_golden_prompts"]).parent / ".quality_report.json"
     write_json(report, str(output_path))
     print(f"  Report written to {output_path}")
     return 0

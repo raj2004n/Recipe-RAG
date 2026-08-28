@@ -5,13 +5,13 @@ data:
   # eval-quality reporter's coverage denominator is self-documenting.
   eval_corpus_recipes: data/processed/cleaned_recipes.json
   # Two eval datasets, reported separately (never blended).
-  #   golden - small hand-verified set, the gate; lives at data/eval/golden.jsonl
+  #   golden_prompts - small hand-verified set, the gate; lives at data/eval/golden_prompts.jsonl
   #   llm_generated - large LLM-drafted set, coverage/trend signal; lives at data/eval/llm_generated.jsonl
-  eval_golden: data/eval/golden.jsonl
+  eval_golden_prompts: data/eval/golden_prompts.jsonl
   eval_llm_generated: data/eval/llm_generated.jsonl
-  # Drafter output: candidates for the golden subset. Lives next to the
-  # golden.jsonl so the batch-review CLI can read it without extra config.
-  eval_golden_candidates: data/eval/golden_candidates.jsonl
+  # Hand-verified user-question prompts that feed into the golden dataset.
+  # Lives next to golden_prompts.jsonl so the review step can read both without extra config.
+  eval_prompts: data/eval/prompts.jsonl
 
 datasets:
   dir: datasets/

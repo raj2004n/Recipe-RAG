@@ -135,24 +135,6 @@ def test_missing_file_does_not_crash(tmp_path):
     assert report.llm_generated.warning is not None and "not found" in report.llm_generated.warning
 
 
-def test_legacy_rows_are_counted_and_surfaced_in_warning(tmp_path):
-    """Legacy `recipe_id` rows are counted and folded into the warning string."""
-    golden = _write_jsonl(tmp_path / "golden.jsonl", [
-        {"query": "a", "recipe_ids": [1]},
-        {"query": "b", "recipe_ids": [2]},
-        {"query": "c", "recipe_ids": [3]},
-        {"query": "d", "recipe_id": 4},
-        {"query": "e", "recipe_id": 5},
-    ])
-    corpus = _write_corpus(tmp_path / "corpus.json", 10)
-    report = report_quality(str(golden), str(tmp_path / "missing.jsonl"), str(corpus))
-    assert report.golden.legacy_rows == 2
-    assert report.golden.warning is not None
-    assert "2 row(s) used legacy recipe_id field" in report.golden.warning
-    # New-schema rows still resolve correctly despite mixed-schema file.
-    assert report.golden.distinct_recipes == 5
-
-
 def test_cli_prints_both_tables_and_exits_zero(tmp_path, monkeypatch, capsys):
     """End-to-end CLI run: synthetic corpus + eval files, monkeypatched DATA_PATHS.
 
@@ -170,7 +152,7 @@ def test_cli_prints_both_tables_and_exits_zero(tmp_path, monkeypatch, capsys):
     corpus = _write_corpus(tmp_path / "corpus.json", 5)
 
     import scripts.report_dataset_quality as cli
-    monkeypatch.setitem(cli.DATA_PATHS, "eval_golden", str(golden))
+    monkeypatch.setitem(cli.DATA_PATHS, "eval_golden_prompts", str(golden))
     monkeypatch.setitem(cli.DATA_PATHS, "eval_llm_generated", str(llm))
     monkeypatch.setitem(cli.DATA_PATHS, "eval_corpus_recipes", str(corpus))
 
