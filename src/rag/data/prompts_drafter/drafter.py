@@ -80,7 +80,7 @@ def _context_chunks_for_selection(selection: Selection) -> dict[str, Any]:
         }
     if selection.query_type in TYPES_WITH_ONE_PRIMARY:
         return {"primary": selection.primary_text}
-    # recipe_suggestion_off_* and ingredient_suggestion.
+    # recipe_suggestion_off_* types.
     return {
         "primary": selection.primary_text,
         "siblings": selection.sibling_texts,

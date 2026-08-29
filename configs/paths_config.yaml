@@ -12,6 +12,10 @@ data:
   # Hand-verified user-question prompts that feed into the golden dataset.
   # Lives next to golden_prompts.jsonl so the review step can read both without extra config.
   eval_prompts: data/eval/prompts.jsonl
+  # Drafted reference answers for the verified prompts; one row per prompt
+  # keyed by (query_type, _primary_id). Lives next to golden_prompts.jsonl
+  # for the same reason.
+  eval_answers: data/eval/golden_answers.jsonl
 
 datasets:
   dir: datasets/

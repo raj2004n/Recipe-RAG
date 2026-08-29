@@ -175,11 +175,28 @@ def selections_for_type(
     """Return the selections (one per row) for a single query type."""
     recipes_by_id = {r.recipe_id: r for r in recipes}
 
-    if query_type in {"recipe", "technique", "technique_suggestion"}:
-        # All three sample whole-recipe chunks and ask the model to find a
-        # notable angle (a recipe, a technique in a recipe, or advice rooted in
-        # a recipe's technique). The selection shape is identical; the prompt
-        # template is the only thing that differs between them.
+    if query_type in {"recipe", "technique"}:
+        # Both sample whole-recipe chunks and ask the model to find a notable
+        # angle (a recipe, or a technique in a recipe). The selection shape is
+        # identical; the prompt template is the only thing that differs.
+        chunk_pool = _build_whole_chunks(recipes)
+        picks = rng.sample(chunk_pool, k=min(per_type_count, len(chunk_pool)))
+        return [
+            Selection(query_type=query_type, primary_id=c.chunk_id,
+                       primary_text=c.text, primary_recipe_id=c.recipe_id,
+                       sibling_texts=[], sibling_recipe_ids=[])
+            for c in picks
+        ]
+
+    if query_type in {
+        "recipe_variation", "recipe_adaptation_method", "recipe_scale",
+        "recipe_improvement",
+    }:
+        # All four adapt a single named recipe: to a constraint, to a new
+        # cooking method, to a different scale, or to a quality improvement.
+        # The selection shape is identical to recipe/technique: sample
+        # whole-recipe chunks. The prompt template is the only thing that
+        # differs.
         chunk_pool = _build_whole_chunks(recipes)
         picks = rng.sample(chunk_pool, k=min(per_type_count, len(chunk_pool)))
         return [
@@ -227,31 +244,22 @@ def selections_for_type(
             ))
         return selections
 
-    if query_type == "ingredient_suggestion":
+    if query_type in {"recipe_combination", "recipe_from_constraints"}:
+        # Both create a NEW recipe from whole-recipe references. The primary is
+        # the base recipe; the two siblings are the other references the answer
+        # should draw from. Nearest-neighbour selection keeps the references
+        # related enough to fuse well or to cover a shared constraint set.
         chunk_pool = _build_whole_chunks(recipes)
-        seeds = rng.sample(chunk_pool, k=min(per_type_count, len(chunk_pool)))
-        selections = []
-        for seed in seeds:
-            siblings = nearest_neighbour_ids(
-                target_text=seed.text,
-                target_recipe_id=seed.recipe_id,
-                pool=chunk_pool,
-                encoder=encoder,
-                k=2,
-            )
-            if len(siblings) < 2:
-                continue
-            selections.append(Selection(
-                query_type=query_type,
-                primary_id=seed.chunk_id,
-                primary_text=seed.text,
-                primary_recipe_id=seed.recipe_id,
-                sibling_texts=[
-                    _recipe_text(recipes_by_id, rid) for rid in siblings
-                ],
-                sibling_recipe_ids=list(siblings),
-            ))
-        return selections
+        pool_to_recipe = {c.chunk_id: c.recipe_id for c in chunk_pool}
+        return _suggestion_selections(
+            query_type=query_type,
+            per_type_count=per_type_count,
+            encoder=encoder,
+            rng=rng,
+            chunk_id_to_recipe_id=pool_to_recipe,
+            chunk_pool=chunk_pool,
+            chunk_lookup=lambda rid: _recipe_text(recipes_by_id, rid),
+        )
 
     if query_type == "recipe_suggestion_off_ingredients":
         chunk_pool = _build_ingredient_chunks(recipes)

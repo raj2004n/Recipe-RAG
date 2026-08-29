@@ -45,8 +45,11 @@ def _single_block_user_message(query_type: str, primary_text: str) -> str:
     label_map = {
         "recipe": "RECIPE",
         "technique": "RECIPE",
-        "technique_suggestion": "RECIPE",
         "info": "INFO SECTION",
+        "recipe_variation": "RECIPE",
+        "recipe_adaptation_method": "RECIPE",
+        "recipe_scale": "RECIPE",
+        "recipe_improvement": "RECIPE",
     }
     label = label_map[query_type]
     instruction_map = {
@@ -58,13 +61,26 @@ def _single_block_user_message(query_type: str, primary_text: str) -> str:
             "Read the instructions. Pick one notable technique they describe and ask how to do it. "
             "Don't quote the recipe name verbatim."
         ),
-        "technique_suggestion": (
-            "Frame a how-to question as if you're seeking advice for a real kitchen situation. "
-            "Do not name this recipe or assume the reader has seen it."
-        ),
         "info": (
             "Generate a meta question about the section above - spiciness, cuisine, difficulty, "
             "timing, or serving. Don't reference the recipe by name."
+        ),
+        "recipe_variation": (
+            "Generate a short question a home cook might type to ask how to adapt this recipe "
+            "to a constraint: dietary, an excluded ingredient, or a flavor change. Reference "
+            "what makes the recipe distinctive but don't quote the name verbatim."
+        ),
+        "recipe_adaptation_method": (
+            "Generate a short question a home cook might type to ask how to convert this recipe "
+            "to a different cooking method (oven to air fryer, stovetop to slow cooker, and so on)."
+        ),
+        "recipe_scale": (
+            "Generate a short question a home cook might type to ask how to scale this recipe "
+            "up or down, for a crowd or for two."
+        ),
+        "recipe_improvement": (
+            "Generate a short question a home cook might type to ask how to improve this recipe's "
+            "texture or flavor (crispier, chewier, more flavorful)."
         ),
     }
     return f"{label}:\n{primary_text}\n\n{instruction_map[query_type]}"
@@ -81,10 +97,21 @@ def _multi_block_user_message(query_type: str, primary_text: str, sibling_texts:
             f"REFERENCE:\n{sibling_texts[0]}\n\n"
             f"SWAP TARGET:\n{sibling_texts[1]}"
         )
-    if query_type == "ingredient_suggestion":
+    if query_type == "recipe_combination":
         return (
-            "Below are three recipes. Write a prompt that asks for ingredient substitutions that would "
-            "work across all three. Anchor the question in something the recipes share.\n\n"
+            "Below are three whole recipes. Write a prompt that asks the home cook "
+            "to fuse two or three of them into one new dish, drawing techniques, "
+            "ingredients, and proportions from the sources. Don't name a specific recipe.\n\n"
+            f"RECIPE 1:\n{primary_text}\n\n"
+            f"RECIPE 2:\n{sibling_texts[0]}\n\n"
+            f"RECIPE 3:\n{sibling_texts[1]}"
+        )
+    if query_type == "recipe_from_constraints":
+        return (
+            "Below are three whole recipes. Write a prompt that gives a constraint "
+            "set (ingredients on hand, equipment, time, dietary) that no single "
+            "recipe satisfies, and asks for a new recipe assembled from these "
+            "sources. Don't name a specific recipe.\n\n"
             f"RECIPE 1:\n{primary_text}\n\n"
             f"RECIPE 2:\n{sibling_texts[0]}\n\n"
             f"RECIPE 3:\n{sibling_texts[1]}"

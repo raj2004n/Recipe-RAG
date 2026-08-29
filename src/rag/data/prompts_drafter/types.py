@@ -1,8 +1,8 @@
 """Query-type metadata for the eval-prompt drafter.
 
-The drafter has nine query types and a small number of properties that vary
-per type. This module is the single source of truth for that metadata; the
-selection, rendering, and orchestration submodules all read from it.
+The drafter has thirteen query types and a small number of properties that
+vary per type. This module is the single source of truth for that metadata;
+the selection, rendering, and orchestration submodules all read from it.
 """
 
 from dataclasses import dataclass
@@ -13,11 +13,15 @@ QUERY_TYPES: tuple[str, ...] = (
     "technique",
     "recipe_with_a_swap",
     "info",
-    "technique_suggestion",
     "recipe_suggestion_off_ingredients",
     "recipe_suggestion_off_instructions",
     "recipe_suggestion_off_info",
-    "ingredient_suggestion",
+    "recipe_variation",
+    "recipe_combination",
+    "recipe_from_constraints",
+    "recipe_adaptation_method",
+    "recipe_scale",
+    "recipe_improvement",
 )
 
 
@@ -42,11 +46,18 @@ QUERY_TYPE_SPECS: tuple[QueryTypeSpec, ...] = (
     QueryTypeSpec("technique", requires_siblings=False),
     QueryTypeSpec("recipe_with_a_swap", requires_siblings=True),
     QueryTypeSpec("info", requires_siblings=False),
-    QueryTypeSpec("technique_suggestion", requires_siblings=False),
     QueryTypeSpec("recipe_suggestion_off_ingredients", requires_siblings=True, label="shared ingredients"),
     QueryTypeSpec("recipe_suggestion_off_instructions", requires_siblings=True, label="shared cooking method"),
     QueryTypeSpec("recipe_suggestion_off_info", requires_siblings=True, label="shared notes or meta info"),
-    QueryTypeSpec("ingredient_suggestion", requires_siblings=True),
+    # Invention types: the answer is a NEW recipe created from the references.
+    # The four single-recipe types adapt one named recipe; the two multi-recipe
+    # types fuse or assemble from several whole-recipe references.
+    QueryTypeSpec("recipe_variation", requires_siblings=False),
+    QueryTypeSpec("recipe_combination", requires_siblings=True),
+    QueryTypeSpec("recipe_from_constraints", requires_siblings=True),
+    QueryTypeSpec("recipe_adaptation_method", requires_siblings=False),
+    QueryTypeSpec("recipe_scale", requires_siblings=False),
+    QueryTypeSpec("recipe_improvement", requires_siblings=False),
 )
 
 TYPES_WITH_ONE_PRIMARY: frozenset[str] = frozenset(

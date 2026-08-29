@@ -1,6 +1,6 @@
 """Drafts the user-question prompts half of the eval-data golden subset.
 
-For each of nine query types, the drafter selects context chunks from the
+For each of thirteen query types, the drafter selects context chunks from the
 recipe corpus using the build encoder for similarity, then asks a model to
 produce a single user-style query string per selection. Output rows are
 written to ``data/eval/prompts.jsonl`` and carry the full context they were
