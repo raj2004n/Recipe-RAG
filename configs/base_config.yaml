@@ -61,7 +61,7 @@ prompts_drafter:
 # Drafts reference answers for the verified prompts, once prompts have been
 # approved in the review step.
 answers_drafter:
-  model_id: minimax-m3:cloud
+  model_id: deepseek-v4-pro:cloud
   max_retries: 3
   backoff_base: 2
   max_workers: 2
