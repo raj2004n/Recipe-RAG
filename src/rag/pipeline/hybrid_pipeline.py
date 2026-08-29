@@ -162,6 +162,31 @@ class HybridPipeline:
         }
 
 
+    def debug_query(self, query: str, k: int = 3) -> tuple[list[dict], str, tuple[str, str]]:
+        """Retrieval-only split: fuse, rerank, and resolve chunks to whole recipes.
+
+        Mirrors DensePipeline.debug_query: it runs the full retrieval path but
+        stops before generation. Returns the deduped recipes the generator
+        would see, in rank order, plus the prompt that would be built from
+        them. The window is capped by the reranker's top_n, so a k larger
+        than that returns at most that many recipes.
+        """
+        fused = self.fuser.fuse(
+            dense=self.dense_retriever.retrieve(query),
+            sparse=self.bm25_retriever.retrieve(query),
+        )
+        reranked = self.reranker.rerank(query, fused, top_n=self._rerank_top_n)
+
+        recipes = self._fetch_recipes(reranked, k=k)
+        prompts = self.prompt_builder.build_prompt_from_recipes(
+            query=query,
+            recipes=recipes,
+            recipe_to_string=recipe_to_string,
+        )
+
+        return recipes, "", prompts
+
+
     def _fetch_recipes(
         self,
         reranked: list[FusedChunk],
