@@ -16,6 +16,9 @@ data:
   # keyed by (query_type, _primary_id). Lives next to golden_prompts.jsonl
   # for the same reason.
   eval_answers: data/eval/golden_answers.jsonl
+  # Per-type system messages for the eval drafters (dev-tool only, not copied
+  # into snapshots). Loaded by src/rag/data/eval_system_messages.py.
+  eval_system_messages: configs/eval_system_messages.yaml
 
 datasets:
   dir: datasets/

@@ -11,124 +11,14 @@ import time
 from ollama import chat
 from pydantic import BaseModel, ValidationError
 
-from .types import QUERY_TYPE_SPECS, TYPES_WITH_ONE_PRIMARY
+from .system_messages import prompts_drafter_messages
+from .types import TYPES_WITH_ONE_PRIMARY
 
 
-_PERSONA = (
-    "You are a home cook drafting questions to test a recipe retrieval system. "
-)
-
-_JSON_LINE = (
-    "Produce exactly one user-style query string. Your entire response must be "
-    "a single JSON object on one line - no markdown fences, no commentary, "
-    'no surrounding text. Exact shape: {"query": "<the query>"}'
-)
-
-
-def _suggestion_message(label: str) -> str:
-    """System message for the three recipe_suggestion_off_* types."""
-    return (
-        _PERSONA
-        + "You are given three chunks from three different recipes that share "
-        + f"{label}. Write a 'what can I make' prompt grounded in the overlap - "
-        + "don't name a specific recipe.\n\n"
-        + _JSON_LINE
-    )
-
-
-# Per-type system messages. One entry per QUERY_TYPES element. The grounded
-# types carry the persona, the per-type task, and the JSON line; the
-# invention types carry their approved messages. The suggestion types read
-# their shared-label wording from QUERY_TYPE_SPECS so the two stay in sync.
-_SUGGESTION_MESSAGES = {
-    spec.name: _suggestion_message(spec.label)
-    for spec in QUERY_TYPE_SPECS
-    if spec.name.startswith("recipe_suggestion_off_")
-}
-
-SYSTEM_MESSAGES: dict[str, str] = {
-    "recipe": (
-        _PERSONA
-        + "You are given ONE recipe. Generate a short question a home cook might "
-        + "type to find this exact recipe. Reference what makes it distinctive "
-        + "(an ingredient, technique, cuisine, or occasion).\n\n"
-        + _JSON_LINE
-    ),
-    "technique": (
-        _PERSONA
-        + "You are given ONE recipe. Read the instructions. Pick one notable "
-        + "technique they describe and ask how to do it. Don't quote the recipe "
-        + "name verbatim.\n\n"
-        + _JSON_LINE
-    ),
-    "info": (
-        _PERSONA
-        + "You are given ONE info section from a recipe. Generate a meta question "
-        + "about the section - spiciness, cuisine, difficulty, timing, or "
-        + "serving. Don't reference the recipe by name.\n\n"
-        + _JSON_LINE
-    ),
-    "recipe_with_a_swap": (
-        _PERSONA
-        + "You are given three similar recipes: a primary, a reference, and a "
-        + "swap target. Write a prompt that asks the home cook how to substitute "
-        + "one ingredient from the primary with something from the swap target, "
-        + "using the reference to keep the swap grounded.\n\n"
-        + _JSON_LINE
-    ),
-    **_SUGGESTION_MESSAGES,
-    "recipe_variation": (
-        "You are a home cook drafting questions to test a recipe retrieval "
-        "system. You are given ONE primary recipe and ONE sibling recipe close "
-        "to it. Write a single user-style query that names the primary recipe "
-        "and asks how to adapt it to a constraint: a dietary need, an excluded "
-        "ingredient, or a flavor change. The query should read like a real home "
-        "cook asking for help, reference what makes the recipe distinctive, and "
-        "be answerable only with the primary recipe plus the sibling as a "
-        "reference. Do not quote the recipe name verbatim.\n\n"
-        "Produce exactly one user-style query string. Your entire response must "
-        "be a single JSON object on one line - no markdown fences, no "
-        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
-    ),
-    "recipe_combination": (
-        "You are a home cook drafting questions to test a recipe retrieval "
-        "system. You are given TWO recipes. Write a single user-style query "
-        "that names both dishes and asks to fuse them into one new dish, "
-        "drawing techniques, ingredients, and proportions from both. The query "
-        "should read like a real home cook asking for help and be answerable "
-        "only with both recipes in context. Do not quote either recipe name "
-        "verbatim.\n\n"
-        "Produce exactly one user-style query string. Your entire response must "
-        "be a single JSON object on one line - no markdown fences, no "
-        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
-    ),
-    "recipe_from_constraints": (
-        "You are a home cook drafting questions to test a recipe retrieval "
-        "system. You are given TWO recipes. Write a single user-style query "
-        "that gives a constraint set (ingredients on hand, equipment, time, "
-        "dietary) that no single recipe satisfies, and asks for a new recipe "
-        "assembled from these sources. The query should read like a real home "
-        "cook asking for help and be answerable only with both recipes in "
-        "context. Do not quote either recipe name verbatim.\n\n"
-        "Produce exactly one user-style query string. Your entire response must "
-        "be a single JSON object on one line - no markdown fences, no "
-        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
-    ),
-    "recipe_adaptation_method": (
-        "You are a home cook drafting questions to test a recipe retrieval "
-        "system. You are given ONE primary recipe and ONE sibling recipe that "
-        "uses a different cooking method. Write a single user-style query that "
-        "names the primary recipe and asks how to convert it to that method "
-        "(oven to air fryer, stovetop to slow cooker, and so on). The query "
-        "should read like a real home cook asking for help, reference what "
-        "makes the recipe distinctive, and be answerable only with the primary "
-        "recipe plus the sibling as a reference. Do not quote the recipe name "
-        "verbatim.\n\n"
-        "Produce exactly one user-style query string. Your entire response must "
-        "be a single JSON object on one line - no markdown fences, no "
-        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
-    ),
-}
+# Per-type system messages, loaded from configs/eval_system_messages.yaml. The
+# suggestion types' {label} placeholder is formatted at load from
+# QUERY_TYPE_SPECS so the two stay in sync.
+SYSTEM_MESSAGES: dict[str, str] = prompts_drafter_messages()
 
 
 class _PromptRecord(BaseModel):
