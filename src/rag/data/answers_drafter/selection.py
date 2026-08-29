@@ -105,7 +105,7 @@ def _primary_chunk_type(query_type: str) -> str:
     if query_type in {
         "recipe", "technique", "recipe_with_a_swap",
         "recipe_variation", "recipe_combination", "recipe_from_constraints",
-        "recipe_adaptation_method", "recipe_scale", "recipe_improvement",
+        "recipe_adaptation_method",
     }:
         return "whole"
     if query_type == "info":

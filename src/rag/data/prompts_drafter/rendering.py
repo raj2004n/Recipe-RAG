@@ -22,6 +22,64 @@ SYSTEM_PROMPT = (
 )
 
 
+# Per-type system messages for the invention types. The grounded types keep
+# the shared SYSTEM_PROMPT until their per-type messages are designed. Each
+# message carries the JSON line, so the user message does not append it again.
+INVENTION_SYSTEM_MESSAGES: dict[str, str] = {
+    "recipe_variation": (
+        "You are a home cook drafting questions to test a recipe retrieval "
+        "system. You are given ONE primary recipe and ONE sibling recipe close "
+        "to it. Write a single user-style query that names the primary recipe "
+        "and asks how to adapt it to a constraint: a dietary need, an excluded "
+        "ingredient, or a flavor change. The query should read like a real home "
+        "cook asking for help, reference what makes the recipe distinctive, and "
+        "be answerable only with the primary recipe plus the sibling as a "
+        "reference. Do not quote the recipe name verbatim.\n\n"
+        "Produce exactly one user-style query string. Your entire response must "
+        "be a single JSON object on one line - no markdown fences, no "
+        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
+    ),
+    "recipe_combination": (
+        "You are a home cook drafting questions to test a recipe retrieval "
+        "system. You are given TWO recipes. Write a single user-style query "
+        "that names both dishes and asks to fuse them into one new dish, "
+        "drawing techniques, ingredients, and proportions from both. The query "
+        "should read like a real home cook asking for help and be answerable "
+        "only with both recipes in context. Do not quote either recipe name "
+        "verbatim.\n\n"
+        "Produce exactly one user-style query string. Your entire response must "
+        "be a single JSON object on one line - no markdown fences, no "
+        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
+    ),
+    "recipe_from_constraints": (
+        "You are a home cook drafting questions to test a recipe retrieval "
+        "system. You are given TWO recipes. Write a single user-style query "
+        "that gives a constraint set (ingredients on hand, equipment, time, "
+        "dietary) that no single recipe satisfies, and asks for a new recipe "
+        "assembled from these sources. The query should read like a real home "
+        "cook asking for help and be answerable only with both recipes in "
+        "context. Do not quote either recipe name verbatim.\n\n"
+        "Produce exactly one user-style query string. Your entire response must "
+        "be a single JSON object on one line - no markdown fences, no "
+        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
+    ),
+    "recipe_adaptation_method": (
+        "You are a home cook drafting questions to test a recipe retrieval "
+        "system. You are given ONE primary recipe and ONE sibling recipe that "
+        "uses a different cooking method. Write a single user-style query that "
+        "names the primary recipe and asks how to convert it to that method "
+        "(oven to air fryer, stovetop to slow cooker, and so on). The query "
+        "should read like a real home cook asking for help, reference what "
+        "makes the recipe distinctive, and be answerable only with the primary "
+        "recipe plus the sibling as a reference. Do not quote the recipe name "
+        "verbatim.\n\n"
+        "Produce exactly one user-style query string. Your entire response must "
+        "be a single JSON object on one line - no markdown fences, no "
+        'commentary, no surrounding text. Exact shape: {"query": "<the query>"}'
+    ),
+}
+
+
 class _PromptRecord(BaseModel):
     """The single-string JSON shape the model is asked to emit."""
 
@@ -34,6 +92,10 @@ def user_message(query_type: str, primary_text: str, sibling_texts: list[str]) -
         body = _single_block_user_message(query_type, primary_text)
     else:
         body = _multi_block_user_message(query_type, primary_text, sibling_texts)
+    if query_type in INVENTION_SYSTEM_MESSAGES:
+        # The invention system messages carry the JSON line; the user message
+        # is just the chunks.
+        return body
     return (
         body
         + "\n\nRespond with a single JSON object on one line - no markdown fences, "
@@ -46,10 +108,6 @@ def _single_block_user_message(query_type: str, primary_text: str) -> str:
         "recipe": "RECIPE",
         "technique": "RECIPE",
         "info": "INFO SECTION",
-        "recipe_variation": "RECIPE",
-        "recipe_adaptation_method": "RECIPE",
-        "recipe_scale": "RECIPE",
-        "recipe_improvement": "RECIPE",
     }
     label = label_map[query_type]
     instruction_map = {
@@ -64,23 +122,6 @@ def _single_block_user_message(query_type: str, primary_text: str) -> str:
         "info": (
             "Generate a meta question about the section above - spiciness, cuisine, difficulty, "
             "timing, or serving. Don't reference the recipe by name."
-        ),
-        "recipe_variation": (
-            "Generate a short question a home cook might type to ask how to adapt this recipe "
-            "to a constraint: dietary, an excluded ingredient, or a flavor change. Reference "
-            "what makes the recipe distinctive but don't quote the name verbatim."
-        ),
-        "recipe_adaptation_method": (
-            "Generate a short question a home cook might type to ask how to convert this recipe "
-            "to a different cooking method (oven to air fryer, stovetop to slow cooker, and so on)."
-        ),
-        "recipe_scale": (
-            "Generate a short question a home cook might type to ask how to scale this recipe "
-            "up or down, for a crowd or for two."
-        ),
-        "recipe_improvement": (
-            "Generate a short question a home cook might type to ask how to improve this recipe's "
-            "texture or flavor (crispier, chewier, more flavorful)."
         ),
     }
     return f"{label}:\n{primary_text}\n\n{instruction_map[query_type]}"
@@ -97,24 +138,17 @@ def _multi_block_user_message(query_type: str, primary_text: str, sibling_texts:
             f"REFERENCE:\n{sibling_texts[0]}\n\n"
             f"SWAP TARGET:\n{sibling_texts[1]}"
         )
-    if query_type == "recipe_combination":
+    if query_type in {"recipe_variation", "recipe_adaptation_method"}:
+        # The primary is the recipe the query adapts; the single sibling is the
+        # reference the answer should draw from.
         return (
-            "Below are three whole recipes. Write a prompt that asks the home cook "
-            "to fuse two or three of them into one new dish, drawing techniques, "
-            "ingredients, and proportions from the sources. Don't name a specific recipe.\n\n"
-            f"RECIPE 1:\n{primary_text}\n\n"
-            f"RECIPE 2:\n{sibling_texts[0]}\n\n"
-            f"RECIPE 3:\n{sibling_texts[1]}"
+            f"PRIMARY:\n{primary_text}\n\n"
+            f"SIBLING:\n{sibling_texts[0]}"
         )
-    if query_type == "recipe_from_constraints":
+    if query_type in {"recipe_combination", "recipe_from_constraints"}:
         return (
-            "Below are three whole recipes. Write a prompt that gives a constraint "
-            "set (ingredients on hand, equipment, time, dietary) that no single "
-            "recipe satisfies, and asks for a new recipe assembled from these "
-            "sources. Don't name a specific recipe.\n\n"
             f"RECIPE 1:\n{primary_text}\n\n"
-            f"RECIPE 2:\n{sibling_texts[0]}\n\n"
-            f"RECIPE 3:\n{sibling_texts[1]}"
+            f"RECIPE 2:\n{sibling_texts[0]}"
         )
     # The three recipe_suggestion_off_* types.
     label_map = {
@@ -161,13 +195,14 @@ def call_model(
 ) -> str:
     """Call the model and return the parsed query string, or "" on failure."""
     user_msg = user_message(query_type, primary_text, sibling_texts)
+    system_msg = INVENTION_SYSTEM_MESSAGES.get(query_type, SYSTEM_PROMPT)
     last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
             response = chat(
                 model=model_id,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system_msg},
                     {"role": "user", "content": user_msg},
                 ],
                 format="json",

@@ -4,8 +4,8 @@ Reads the model and concurrency knobs from
 ``configs/base_config.yaml`` (``answers_drafter`` section) and the
 prompts / recipes / output paths from ``configs/paths_config.yaml``.
 Supports ``--per-type-count`` so a long draft can be run as a small
-smoke test before committing to the full 104 rows; ``--per-type-count 1``
-produces 13 rows total (one per query type).
+smoke test before committing to the full 88 rows; ``--per-type-count 1``
+produces 11 rows total (one per query type).
 """
 
 import argparse
@@ -50,7 +50,7 @@ def _filter_prompts_by_per_type_count(
     Returns the path to the sliced file. The original prompts file is
     untouched. If ``per_type_count`` is None, returns ``prompts_path``
     unchanged. The slice is deterministic given the same seed so a
-    smoke-test rerun produces the same 13 rows.
+    smoke-test rerun produces the same 11 rows.
     """
     if per_type_count is None:
         return prompts_path
@@ -94,8 +94,8 @@ def main() -> None:
         default=None,
         help=(
             "Rows per query type. Defaults to no slicing (all rows in the "
-            "prompts file are drafted). Use 1 to smoke-test with 13 rows "
-            "(one per query type) before committing to the full 104."
+            "prompts file are drafted). Use 1 to smoke-test with 11 rows "
+            "(one per query type) before committing to the full 88."
         ),
     )
     parser.add_argument(
@@ -104,7 +104,7 @@ def main() -> None:
         default=None,
         help=(
             "Seed for the smoke-test slice RNG. Same seed + same prompts "
-            "file => same 13 rows."
+            "file => same 11 rows."
         ),
     )
     parser.add_argument(

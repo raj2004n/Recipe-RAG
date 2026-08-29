@@ -188,24 +188,6 @@ def selections_for_type(
             for c in picks
         ]
 
-    if query_type in {
-        "recipe_variation", "recipe_adaptation_method", "recipe_scale",
-        "recipe_improvement",
-    }:
-        # All four adapt a single named recipe: to a constraint, to a new
-        # cooking method, to a different scale, or to a quality improvement.
-        # The selection shape is identical to recipe/technique: sample
-        # whole-recipe chunks. The prompt template is the only thing that
-        # differs.
-        chunk_pool = _build_whole_chunks(recipes)
-        picks = rng.sample(chunk_pool, k=min(per_type_count, len(chunk_pool)))
-        return [
-            Selection(query_type=query_type, primary_id=c.chunk_id,
-                       primary_text=c.text, primary_recipe_id=c.recipe_id,
-                       sibling_texts=[], sibling_recipe_ids=[])
-            for c in picks
-        ]
-
     if query_type == "info":
         sections = _build_info_sections(recipes)
         picks = rng.sample(sections, k=min(per_type_count, len(sections)))
@@ -244,11 +226,14 @@ def selections_for_type(
             ))
         return selections
 
-    if query_type in {"recipe_combination", "recipe_from_constraints"}:
-        # Both create a NEW recipe from whole-recipe references. The primary is
-        # the base recipe; the two siblings are the other references the answer
-        # should draw from. Nearest-neighbour selection keeps the references
-        # related enough to fuse well or to cover a shared constraint set.
+    if query_type in {
+        "recipe_variation", "recipe_combination", "recipe_from_constraints",
+        "recipe_adaptation_method",
+    }:
+        # All four create a NEW recipe from whole-recipe references. The
+        # primary is the base recipe; the single sibling is the reference the
+        # answer should draw from. Nearest-neighbour selection keeps the
+        # reference related enough to adapt, fuse, or assemble well.
         chunk_pool = _build_whole_chunks(recipes)
         pool_to_recipe = {c.chunk_id: c.recipe_id for c in chunk_pool}
         return _suggestion_selections(
@@ -259,6 +244,7 @@ def selections_for_type(
             chunk_id_to_recipe_id=pool_to_recipe,
             chunk_pool=chunk_pool,
             chunk_lookup=lambda rid: _recipe_text(recipes_by_id, rid),
+            sibling_count=1,
         )
 
     if query_type == "recipe_suggestion_off_ingredients":
@@ -340,14 +326,15 @@ def _suggestion_selections(
     chunk_id_to_recipe_id: dict[int, int],
     chunk_pool: list[Chunk],
     chunk_lookup,
+    sibling_count: int = 2,
 ) -> list[Selection]:
-    """Shared selection logic for the three ``recipe_suggestion_off_*`` types.
+    """Shared selection logic for the multi-recipe query types.
 
-    Each selection is 1 seed chunk + 2 nearest-neighbour chunks from distinct
-    recipes, all from the same chunk-type pool. The pool's own
+    Each selection is 1 seed chunk + ``sibling_count`` nearest-neighbour chunks
+    from distinct recipes, all from the same chunk-type pool. The pool's own
     ``chunk_id_to_recipe_id`` map is passed in because ids are stream-local.
     """
-    if len(chunk_pool) < per_type_count * 3:
+    if len(chunk_pool) < per_type_count * (sibling_count + 1):
         return []
     seeds = rng.sample(chunk_pool, k=min(per_type_count, len(chunk_pool)))
     selections: list[Selection] = []
@@ -357,9 +344,9 @@ def _suggestion_selections(
             target_recipe_id=seed.recipe_id,
             pool=chunk_pool,
             encoder=encoder,
-            k=2,
+            k=sibling_count,
         )
-        if len(siblings) < 2:
+        if len(siblings) < sibling_count:
             continue
         selections.append(Selection(
             query_type=query_type,

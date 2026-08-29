@@ -3,7 +3,7 @@
 Reads the model and concurrency knobs from configs/base_config.yaml
 (prompts_drafter section) and the corpus / output paths from
 configs/paths_config.yaml. Supports --per-type-count so a long draft can be
-run as a small smoke test before committing to the full 104 rows.
+run as a small smoke test before committing to the full 88 rows.
 """
 
 import argparse

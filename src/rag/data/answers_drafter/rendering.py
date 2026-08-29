@@ -1,6 +1,6 @@
 """Prompt rendering: per-query-type system + user messages for the answer drafter.
 
-Each of the 13 query types gets its own system message. The user message is
+Each of the 11 query types gets its own system message. The user message is
 shared across types where possible; it just lays out the chunks the model
 sees and the user's query. The model returns a single JSON object
 ``{"answer": "<the drafted answer>"}`` on one line, parsed by the
@@ -9,9 +9,9 @@ sees and the user's query. The model returns a single JSON object
 The grounded types are seeded from the ``GENERATION`` persona in
 ``configs/prompts_config.yaml`` but pivot away from "create a NEW recipe"
 to a recommender / teacher / fact-checker role appropriate to each
-retrieval shape. The six invention types keep the "create a NEW recipe"
-direction; their real per-type messages are designed on a review surface,
-so for now they share a placeholder. Messages are easy to edit here and
+retrieval shape. The four invention types keep the "create a NEW recipe"
+direction and carry the JSON line inside their system message, so the user
+message does not append it again. Messages are easy to edit here and
 re-test in the smoke-test drafter run.
 """
 
@@ -23,18 +23,6 @@ from pydantic import BaseModel, ValidationError
 
 from .selection import AnswerSelection
 from .types import QUERY_TYPES
-
-
-# Placeholder for the six invention types. The real per-type messages are
-# designed on a fresh review surface; this keeps QUERY_TYPES and
-# SYSTEM_MESSAGES in sync so the drafter stays importable and the coverage
-# assertion passes in the meantime.
-_INVENTION_PLACEHOLDER = (
-    "You are a recipe developer. Using the REFERENCE RECIPES as inspiration "
-    "for techniques, ingredient combinations, and proportions, create a NEW "
-    "recipe that satisfies the USER QUERY. Do not reproduce an existing "
-    "recipe. [PLACEHOLDER: real per-type system message designed in step 3.]"
-)
 
 
 # Per-type system messages. One entry per QUERY_TYPES element.
@@ -108,14 +96,65 @@ SYSTEM_MESSAGES: dict[str, str] = {
         "recipe whose context is actually different from what the user "
         "described."
     ),
-    # Invention types: placeholders until the real per-type messages are
-    # designed on a review surface.
-    "recipe_variation": _INVENTION_PLACEHOLDER,
-    "recipe_combination": _INVENTION_PLACEHOLDER,
-    "recipe_from_constraints": _INVENTION_PLACEHOLDER,
-    "recipe_adaptation_method": _INVENTION_PLACEHOLDER,
-    "recipe_scale": _INVENTION_PLACEHOLDER,
-    "recipe_improvement": _INVENTION_PLACEHOLDER,
+    # Invention types: the answer is a NEW recipe created from the references.
+    # Each message carries the JSON line, so the user message does not append
+    # it again.
+    "recipe_variation": (
+        "You are a recipe developer for a home cook. You are given ONE primary "
+        "recipe, ONE sibling recipe, and a USER QUERY asking to adapt the "
+        "primary recipe to a constraint using the sibling recipe as a "
+        "reference: a dietary need, an excluded ingredient, or a flavor "
+        "change. Rewrite the recipe so it satisfies the constraint while "
+        "keeping the dish's identity: the same core structure, the same "
+        "cooking method, and as many of the original ingredients as possible. "
+        "In the answer, name the dish, give the adapted ingredient list and "
+        "steps, and add one short note on what changed and why. Ground every "
+        "ingredient and step in the original recipe. Do not invent a different "
+        "dish. If the constraint conflicts with the recipe's core, say so "
+        "plainly and offer the closest workable adaptation.\n\n"
+        "Respond with a single JSON object on one line - no markdown fences, "
+        'no commentary: {"answer": "<the drafted answer>"}'
+    ),
+    "recipe_combination": (
+        "You are a recipe developer for a home cook. You are given TWO recipes "
+        "and a USER QUERY asking to fuse two of them into one new dish. Create "
+        "one coherent new recipe that draws techniques, ingredient "
+        "combinations, and proportions from the sources: pick the elements that "
+        "fit together, resolve any conflicts, and keep the result practical for "
+        "a home kitchen. In the answer, name the new dish, give the ingredient "
+        "list and steps, and add one short note on which elements came from "
+        "which source. Ground every ingredient and step in the source recipes. "
+        "Do not reproduce any single source recipe verbatim.\n\n"
+        "Respond with a single JSON object on one line - no markdown fences, "
+        'no commentary: {"answer": "<the drafted answer>"}'
+    ),
+    "recipe_from_constraints": (
+        "You are a recipe developer for a home cook. You are given TWO recipes "
+        "and a USER QUERY that lists constraints: ingredients on hand, "
+        "equipment, time, or dietary needs. Create a new recipe that satisfies "
+        "every stated constraint, assembling techniques and ingredients from "
+        "the source recipes where they fit. In the answer, name the dish, give "
+        "the ingredient list and steps, and add one short note on how each "
+        "constraint is met. Ground every ingredient and step in the source "
+        "recipes. If a constraint cannot be met with the given sources, say so "
+        "plainly and offer the closest workable recipe.\n\n"
+        "Respond with a single JSON object on one line - no markdown fences, "
+        'no commentary: {"answer": "<the drafted answer>"}'
+    ),
+    "recipe_adaptation_method": (
+        "You are a recipe developer for a home cook. You are given ONE primary "
+        "recipe, ONE sibling recipe, and a USER QUERY asking to convert the "
+        "primary recipe to a different cooking method, such as oven to air "
+        "fryer or stovetop to slow cooker. Rewrite the recipe for the new "
+        "method using the sibling recipe as a reference: adjust the timing, "
+        "temperature, and technique so the dish works, and keep the dish's "
+        "identity and flavor. In the answer, name the dish, give the adapted "
+        "ingredient list and steps, and add one short note on what changed for "
+        "the new method. Ground every ingredient and step in the original "
+        "recipe. Do not invent a different dish.\n\n"
+        "Respond with a single JSON object on one line - no markdown fences, "
+        'no commentary: {"answer": "<the drafted answer>"}'
+    ),
 }
 
 
@@ -123,6 +162,16 @@ class _AnswerRecord(BaseModel):
     """The single-string JSON shape the model is asked to emit."""
 
     answer: str
+
+
+# The four invention types carry the JSON line inside their system message,
+# so the user message does not append it again.
+_INVENTION_TYPES = frozenset({
+    "recipe_variation",
+    "recipe_combination",
+    "recipe_from_constraints",
+    "recipe_adaptation_method",
+})
 
 
 def _user_message(selection: AnswerSelection) -> str:
@@ -143,10 +192,11 @@ def _user_message(selection: AnswerSelection) -> str:
     else:
         parts.append("PRIMARY:\n" + selection.primary_text)
     parts.append("\nUSER QUERY:\n" + selection.query)
-    parts.append(
-        "\nRespond with a single JSON object on one line - no markdown "
-        'fences, no commentary: {"answer": "<the drafted answer>"}'
-    )
+    if q not in _INVENTION_TYPES:
+        parts.append(
+            "\nRespond with a single JSON object on one line - no markdown "
+            'fences, no commentary: {"answer": "<the drafted answer>"}'
+        )
     return "\n".join(parts)
 
 
@@ -155,8 +205,10 @@ TYPES_FOR_SIBLINGS = frozenset({
     "recipe_suggestion_off_ingredients",
     "recipe_suggestion_off_instructions",
     "recipe_suggestion_off_info",
+    "recipe_variation",
     "recipe_combination",
     "recipe_from_constraints",
+    "recipe_adaptation_method",
 })
 
 

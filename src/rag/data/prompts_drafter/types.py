@@ -1,6 +1,6 @@
 """Query-type metadata for the eval-prompt drafter.
 
-The drafter has thirteen query types and a small number of properties that
+The drafter has eleven query types and a small number of properties that
 vary per type. This module is the single source of truth for that metadata;
 the selection, rendering, and orchestration submodules all read from it.
 """
@@ -20,8 +20,6 @@ QUERY_TYPES: tuple[str, ...] = (
     "recipe_combination",
     "recipe_from_constraints",
     "recipe_adaptation_method",
-    "recipe_scale",
-    "recipe_improvement",
 )
 
 
@@ -50,14 +48,12 @@ QUERY_TYPE_SPECS: tuple[QueryTypeSpec, ...] = (
     QueryTypeSpec("recipe_suggestion_off_instructions", requires_siblings=True, label="shared cooking method"),
     QueryTypeSpec("recipe_suggestion_off_info", requires_siblings=True, label="shared notes or meta info"),
     # Invention types: the answer is a NEW recipe created from the references.
-    # The four single-recipe types adapt one named recipe; the two multi-recipe
-    # types fuse or assemble from several whole-recipe references.
-    QueryTypeSpec("recipe_variation", requires_siblings=False),
+    # All four carry one reference sibling (a whole-recipe chunk) the answer
+    # should draw from.
+    QueryTypeSpec("recipe_variation", requires_siblings=True),
     QueryTypeSpec("recipe_combination", requires_siblings=True),
     QueryTypeSpec("recipe_from_constraints", requires_siblings=True),
-    QueryTypeSpec("recipe_adaptation_method", requires_siblings=False),
-    QueryTypeSpec("recipe_scale", requires_siblings=False),
-    QueryTypeSpec("recipe_improvement", requires_siblings=False),
+    QueryTypeSpec("recipe_adaptation_method", requires_siblings=True),
 )
 
 TYPES_WITH_ONE_PRIMARY: frozenset[str] = frozenset(
