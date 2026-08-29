@@ -11,6 +11,7 @@ import time
 from ollama import chat
 from pydantic import BaseModel, ValidationError
 
+from .selection import Selection
 from .system_messages import prompts_drafter_messages
 from .types import TYPES_WITH_ONE_PRIMARY
 
@@ -27,46 +28,46 @@ class _PromptRecord(BaseModel):
     query: str
 
 
-def user_message(query_type: str, primary_text: str, sibling_texts: list[str]) -> str:
-    """Build the user-role message body for a single (type, primary) selection."""
-    if query_type in TYPES_WITH_ONE_PRIMARY:
-        return _single_block_user_message(query_type, primary_text)
-    return _multi_block_user_message(query_type, primary_text, sibling_texts)
+def user_message(selection: Selection) -> str:
+    """Build the user-role message body for a single selection."""
+    if selection.query_type in TYPES_WITH_ONE_PRIMARY:
+        return _single_block_user_message(selection)
+    return _multi_block_user_message(selection)
 
 
-def _single_block_user_message(query_type: str, primary_text: str) -> str:
+def _single_block_user_message(selection: Selection) -> str:
     label_map = {
         "recipe": "RECIPE",
         "technique": "RECIPE",
         "info": "INFO SECTION",
     }
-    return f"{label_map[query_type]}:\n{primary_text}"
+    return f"{label_map[selection.query_type]}:\n{selection.primary_text}"
 
 
-def _multi_block_user_message(query_type: str, primary_text: str, sibling_texts: list[str]) -> str:
-    if query_type == "recipe_with_a_swap":
+def _multi_block_user_message(selection: Selection) -> str:
+    if selection.query_type == "recipe_with_a_swap":
         return (
-            f"PRIMARY:\n{primary_text}\n\n"
-            f"REFERENCE:\n{sibling_texts[0]}\n\n"
-            f"SWAP TARGET:\n{sibling_texts[1]}"
+            f"PRIMARY:\n{selection.primary_text}\n\n"
+            f"REFERENCE:\n{selection.reference_text or ''}\n\n"
+            f"SWAP TARGET:\n{selection.swap_text or ''}"
         )
-    if query_type in {"recipe_variation", "recipe_adaptation_method"}:
+    if selection.query_type in {"recipe_variation", "recipe_adaptation_method"}:
         # The primary is the recipe the query adapts; the single sibling is the
         # reference the answer should draw from.
         return (
-            f"PRIMARY:\n{primary_text}\n\n"
-            f"SIBLING:\n{sibling_texts[0]}"
+            f"PRIMARY:\n{selection.primary_text}\n\n"
+            f"SIBLING:\n{selection.sibling_texts[0]}"
         )
-    if query_type in {"recipe_combination", "recipe_from_constraints"}:
+    if selection.query_type in {"recipe_combination", "recipe_from_constraints"}:
         return (
-            f"RECIPE 1:\n{primary_text}\n\n"
-            f"RECIPE 2:\n{sibling_texts[0]}"
+            f"RECIPE 1:\n{selection.primary_text}\n\n"
+            f"RECIPE 2:\n{selection.sibling_texts[0]}"
         )
     # The three recipe_suggestion_off_* types.
     return (
-        f"CHUNK 1:\n{primary_text}\n\n"
-        f"CHUNK 2:\n{sibling_texts[0]}\n\n"
-        f"CHUNK 3:\n{sibling_texts[1]}"
+        f"CHUNK 1:\n{selection.primary_text}\n\n"
+        f"CHUNK 2:\n{selection.sibling_texts[0]}\n\n"
+        f"CHUNK 3:\n{selection.sibling_texts[1]}"
     )
 
 
@@ -91,16 +92,14 @@ def _strip_markdown_fence(content: str) -> str:
 
 
 def call_model(
-    query_type: str,
-    primary_text: str,
-    sibling_texts: list[str],
+    selection: Selection,
     model_id: str,
     max_retries: int,
     backoff_base: float,
 ) -> str:
     """Call the model and return the parsed query string, or "" on failure."""
-    user_msg = user_message(query_type, primary_text, sibling_texts)
-    system_msg = SYSTEM_MESSAGES[query_type]
+    user_msg = user_message(selection)
+    system_msg = SYSTEM_MESSAGES[selection.query_type]
     last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
@@ -122,5 +121,5 @@ def call_model(
                 sleep_for = (backoff_base ** attempt) + random.uniform(0, 0.5)
                 time.sleep(sleep_for)
     if last_error is not None:
-        print(f"call_model failed for type={query_type}: {last_error}")
+        print(f"call_model failed for type={selection.query_type}: {last_error}")
     return ""

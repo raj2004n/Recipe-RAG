@@ -17,21 +17,31 @@ from .selection import Selection, load_recipes, selections_for_type
 from .types import QUERY_TYPES, TYPES_WITH_ONE_PRIMARY
 
 
-def _load_processed_keys(output_path: Path) -> set[tuple[str, int]]:
-    """Resume key: (query_type, primary_id) pairs already present in the output."""
+def _load_existing_rows(output_path: Path) -> list[dict[str, Any]]:
+    """Read the rows already on disk so a resume run can merge them back."""
     if not output_path.exists():
-        return set()
-    keys: set[tuple[str, int]] = set()
+        return []
+    rows: list[dict[str, Any]] = []
     with output_path.open() as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             try:
-                row = json.loads(line)
-                keys.add((row["query_type"], int(row["_primary_id"])))
-            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
                 continue
+    return rows
+
+
+def _load_processed_keys(output_path: Path) -> set[tuple[str, int]]:
+    """Resume key: (query_type, primary_id) pairs already present in the output."""
+    keys: set[tuple[str, int]] = set()
+    for row in _load_existing_rows(output_path):
+        try:
+            keys.add((row["query_type"], int(row["_primary_id"])))
+        except (KeyError, TypeError, ValueError):
+            continue
     return keys
 
 
@@ -122,11 +132,12 @@ def draft_prompts(
 
     Re-running this function resumes from ``output_path``: any (query_type,
     primary_id) pair already present (or recorded as failed in the sidecar)
-    is skipped. The new file is written to a sibling temp path and then
-    atomically renamed over ``output_path`` so a crashed run leaves the
-    existing file in place rather than moving it aside and never replacing
-    it. The failed sidecar is archived before truncation because its only
-    job is to record known-bad selections for resume.
+    is skipped, and the rows already on disk are preserved and merged with
+    the newly drafted ones. The merged file is written to a sibling temp
+    path and then atomically renamed over ``output_path`` so a crashed run
+    leaves the existing file in place rather than moving it aside and never
+    replacing it. The failed sidecar is archived before truncation because
+    its only job is to record known-bad selections for resume.
     """
     recipes = load_recipes(recipes_path)
     if not recipes:
@@ -144,6 +155,7 @@ def draft_prompts(
             rng=rng,
         ))
 
+    existing_rows = _load_existing_rows(output_path)
     processed = _load_processed_keys(output_path)
     failed = _load_failed_keys(output_path)
     _archive_failed(output_path)
@@ -154,9 +166,7 @@ def draft_prompts(
         future_to_sel = {
             executor.submit(
                 call_model,
-                sel.query_type,
-                sel.primary_text,
-                sel.sibling_texts,
+                sel,
                 model_id,
                 max_retries,
                 backoff_base,
@@ -181,6 +191,8 @@ def draft_prompts(
 
     tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
     with tmp_path.open("w") as f:
+        for row in existing_rows:
+            f.write(json.dumps(row) + "\n")
         for row in rows:
             f.write(json.dumps(row) + "\n")
     os.replace(tmp_path, output_path)
