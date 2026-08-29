@@ -11,21 +11,72 @@ import time
 from ollama import chat
 from pydantic import BaseModel, ValidationError
 
-from .types import TYPES_WITH_ONE_PRIMARY
+from .types import QUERY_TYPE_SPECS, TYPES_WITH_ONE_PRIMARY
 
 
-SYSTEM_PROMPT = (
+_PERSONA = (
     "You are a home cook drafting questions to test a recipe retrieval system. "
+)
+
+_JSON_LINE = (
     "Produce exactly one user-style query string. Your entire response must be "
     "a single JSON object on one line - no markdown fences, no commentary, "
     'no surrounding text. Exact shape: {"query": "<the query>"}'
 )
 
 
-# Per-type system messages for the invention types. The grounded types keep
-# the shared SYSTEM_PROMPT until their per-type messages are designed. Each
-# message carries the JSON line, so the user message does not append it again.
-INVENTION_SYSTEM_MESSAGES: dict[str, str] = {
+def _suggestion_message(label: str) -> str:
+    """System message for the three recipe_suggestion_off_* types."""
+    return (
+        _PERSONA
+        + "You are given three chunks from three different recipes that share "
+        + f"{label}. Write a 'what can I make' prompt grounded in the overlap - "
+        + "don't name a specific recipe.\n\n"
+        + _JSON_LINE
+    )
+
+
+# Per-type system messages. One entry per QUERY_TYPES element. The grounded
+# types carry the persona, the per-type task, and the JSON line; the
+# invention types carry their approved messages. The suggestion types read
+# their shared-label wording from QUERY_TYPE_SPECS so the two stay in sync.
+_SUGGESTION_MESSAGES = {
+    spec.name: _suggestion_message(spec.label)
+    for spec in QUERY_TYPE_SPECS
+    if spec.name.startswith("recipe_suggestion_off_")
+}
+
+SYSTEM_MESSAGES: dict[str, str] = {
+    "recipe": (
+        _PERSONA
+        + "You are given ONE recipe. Generate a short question a home cook might "
+        + "type to find this exact recipe. Reference what makes it distinctive "
+        + "(an ingredient, technique, cuisine, or occasion).\n\n"
+        + _JSON_LINE
+    ),
+    "technique": (
+        _PERSONA
+        + "You are given ONE recipe. Read the instructions. Pick one notable "
+        + "technique they describe and ask how to do it. Don't quote the recipe "
+        + "name verbatim.\n\n"
+        + _JSON_LINE
+    ),
+    "info": (
+        _PERSONA
+        + "You are given ONE info section from a recipe. Generate a meta question "
+        + "about the section - spiciness, cuisine, difficulty, timing, or "
+        + "serving. Don't reference the recipe by name.\n\n"
+        + _JSON_LINE
+    ),
+    "recipe_with_a_swap": (
+        _PERSONA
+        + "You are given three similar recipes: a primary, a reference, and a "
+        + "swap target. Write a prompt that asks the home cook how to substitute "
+        + "one ingredient from the primary with something from the swap target, "
+        + "using the reference to keep the swap grounded.\n\n"
+        + _JSON_LINE
+    ),
+    **_SUGGESTION_MESSAGES,
     "recipe_variation": (
         "You are a home cook drafting questions to test a recipe retrieval "
         "system. You are given ONE primary recipe and ONE sibling recipe close "
@@ -89,18 +140,8 @@ class _PromptRecord(BaseModel):
 def user_message(query_type: str, primary_text: str, sibling_texts: list[str]) -> str:
     """Build the user-role message body for a single (type, primary) selection."""
     if query_type in TYPES_WITH_ONE_PRIMARY:
-        body = _single_block_user_message(query_type, primary_text)
-    else:
-        body = _multi_block_user_message(query_type, primary_text, sibling_texts)
-    if query_type in INVENTION_SYSTEM_MESSAGES:
-        # The invention system messages carry the JSON line; the user message
-        # is just the chunks.
-        return body
-    return (
-        body
-        + "\n\nRespond with a single JSON object on one line - no markdown fences, "
-        + 'no commentary: {"query": "<the query>"}'
-    )
+        return _single_block_user_message(query_type, primary_text)
+    return _multi_block_user_message(query_type, primary_text, sibling_texts)
 
 
 def _single_block_user_message(query_type: str, primary_text: str) -> str:
@@ -109,31 +150,12 @@ def _single_block_user_message(query_type: str, primary_text: str) -> str:
         "technique": "RECIPE",
         "info": "INFO SECTION",
     }
-    label = label_map[query_type]
-    instruction_map = {
-        "recipe": (
-            "Generate a short question a home cook might type to find this exact recipe. "
-            "Reference what makes it distinctive (an ingredient, technique, cuisine, or occasion)."
-        ),
-        "technique": (
-            "Read the instructions. Pick one notable technique they describe and ask how to do it. "
-            "Don't quote the recipe name verbatim."
-        ),
-        "info": (
-            "Generate a meta question about the section above - spiciness, cuisine, difficulty, "
-            "timing, or serving. Don't reference the recipe by name."
-        ),
-    }
-    return f"{label}:\n{primary_text}\n\n{instruction_map[query_type]}"
+    return f"{label_map[query_type]}:\n{primary_text}"
 
 
 def _multi_block_user_message(query_type: str, primary_text: str, sibling_texts: list[str]) -> str:
     if query_type == "recipe_with_a_swap":
         return (
-            "Below are three similar recipes. The first is the primary; the second is a reference; "
-            "the third is the swap target. Write a prompt that asks the home cook how to substitute "
-            "one ingredient from the primary with something from the swap target, using the reference "
-            "to keep the swap grounded.\n\n"
             f"PRIMARY:\n{primary_text}\n\n"
             f"REFERENCE:\n{sibling_texts[0]}\n\n"
             f"SWAP TARGET:\n{sibling_texts[1]}"
@@ -151,14 +173,7 @@ def _multi_block_user_message(query_type: str, primary_text: str, sibling_texts:
             f"RECIPE 2:\n{sibling_texts[0]}"
         )
     # The three recipe_suggestion_off_* types.
-    label_map = {
-        "recipe_suggestion_off_ingredients": "shared ingredients",
-        "recipe_suggestion_off_instructions": "shared cooking method",
-        "recipe_suggestion_off_info": "shared notes or meta info",
-    }
     return (
-        f"Below are three chunks from three different recipes that share {label_map[query_type]}. "
-        "Write a 'what can I make' prompt grounded in the overlap - don't name a specific recipe.\n\n"
         f"CHUNK 1:\n{primary_text}\n\n"
         f"CHUNK 2:\n{sibling_texts[0]}\n\n"
         f"CHUNK 3:\n{sibling_texts[1]}"
@@ -195,7 +210,7 @@ def call_model(
 ) -> str:
     """Call the model and return the parsed query string, or "" on failure."""
     user_msg = user_message(query_type, primary_text, sibling_texts)
-    system_msg = INVENTION_SYSTEM_MESSAGES.get(query_type, SYSTEM_PROMPT)
+    system_msg = SYSTEM_MESSAGES[query_type]
     last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
