@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from ..data.recipe_format import recipe_to_string
 from .judge_prompts import judge_messages
+from .scoring import aggregate, budget_texts, judgment
 
 
 logger = logging.getLogger(__name__)
@@ -326,14 +327,6 @@ def _expectedness_user_message(
     )
 
 
-def _mean(values: Sequence[float]) -> float | None:
-    """Mean of the non-None values, or None when there are none."""
-    present = [v for v in values if v is not None]
-    if not present:
-        return None
-    return sum(present) / len(present)
-
-
 class GeneratorEvaluator:
     """Scores the generator on golden rows whose context is given, not retrieved.
 
@@ -345,13 +338,6 @@ class GeneratorEvaluator:
     given, and the judge is any object with the JudgeClient's two score
     methods, which keeps the evaluator testable with stub judges.
     """
-
-    _JUDGED_DIMENSIONS = (
-        "constraint_satisfaction",
-        "query_relevance",
-        "faithfulness",
-        "expectedness",
-    )
 
     def __init__(
         self,
@@ -428,35 +414,7 @@ class GeneratorEvaluator:
             else []
         )
 
-        scores = {
-            "constraint_satisfaction": _mean(
-                [v.constraint_satisfaction for v in core_verdicts if v]
-            ),
-            "query_relevance": _mean(
-                [v.query_relevance for v in core_verdicts if v]
-            ),
-            "faithfulness": _mean([v.faithfulness for v in core_verdicts if v]),
-            "expectedness": _mean(
-                [v.expectedness for v in expectedness_verdicts if v]
-            ),
-        }
-        if not expectedness_verdicts:
-            scores["expectedness"] = None
-
-        disagreement = {
-            "constraint_satisfaction": self._disagrees(
-                [v.constraint_satisfaction for v in core_verdicts if v]
-            ),
-            "query_relevance": self._disagrees(
-                [v.query_relevance for v in core_verdicts if v]
-            ),
-            "faithfulness": self._disagrees(
-                [v.faithfulness for v in core_verdicts if v]
-            ),
-            "expectedness": self._disagrees(
-                [v.expectedness for v in expectedness_verdicts if v]
-            ),
-        }
+        scores, disagreement = judgment(core_verdicts, expectedness_verdicts)
 
         return {
             "query": query,
@@ -477,61 +435,14 @@ class GeneratorEvaluator:
         }
 
     def _budgeted_texts(self, texts: Sequence[str]) -> list[str]:
-        """The texts the prompt builder will keep under its token budget.
-
-        Mirrors the builder's accumulation loop so the evaluator can flag
-        truncation and hand the judge exactly the context the generator saw.
-        """
-        budget = self.prompt_builder.max_context_tokens
-        included = []
-        used = 0
-        for text in texts:
-            tokens = len(self.prompt_builder.tokenizer.encode(text))
-            if used + tokens > budget:
-                break
-            used += tokens
-            included.append(text)
-        return included
-
-    @staticmethod
-    def _disagrees(values: Sequence[int]) -> bool | None:
-        """Whether the judge calls for one dimension gave different scores.
-
-        None when no call succeeded, so an all-failed row is not counted as
-        agreement or disagreement.
-        """
-        if not values:
-            return None
-        return len(set(values)) > 1
+        """The texts the prompt builder will keep under its token budget."""
+        return budget_texts(
+            texts,
+            self.prompt_builder.tokenizer,
+            self.prompt_builder.max_context_tokens,
+        )
 
     @classmethod
     def _aggregate(cls, rows: Sequence[dict]) -> dict:
         """Slice-level means, disagreement rates, and structural flag rates."""
-        aggregate = {}
-        for dimension in cls._JUDGED_DIMENSIONS:
-            mean = _mean([r["scores"][dimension] for r in rows])
-            if mean is not None:
-                aggregate[f"mean.{dimension}"] = mean
-            disagreements = [
-                r["disagreement"][dimension]
-                for r in rows
-                if r["disagreement"][dimension] is not None
-            ]
-            if disagreements:
-                aggregate[f"disagreement.{dimension}"] = (
-                    sum(disagreements) / len(disagreements)
-                )
-        if rows:
-            aggregate["structure_pass_rate"] = (
-                sum(1 for r in rows if r["structural"]["structure_pass"]) / len(rows)
-            )
-            flag_names = [
-                name
-                for name in rows[0]["structural"]
-                if name != "structure_pass"
-            ]
-            for name in flag_names:
-                aggregate[f"flag.{name}"] = (
-                    sum(1 for r in rows if r["structural"][name]) / len(rows)
-                )
-        return aggregate
+        return aggregate(rows)
