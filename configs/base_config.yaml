@@ -65,3 +65,22 @@ answers_drafter:
   max_retries: 3
   backoff_base: 2
   max_workers: 2
+
+# LLM-as-judge for the generation eval harness (scripts/evaluate_generation.py).
+# The temperature is deliberately small but nonzero so the two judging calls
+# per row sample independently and the disagreement rate measures real judge
+# noise; a temperature of 0 would return identical scores and measure nothing.
+# num_ctx must hold the query plus two whole recipes plus the generated
+# answer, and for the expectedness persona the reference answer too.
+# num_predict has to cover the judge's own reasoning tokens as well as the
+# JSON: the probe run showed 800 truncating the JSON mid-string roughly three
+# times out of four on minimax-m3:cloud, while 2000 completed every call.
+generation_judge:
+  model_id: minimax-m3:cloud
+  temperature: 0.2
+  num_ctx: 16384
+  num_predict: 3000
+  seed: 42        # passed through for reproducible reruns; provider may ignore it
+  judge_calls: 2
+  max_retries: 3
+  backoff_base: 2

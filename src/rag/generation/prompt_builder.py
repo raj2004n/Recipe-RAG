@@ -125,20 +125,3 @@ class PromptBuilder:
         )
 
         return system_prompt, user_prompt
-
-
-    def build_judge_prompt(self, recipe: dict, query: str, response: str) -> str:
-        """Build a prompt-ready context string for LLM judge during evaluation"""
-        igredients = recipe.get("ingredients", [])
-        ingredients = "\n".join(igredients)
-
-        prompt_template = self._persona_template(
-            GENERATION_PERSONA, "judge", "user"
-        )
-
-        return prompt_template.format(
-            query=query,
-            recipe=recipe,
-            ingredients=ingredients,
-            response=response,
-        )

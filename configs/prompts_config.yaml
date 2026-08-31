@@ -3,10 +3,12 @@ settings:
   max_context_tokens: 4000
 
 template:
-  # each persona is designed for a specific objective. 
+  # each persona is designed for a specific objective.
   # e.g. suggest a recipe, generation a recipe, etc.
-  # under each persona, 'generate' produces the response and 'judge'
-  # is the promopt to evaluate it.
+  # under each persona, 'generate' produces the response. The judge prompts
+  # for the generation eval live in configs/eval_system_messages.yaml, read
+  # from the live config at eval time; 'judge' stanzas here are unused by the
+  # eval harness.
   personas:
     # Persona: suggest existing recipes that match the query (original objective).
     suggestion:
@@ -63,44 +65,3 @@ template:
 
           Generate a complete recipe: a name, ingredients with amounts, and
           step-by-step instructions.
-      judge:
-        system: |
-          You are a judge for a recipe generation system. The system retrieves
-          reference recipes and generates a NEW recipe in response to a user
-          request. Score the generated recipe on the following dimensions:
-
-          1. Constraint satisfaction (0 - 2): Does the recipe satisfy the user's
-             explicit requirements and constraints (e.g. substitutions, excluded
-             ingredients)?
-             0 = violates a constraint
-             1 = partially satisfies
-             2 = fully satisfies
-
-          2. Query relevance (0 - 2): Is the recipe on-topic for the user's
-             request?
-             0 = irrelevant
-             1 = partially relevant
-             2 = relevant
-
-          3. Faithfulness (0 - 2): Is the recipe grounded in the reference
-             recipes (techniques, proportions, combinations) rather than
-             hallucinated?
-             0 = hallucinated
-             1 = partially grounded
-             2 = well grounded
-
-          Return JSON:
-          {{
-              "constraint_satisfaction": int,
-              "query_relevance": int,
-              "faithfulness": int
-          }}
-        user: |
-          User Request: {query}
-
-          Reference Recipes:
-          {context}
-
-          Generated Response: {response}
-
-          Score the generated response.
