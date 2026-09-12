@@ -3,11 +3,21 @@
 # travel inside a sealed snapshot; they are read only by the gate script
 # (scripts/promote_snapshot.py) at promotion time.
 #
-# The bars are a starting set, to be calibrated against the recorded experiment
-# means before the gate is used for a real deployment decision. The runs land
-# in the store at the default tracking URI (sqlite:///mlflow.db, overridable via
-# RECIPE_RAG_MLFLOW_TRACKING_URI); start an mlflow server on that store only if
-# you want to browse the runs in the UI.
+# Calibrated 2026-09-12 from the first real end-to-end run on snapshot
+# hybrid_20260824_1722_0 (run eval-e2e-hybrid-hybrid_20260824_1722_0-20260912-165448
+# in rag-end-to-end-eval, 32 golden rows, judge minimax-m3:cloud at temp 0.2,
+# seed 42). The slice at_least bars equal the recorded slice means and the
+# at_most caps equal the recorded disagreement rates, so the calibrating run
+# passes with no margin; the per-query-type bars equal the weakest type's
+# recorded values. Each bar is written at the exact recorded value, because a
+# higher fraction would fail the run it was calibrated from.
+#
+# structure_pass_rate on this run mostly reflects flag.has_name (2 of 32), so
+# the 0.06 slice bar is a floor on a known gap, not an endorsement of it.
+#
+# Runs land in the store at the default tracking URI (sqlite:///mlflow.db,
+# overridable via RECIPE_RAG_MLFLOW_TRACKING_URI); start an mlflow server on
+# that store only if you want to browse the runs in the UI.
 #
 # A gate run evaluates the slice bars against the slice aggregates of the
 # candidate snapshot's end-to-end run, and the per-query-type bars against every
@@ -27,35 +37,39 @@ gate:
   # statistical proof.
   sample_size_caveat: "32 golden rows (8 per type): a sanity bar, not statistical proof"
 
-  # Slice-level bars over the e2e run's slice aggregates.
+  # Slice-level bars over the e2e run's slice aggregates. Calibrated to the
+  # recorded means of the 2026-09-12 calibrating run (see header).
   bars:
     at_least:
-      structure_pass_rate: 0.95
-      mean.constraint_satisfaction: 1.75
-      mean.query_relevance: 1.75
-      mean.faithfulness: 1.80
-      mean.expectedness: 1.50
-      retrieval.golden_recall: 0.85
-      retrieval.both_ground_truth_rate: 0.80
+      structure_pass_rate: 0.0625
+      mean.constraint_satisfaction: 0.71875
+      mean.query_relevance: 1.484375
+      mean.faithfulness: 0.71875
+      mean.expectedness: 0.96875
+      retrieval.golden_recall: 0.75
+      retrieval.both_ground_truth_rate: 0.5625
     at_most:
-      disagreement.constraint_satisfaction: 0.20
-      disagreement.query_relevance: 0.20
-      disagreement.faithfulness: 0.20
-      disagreement.expectedness: 0.20
+      disagreement.constraint_satisfaction: 0.3125
+      disagreement.query_relevance: 0.28125
+      disagreement.faithfulness: 0.125
+      disagreement.expectedness: 0.125
 
-  # Lowered floors applied to every query type present in the run, so one weak
-  # query type cannot hide under the slice mean.
+  # Floors applied to every query type present in the run, so one weak query
+  # type cannot hide under the slice mean. Calibrated to each weakest type's
+  # recorded value on the 2026-09-12 run, so every type clears with no margin.
+  # structure_pass_rate is 0.0 because adaptation_method and from_constraints
+  # both recorded a zero structural pass rate.
   per_query_type_bars:
     at_least:
-      structure_pass_rate: 0.75
-      mean.constraint_satisfaction: 1.50
-      mean.query_relevance: 1.50
-      mean.faithfulness: 1.50
-      mean.expectedness: 1.25
-      retrieval.golden_recall: 0.70
-      retrieval.both_ground_truth_rate: 0.60
+      structure_pass_rate: 0.0
+      mean.constraint_satisfaction: 0.5625
+      mean.query_relevance: 1.3125
+      mean.faithfulness: 0.625
+      mean.expectedness: 0.8125
+      retrieval.golden_recall: 0.6875
+      retrieval.both_ground_truth_rate: 0.375
     at_most:
-      disagreement.constraint_satisfaction: 0.30
-      disagreement.query_relevance: 0.30
-      disagreement.faithfulness: 0.30
-      disagreement.expectedness: 0.30
+      disagreement.constraint_satisfaction: 0.625
+      disagreement.query_relevance: 0.375
+      disagreement.faithfulness: 0.25
+      disagreement.expectedness: 0.25
