@@ -6,3 +6,6 @@
 fastapi==0.137.2
 uvicorn==0.49.0
 httpx==0.28.1
+
+# the pipeline code the service imports (chunker -> preprocessor) reads jsonlines
+jsonlines==4.0.0

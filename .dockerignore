@@ -1,0 +1,19 @@
+# Build context trim. Keep the context lean while never dropping the paths the
+# Dockerfile COPYs: snapshots/, data/processed/, and .docker/weights/ must stay
+# in the context or the build fails on a missing source.
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+.claude
+.lavish
+.dvc
+tests
+notebooks
+scripts
+docs
+data/raw
+data/eval
+temp
+*.log
