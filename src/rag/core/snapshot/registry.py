@@ -11,9 +11,10 @@ from pathlib import Path
 from typing import TypedDict, Optional
 
 
-class RegistryData(TypedDict):
+class RegistryData(TypedDict, total=False):
     targets: dict[str, str]  # target_name -> folder_name (e.g., "latest" -> "dense_2026_0")
     status: dict[str, str]   # folder_name -> status ("building" | "complete" | "abandoned")
+    promoted: dict[str, "PromotionRecord"]  # folder_name -> record of its promotion
 
 
 class DatasetEntry(TypedDict, total=False):
@@ -29,6 +30,18 @@ class DatasetEntry(TypedDict, total=False):
     size_bytes: int
 
 
+class PromotionRecord(TypedDict):
+    """What the promotion gate recorded when a snapshot became the baseline.
+
+    Carries the identity of the end-to-end MLflow run the verdict came from and
+    the per-check outcome, so a promotion is auditable from the registry alone.
+    """
+    run_id: str
+    run_name: str
+    promoted_at: str
+    checks: list
+
+
 def _migrate_legacy(data: dict) -> dict:
     """Convert a legacy {current, status} registry into the {targets, status} shape.
 
@@ -41,6 +54,7 @@ def _migrate_legacy(data: dict) -> dict:
             "targets": dict(data["targets"]),
             "status": dict(data["status"]),
             "datasets": dict(data.get("datasets", {})),
+            "promoted": dict(data.get("promoted", {})),
         }
 
     if "current" in data:
@@ -50,9 +64,10 @@ def _migrate_legacy(data: dict) -> dict:
             "targets": {"current": folder, "latest": folder} if folder else {"current": folder},
             "status": {folder: status} if folder else {},
             "datasets": {},
+            "promoted": {},
         }
 
-    return {"targets": {}, "status": {}, "datasets": {}}
+    return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
 
 def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
@@ -81,22 +96,23 @@ def _read_registry(registry_path: Path) -> RegistryData:
     """Read the registry file, migrating legacy shapes to the current one.
     """
     if not registry_path.exists():
-        return {"targets": {}, "status": {}, "datasets": {}}
+        return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
     try:
         with open(registry_path, "r") as f:
             raw = json.load(f)
     except (json.JSONDecodeError, KeyError):
-        return {"targets": {}, "status": {}, "datasets": {}}
+        return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
     if not isinstance(raw, dict):
-        return {"targets": {}, "status": {}, "datasets": {}}
+        return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
     migrated = _migrate_legacy(raw)
     return {
         "targets": dict(migrated.get("targets", {})),
         "status": dict(migrated.get("status", {})),
         "datasets": dict(migrated.get("datasets", {})),
+        "promoted": dict(migrated.get("promoted", {})),
     }
 
 
@@ -124,6 +140,41 @@ def update_status(registry_path: Path, folder: str, status: str) -> None:
     data = _read_registry(registry_path)
     data["status"][folder] = status
     _write_registry(registry_path, data)
+
+
+def record_promotion(
+    registry_path: Path,
+    folder: str,
+    *,
+    run_id: str,
+    run_name: str,
+    checks: list,
+    promoted_at: str | None = None,
+) -> None:
+    """Record a snapshot as the promoted baseline together with what the gate saw.
+
+    Sets targets["baseline"] to the folder and stores a promoted record keyed
+    by the folder name carrying the governing MLflow run's identity and the
+    gate's per-check outcome, so a promotion is auditable from the registry
+    alone. Re-promoting the same folder overwrites its record in place;
+    promoting a different folder keeps earlier promoted records intact. Writes
+    atomically like the other registry helpers.
+    """
+    data = _read_registry(registry_path)
+    data["targets"]["baseline"] = folder
+    promoted = data.setdefault("promoted", {})
+    promoted[folder] = {
+        "run_id": run_id,
+        "run_name": run_name,
+        "promoted_at": promoted_at or time.strftime("%Y-%m-%d %H:%M:%S"),
+        "checks": checks,
+    }
+    _write_registry(registry_path, data)
+
+
+def get_promotion_record(registry_path: Path, folder: str) -> Optional[PromotionRecord]:
+    """The recorded promotion for a folder, or None if it was never promoted."""
+    return _read_registry(registry_path)["promoted"].get(folder)
 
 
 def get_folder_for_target(registry_path: Path, target: str) -> Optional[str]:

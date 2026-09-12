@@ -1,0 +1,60 @@
+# Promotion gate criteria. Standalone by design: this file is deliberately not
+# in the `config_files` list of configs/paths_config.yaml, so the criteria never
+# travel inside a sealed snapshot; they are read only by the gate script
+# (scripts/promote_snapshot.py) at promotion time.
+#
+# The bars are a starting set, to be calibrated against the recorded experiment
+# means before the gate is used for a real deployment decision. Start the server
+# on the repo store and read the means:
+#   mlflow server --backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000
+#
+# A gate run evaluates the slice bars against the slice aggregates of the
+# candidate snapshot's end-to-end run, and the per-query-type bars against every
+# query type the run contains. Every bar must clear its threshold for the
+# snapshot to pass; a bar with no value in the run is a failed check, so an
+# incomplete or failed run fails closed. The `at_most` disagreement bars encode
+# the judge-noise rule: a dimension's mean is trusted only while the judge
+# agrees (disagreement at or under the cap), otherwise the dimension fails.
+
+gate:
+  # The MLflow experiment that holds the candidate's end-to-end eval run and
+  # the run parameter that marks which snapshot it evaluated.
+  experiment: rag-end-to-end-eval
+  run_marker_param: snapshot_name
+
+  # Printed in the promote report header. 32 golden rows is a sanity bar, not
+  # statistical proof.
+  sample_size_caveat: "32 golden rows (8 per type): a sanity bar, not statistical proof"
+
+  # Slice-level bars over the e2e run's slice aggregates.
+  bars:
+    at_least:
+      structure_pass_rate: 0.95
+      mean.constraint_satisfaction: 1.75
+      mean.query_relevance: 1.75
+      mean.faithfulness: 1.80
+      mean.expectedness: 1.50
+      retrieval.golden_recall: 0.85
+      retrieval.both_ground_truth_rate: 0.80
+    at_most:
+      disagreement.constraint_satisfaction: 0.20
+      disagreement.query_relevance: 0.20
+      disagreement.faithfulness: 0.20
+      disagreement.expectedness: 0.20
+
+  # Lowered floors applied to every query type present in the run, so one weak
+  # query type cannot hide under the slice mean.
+  per_query_type_bars:
+    at_least:
+      structure_pass_rate: 0.75
+      mean.constraint_satisfaction: 1.50
+      mean.query_relevance: 1.50
+      mean.faithfulness: 1.50
+      mean.expectedness: 1.25
+      retrieval.golden_recall: 0.70
+      retrieval.both_ground_truth_rate: 0.60
+    at_most:
+      disagreement.constraint_satisfaction: 0.30
+      disagreement.query_relevance: 0.30
+      disagreement.faithfulness: 0.30
+      disagreement.expectedness: 0.30
