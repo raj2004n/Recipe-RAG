@@ -64,7 +64,7 @@ python -m scripts.build_rag --run finalise_build
 
 # Serve queries over HTTP
 export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
-python -m src.rag.serve.app
+uvicorn src.rag.serve.app:create_app --factory
 # then: curl -H 'X-API-Key: dev-public-key' -H 'content-type: application/json' \
 #   -d '{"query":"quick chicken dinner"}' http://localhost:8000/query
 ```
