@@ -62,10 +62,10 @@ def find_latest_run(folder: str, experiment: str, marker_param: str):
     Runs are marked with the snapshot folder name under marker_param, so the
     candidate is found by filtering the experiment on that param and taking
     the newest by start time. The gate must fail closed when the tracking
-    server is down, so the HTTP client is bounded to a short timeout and a
-    single retry instead of mlflow's default no-timeout backoff, and a
-    connection failure becomes the same actionable error as a missing
-    experiment.
+    store is unreachable or the experiment has no recorded runs. When the
+    tracking URI is an HTTP server, the client is bounded to a short timeout
+    and a single retry instead of mlflow's default no-timeout backoff, so a
+    down server fails fast as a readable error rather than hanging.
     """
     os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "1")
     os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "5")
@@ -87,9 +87,11 @@ def find_latest_run(folder: str, experiment: str, marker_param: str):
 
 def _server_missing_message(experiment: str) -> str:
     return (
-        f"could not reach the MLflow server or experiment {experiment!r} is missing. "
-        f"Start the server on the repo store first: mlflow server "
-        f"--backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000"
+        f"could not reach the tracking store or experiment {experiment!r} has "
+        f"no recorded runs. The default store is sqlite:///mlflow.db (override "
+        f"with RECIPE_RAG_MLFLOW_TRACKING_URI if you use an HTTP server). Run "
+        f"scripts.evaluate_end_to_end --snapshot <target> first to record a "
+        f"run in this experiment."
     )
 
 

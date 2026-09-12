@@ -11,6 +11,7 @@ the judge client is built.
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 
 import mlflow
@@ -28,7 +29,11 @@ from src.rag.generation.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
-MLFLOW_TRACKING_URI = "http://localhost:5000"
+# The scripts write straight to the local SQLite store by default, so no MLflow
+# server needs to be running to log or read runs. Point RECIPE_RAG_MLFLOW_TRACKING_URI
+# at an HTTP URI only when you want a run to go through a server (for example to
+# watch it live in the UI).
+MLFLOW_TRACKING_URI = os.environ.get("RECIPE_RAG_MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
 _DEFAULT_SNAPSHOT = "latest"
 
 

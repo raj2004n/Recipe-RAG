@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 import mlflow
 import argparse
@@ -18,7 +19,10 @@ from src.rag.builder.base_builder import BaseBuilder
 logger = logging.getLogger(__name__)
 
 
-_MLFLOW_TRACKING_URI = "http://localhost:5000"
+# Builds log straight to the local SQLite store by default, so no MLflow server
+# needs to be running. Point RECIPE_RAG_MLFLOW_TRACKING_URI at an HTTP URI only
+# when you want the run to go through a server (for example a live dashboard).
+_MLFLOW_TRACKING_URI = os.environ.get("RECIPE_RAG_MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
 _MLFLOW_EXPERIMENT = "rag-builds"
 
 _DVC_STAGES = [

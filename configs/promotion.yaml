@@ -4,9 +4,10 @@
 # (scripts/promote_snapshot.py) at promotion time.
 #
 # The bars are a starting set, to be calibrated against the recorded experiment
-# means before the gate is used for a real deployment decision. Start the server
-# on the repo store and read the means:
-#   mlflow server --backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000
+# means before the gate is used for a real deployment decision. The runs land
+# in the store at the default tracking URI (sqlite:///mlflow.db, overridable via
+# RECIPE_RAG_MLFLOW_TRACKING_URI); start an mlflow server on that store only if
+# you want to browse the runs in the UI.
 #
 # A gate run evaluates the slice bars against the slice aggregates of the
 # candidate snapshot's end-to-end run, and the per-query-type bars against every
