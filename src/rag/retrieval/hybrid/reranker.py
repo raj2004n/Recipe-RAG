@@ -1,4 +1,6 @@
 
+import torch
+
 from sentence_transformers import CrossEncoder
 
 from .fuser import FusedChunk
@@ -18,6 +20,7 @@ class CrossEncoderReranker:
             self._model = CrossEncoder(
                 self.model_id,
                 max_length=self.max_length,
+                model_kwargs={"torch_dtype": torch.bfloat16},
             )
         return self._model
 

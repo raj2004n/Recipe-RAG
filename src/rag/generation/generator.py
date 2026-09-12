@@ -26,7 +26,7 @@ class Generator:
         # load base model
         self.model = AutoModelForCausalLM.from_pretrained(
             model_id,
-            dtype="auto",
+            torch_dtype=torch.bfloat16,
             device_map="auto"
         )
 
