@@ -114,6 +114,31 @@ trail.
 - A **4-stage build pipeline** orchestrated through DVC, with MLflow tracking
   every run.
 
+## Shipping the baseline to this machine
+
+Promotion pins a snapshot as the deployment baseline in the registry, and the
+serve image with that baseline baked in runs on this machine. To build and start
+it:
+
+```bash
+export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
+python -m scripts.ship_baseline
+```
+
+The script resolves the promoted baseline from the registry, builds the serve
+image with it baked in (the Dockerfile's `ARG SNAPSHOT`), starts a
+`docker run --gpus all` container mapping port 8000 to the host, and waits for
+`/health` to report ok before returning. Re-running it replaces the container,
+so shipping a new baseline is the same command. It fails closed: no baseline
+target in the registry, a baseline that is not sealed or not promoted, missing
+`RECIPE_RAG_API_KEYS`, or a service that never reports healthy each stop the
+ship and exit non-zero.
+
+The script calls plain `docker`. If your user is not in the `docker` group,
+either run each docker call via `sudo` or add yourself to the group once with
+`sudo usermod -aG docker $USER` and log back in (docker group membership is
+root-equivalent access to the host).
+
 ## Status
 
 Working end-to-end on a developer machine. The build, retrieval, and generation
