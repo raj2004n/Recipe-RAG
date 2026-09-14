@@ -179,20 +179,24 @@ Setup for the self-hosted path:
 
 ## Status
 
-Working end-to-end on a developer machine. The build, retrieval, and generation
-loops all run; snapshots seal and load cleanly. The serve image builds and has
-been smoke-validated on this machine, the promotion gate records a baseline in
-the registry, and the CI / CD workflows are in place.
+Deployed and live on this machine. The build, retrieval, and generation loops
+all run; snapshots seal and load cleanly; and the CI / CD pipeline ships the
+promoted baseline here:
 
-Not done yet:
+- `ci` runs ruff and the test suite on GitHub-hosted runners for every push to
+  main and every pull request.
+- `build` runs on a self-hosted runner on this machine after `ci` passes on a
+  push to main. It stages the model weights, bakes the promoted baseline
+  snapshot into the serve image, pushes it to `ghcr.io/raj2004n/recipe-rag`,
+  and logs out of ghcr so no stale registry credential outlives the job.
+- `deploy` is a manual `workflow_dispatch`. It pulls the baseline-tagged image
+  from ghcr and runs it here, replacing any running container.
 
-- Registering the self-hosted runner and adding the `RECIPE_RAG_API_KEYS`
-  secret (the two GitHub-side setup steps).
-- Validating the workflows on a real push to main.
-
-The HTTP service (`/health`, `/info`, `POST /query`) and the two-role API key
-auth are wired up; the remaining gap is the GitHub-side runner registration and
-the first end-to-end workflow run.
+The deployed service is verified end to end on this machine: the container runs
+the promoted baseline from ghcr, `/health` reports the snapshot loaded, `/info`
+shows the retrieval strategy and models, and `POST /query` answers with the
+generator. The two-role (`admin` / `public`) API key auth applies to every
+endpoint.
 
 ## Author
 
