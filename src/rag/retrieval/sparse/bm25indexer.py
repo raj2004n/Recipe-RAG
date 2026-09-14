@@ -24,33 +24,6 @@ class BM25Index:
 
 
 class BM25Indexer:
-    def __init__(self):
-        self.indexed_sets: list[BM25IndexedChunkSet] = []
-
-    
-    def build(self, tokenized_chunk_set: list[TokenizedChunkSet]) -> list[BM25IndexedChunkSet]:
-        self.indexed_sets: list[BM25IndexedChunkSet] = []
-
-        for chunk_set in tokenized_chunk_set:
-            chunks_by_id: ChunkById = {
-                tc.chunk.chunk_id: tc.chunk for tc in chunk_set.tokenized_chunks
-            }
-            tokenized_documents = [chunk.tokens for chunk in chunk_set.tokenized_chunks]
-
-            bm25 = BM25Okapi(tokenized_documents)
-
-            self.indexed_sets.append(
-                BM25IndexedChunkSet(
-                    name=chunk_set.name,
-                    index=bm25,
-                    tokenized_chunks=chunk_set.tokenized_chunks,
-                    chunks=chunks_by_id,
-                )
-            )
-
-        return self.indexed_sets
-        
-
     def build(self, chunk_set: TokenizedChunkSet) -> list[BM25IndexedChunkSet]:
         chunks_by_id: ChunkById = {
             tc.chunk.chunk_id: tc.chunk for tc in chunk_set.tokenized_chunks

@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 from ...retrieval.chunker import (
-    Chunk,
     instruction_chunks,
     ingredient_chunks,
     whole_recipe_chunks,

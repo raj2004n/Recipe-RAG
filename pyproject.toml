@@ -1,2 +1,10 @@
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# Default set: the bug-catching rules (pyflakes F, plus E4/E7/E9)
+# before style churn. Style rules can be added later if wanted.
+select = ["E4", "E7", "E9", "F"]

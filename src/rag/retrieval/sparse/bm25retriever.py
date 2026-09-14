@@ -1,4 +1,3 @@
-from typing import List
 from .bm25indexer import BM25IndexedChunkSet
 from .tokenizer import Tokenizer
 from ..dense.retriever import RetrievalResult

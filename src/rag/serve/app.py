@@ -32,7 +32,7 @@ from typing import Any
 from fastapi import FastAPI
 
 from . import auth as auth_module
-from .errors import NoSnapshotError, install_error_handlers
+from .errors import install_error_handlers
 from .routes import health as health_route
 from .routes import info as info_route
 from .routes import query as query_route

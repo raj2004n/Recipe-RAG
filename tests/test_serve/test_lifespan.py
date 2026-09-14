@@ -8,7 +8,6 @@ silently-degraded state where /health is green but /query cannot answer.
 
 import pytest
 
-from src.rag.core.datasets.resolver import MissingDatasetError
 from src.rag.core.snapshot import registry as registry_module
 from src.rag.core.snapshot.paths import SnapshotPaths
 

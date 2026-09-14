@@ -11,7 +11,7 @@ def collect_data():
     settings.set("LOG_LEVEL", "INFO")
 
     output_file = (
-        f"data/raw/recipes.jsonl"
+        "data/raw/recipes.jsonl"
     )
 
     settings.set(

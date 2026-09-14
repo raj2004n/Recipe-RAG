@@ -14,7 +14,6 @@ import json
 import logging
 from pathlib import Path
 
-import pytest
 
 from src.rag.builder.dense_builder import DenseBuilder
 from src.rag.builder.hybrid_builder import HybridBuilder

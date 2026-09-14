@@ -10,7 +10,7 @@ used by both evaluators, and the budget helper mirrors the prompt builder's
 token loop so the judge always sees the context the generator saw.
 """
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 JUDGED_DIMENSIONS = (
     "constraint_satisfaction",

@@ -110,7 +110,7 @@ def print_report(folder: str, run, gate: dict, checks: list) -> None:
     print(f"  run id:        {run.info.run_id}")
     print(f"  rows:          {params.get('rows', 'n/a')}")
     if params.get("limit"):
-        print(f"  WARNING: this run was bounded by --limit; it is not a full golden read")
+        print("  WARNING: this run was bounded by --limit; it is not a full golden read")
     if params.get("judge_model_id"):
         print(f"  judge:         {params.get('judge_model_id')} "
               f"(temp {params.get('judge_temperature', 'n/a')})")
