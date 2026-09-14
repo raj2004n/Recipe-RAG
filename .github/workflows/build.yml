@@ -74,3 +74,10 @@ jobs:
           docker push "$IMAGE:${{ steps.sync.outputs.sha }}"
           docker push "$IMAGE:latest"
           docker push "$IMAGE:${{ steps.baseline.outputs.folder }}"
+
+      # The token used for the login above is the short-lived GITHUB_TOKEN,
+      # which stops working when this workflow ends. Left behind in
+      # ~/.docker/config.json, it makes later token-less pulls (the deploy
+      # path) fail with "denied". Drop it before the job finishes.
+      - name: Clear the build token credential
+        run: docker logout ghcr.io
