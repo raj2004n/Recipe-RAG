@@ -1,0 +1,76 @@
+# Self-hosted workflow: build the serve image and push it to ghcr.
+#
+# The full payload the image needs (the sealed snapshot folder, the dataset it
+# pins, the registry, and the staged model weights) lives only on this machine,
+# so the job runs in the machine's checkout rather than a fresh workspace. It
+# fires only after ci.yml has passed on a push to main, and bakes the promoted
+# baseline snapshot (resolved from the registry) into the image. The image is
+# pushed as recipe-rag:<sha>, recipe-rag:latest, and recipe-rag:<baseline
+# folder>, so a deploy can pull whatever baseline is promoted.
+
+name: build
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push' &&
+            github.event.workflow_run.head_branch == 'main' }}
+    runs-on: [self-hosted, gpu]
+    env:
+      REPO_PATH: /home/raj/projects/Recipe-RAG
+      IMAGE: ghcr.io/raj2004n/recipe-rag
+    steps:
+      - name: Sync the machine checkout to the tested commit
+        id: sync
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          cd "$REPO_PATH"
+          git fetch origin
+          git checkout --detach "$HEAD_SHA"
+          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Stage the model weights
+        run: |
+          cd "$REPO_PATH"
+          bash scripts/stage_weights.sh
+
+      - name: Resolve the promoted baseline
+        id: baseline
+        run: |
+          set -euo pipefail
+          cd "$REPO_PATH"
+          folder=$(python3 -c "import json; print(json.load(open('snapshots/registry.json'))['targets']['baseline'])")
+          if [ -z "$folder" ]; then
+            echo "error: no baseline target in the registry" >&2
+            exit 1
+          fi
+          echo "folder=$folder" >> "$GITHUB_OUTPUT"
+
+      - name: Build and tag the serve image
+        run: |
+          set -euo pipefail
+          cd "$REPO_PATH"
+          docker build \
+            --build-arg "SNAPSHOT=${{ steps.baseline.outputs.folder }}" \
+            -t "$IMAGE:${{ steps.sync.outputs.sha }}" \
+            -t "$IMAGE:latest" \
+            -t "$IMAGE:${{ steps.baseline.outputs.folder }}" \
+            .
+
+      - name: Push to ghcr
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:${{ steps.sync.outputs.sha }}"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ steps.baseline.outputs.folder }}"

@@ -1,0 +1,37 @@
+# Manual deploy: run the promoted baseline's serve image on this machine.
+#
+# A deploy is a deliberate act (matching the promotion flow), so this only
+# triggers on workflow_dispatch. The job resolves the baseline folder from the
+# registry, pulls recipe-rag:<baseline folder> from ghcr, starts a container
+# with the GPU passed through, and waits until the service reports healthy. The
+# ship script fails closed if the registry has no baseline, the baseline is
+# unsealed or never gated in, the image is missing from ghcr, the API keys are
+# absent, or the service never becomes healthy.
+
+name: deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, gpu]
+    env:
+      REPO_PATH: /home/raj/projects/Recipe-RAG
+    steps:
+      - name: Sync the machine checkout to latest main
+        run: |
+          set -euo pipefail
+          cd "$REPO_PATH"
+          git fetch origin
+          git checkout --detach origin/main
+
+      - name: Run the baseline
+        env:
+          RECIPE_RAG_API_KEYS: ${{ secrets.RECIPE_RAG_API_KEYS }}
+        run: |
+          cd "$REPO_PATH"
+          .venv/bin/python -m scripts.ship_baseline

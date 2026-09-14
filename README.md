@@ -117,46 +117,82 @@ trail.
 ## Shipping the baseline to this machine
 
 Promotion pins a snapshot as the deployment baseline in the registry, and the
-serve image with that baseline baked in runs on this machine. To build and start
-it:
+serve image with that baseline baked in runs on this machine. To pull the
+promoted baseline and start it:
 
 ```bash
 export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
 python -m scripts.ship_baseline
 ```
 
-The script resolves the promoted baseline from the registry, builds the serve
-image with it baked in (the Dockerfile's `ARG SNAPSHOT`), starts a
-`docker run --gpus all` container mapping port 8000 to the host, and waits for
-`/health` to report ok before returning. Re-running it replaces the container,
-so shipping a new baseline is the same command. It fails closed: no baseline
-target in the registry, a baseline that is not sealed or not promoted, missing
-`RECIPE_RAG_API_KEYS`, or a service that never reports healthy each stop the
-ship and exit non-zero.
+The script resolves the promoted baseline from the registry, pulls the image
+tagged `<baseline folder>` from ghcr, starts a `docker run --gpus all`
+container mapping port 8000 to the host, and waits for `/health` to report ok
+before returning. Re-running it replaces the container, so shipping a new
+baseline is the same command. It fails closed: no baseline target in the
+registry, a baseline that is not sealed or not promoted, an image that cannot
+be pulled, missing `RECIPE_RAG_API_KEYS`, or a service that never reports
+healthy each stop the ship and exit non-zero.
+
+If the image is not in ghcr yet, run the build workflow to push it first, or
+point the script at a locally built image with
+`python -m scripts.ship_baseline --image-repo recipe-rag`.
 
 The script calls plain `docker`. If your user is not in the `docker` group,
 either run each docker call via `sudo` or add yourself to the group once with
 `sudo usermod -aG docker $USER` and log back in (docker group membership is
 root-equivalent access to the host).
 
+## CI / CD
+
+Three GitHub Actions workflows drive the pipeline:
+
+- `ci.yml` runs ruff and the full test suite on GitHub-hosted runners for
+  every push to main and every pull request. The tests use fixtures, so they
+  pass on a clean runner with no snapshot, dataset, or model weights present.
+- `build.yml` runs on a self-hosted runner on this machine and fires only after
+  `ci.yml` passes on a push to main. It stages the model weights, resolves the
+  promoted baseline from the registry, builds the serve image with
+  `ARG SNAPSHOT=<baseline>`, and pushes it to `ghcr.io/raj2004n/recipe-rag` as
+  `<git sha>`, `latest`, and `<baseline folder>`.
+- `deploy.yml` is a manual `workflow_dispatch`. It pulls
+  `recipe-rag:<baseline folder>` and runs it on this machine, replacing any
+  running container.
+
+The build and deploy jobs run in the machine's checkout rather than a fresh
+clone, because the sealed snapshot, the dataset, the registry, and the staged
+weights all live only on this machine. The image's payload is split: git
+carries code, configs, and requirements, while a local DVC remote at
+`/home/raj/dvc_storage` carries the snapshot contents and the model weights are
+staged by `scripts/stage_weights.sh` from the HF cache. GitHub-hosted runners
+therefore cannot build the serve image at all.
+
+Setup for the self-hosted path:
+
+1. Register a self-hosted runner at repository scope with the labels
+   `self-hosted, gpu, linux`. The runner user needs the `docker` group and
+   read/write access to the checkout at `/home/raj/projects/Recipe-RAG`.
+2. Add a repository secret `RECIPE_RAG_API_KEYS` holding the API-key JSON the
+   deployed service must accept.
+3. The image package on ghcr is public, so the host can pull it without a
+   token after the workflow's short-lived checkout token expires.
+
 ## Status
 
 Working end-to-end on a developer machine. The build, retrieval, and generation
-loops all run; snapshots seal and load cleanly.
+loops all run; snapshots seal and load cleanly. The serve image builds and has
+been smoke-validated on this machine, the promotion gate records a baseline in
+the registry, and the CI / CD workflows are in place.
 
 Not done yet:
 
-- Dockerfile and containerised deploy.
-- CI / CD and a held-out eval stage for promotion gating.
+- Registering the self-hosted runner and adding the `RECIPE_RAG_API_KEYS`
+  secret (the two GitHub-side setup steps).
+- Validating the workflows on a real push to main.
 
 The HTTP service (`/health`, `/info`, `POST /query`) and the two-role API key
-auth are already wired up; the gap between "runs on a developer machine" and
-"deployed" is now the eval stage, the container, and the workflows.
-
-A deployment plan for the above lives in `.lavish/deployment-readiness.html`.
-The short version: README → split requirements → tests → FastAPI service
-with auth → eval stage → Dockerfile → CI → build image → release → gated
-promotion.
+auth are wired up; the remaining gap is the GitHub-side runner registration and
+the first end-to-end workflow run.
 
 ## Author
 
