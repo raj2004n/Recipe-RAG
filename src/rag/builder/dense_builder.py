@@ -6,7 +6,7 @@ from ..retrieval.chunker import chunk_recipes
 
 from ..core.config import ENCODER_CONFIG, INDEXER_CONFIG
 from ..core.snapshot.paths import SnapshotPaths
-from ..core.snapshot.lifecycle import finalise_snapshot, sha256_of
+from ..core.snapshot.lifecycle import finalise_snapshot
 from ..core.snapshot.chunk_sets import (
     save_chunk_sets,
     load_chunk_sets,

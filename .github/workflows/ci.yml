@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: python -m pip install ruff==0.14.7
+      - name: Lint
+        run: ruff check src scripts tests
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The tests use fixtures and mocks, so a clean hosted runner passes
+      # without the sealed snapshot, dataset, or model weights. The install
+      # mirrors the Dockerfile: faiss-gpu is dropped from the main resolve and
+      # added back with --no-deps because its metadata asks for nvidia
+      # cuda-runtime-cu12 >= 12.6 while torch 2.6.0+cu124 ships the 12.4 wheels.
+      - name: Install dependencies
+        env:
+          PIP_INDEX_URL: https://download.pytorch.org/whl/cu124
+          PIP_EXTRA_INDEX_URL: https://pypi.org/simple
+          PIP_NO_CACHE_DIR: "1"
+        run: |
+          set -euo pipefail
+          grep -v '^faiss-gpu' requirements/base.txt > /tmp/base.no-faiss.txt
+          grep -v '^-r base.txt' requirements/serve.txt > /tmp/serve.extras.txt
+          grep -vE '^(-r serve\.txt|-r base\.txt)' requirements/dev.txt > /tmp/dev.extras.txt
+          python -m pip install -r /tmp/base.no-faiss.txt -r /tmp/serve.extras.txt -r /tmp/dev.extras.txt
+          python -m pip install --no-deps faiss-gpu==1.14.3
+      - name: Run tests
+        run: pytest -q

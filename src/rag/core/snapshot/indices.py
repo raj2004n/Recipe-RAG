@@ -6,7 +6,6 @@ tokenized chunks, so only a manifest is written.
 """
 
 import json
-import os
 from pathlib import Path
 
 import faiss
@@ -14,7 +13,7 @@ import faiss
 from ...retrieval.chunker import Chunk
 from ...retrieval.dense.indexer import IndexedChunkSet
 from ...retrieval.sparse.bm25indexer import BM25IndexedChunkSet
-from ...retrieval.sparse.tokenizer import TokenizedChunk, TokenizedChunkSet
+from ...retrieval.sparse.tokenizer import TokenizedChunk
 from .chunk_sets import load_chunk_sets
 
 

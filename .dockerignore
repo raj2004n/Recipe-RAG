@@ -1,19 +1,47 @@
-# Build context trim. Keep the context lean while never dropping the paths the
-# Dockerfile COPYs: snapshots/, data/processed/, and .docker/weights/ must stay
-# in the context or the build fails on a missing source.
+# Keep the docker build context lean. Everything the image needs stays: the app
+# under src/, configs/, requirements/, the sealed snapshot folder and its
+# registry, the dataset cleaned_recipes.json, and the staged model weights
+# under .docker/weights/. Everything else in the tree is build/working state
+# that would otherwise be shipped to the builder on every image build.
+#
+# The snapshot folder name is baked by ARG SNAPSHOT at build time, so the
+# sealed folders cannot be excluded piecemeal here; any sealed snapshot (a few
+# hundred MB over the tree) rides in with the one the build actually copies.
+
+# Version control and agent/editor state
 .git
 .gitignore
-.venv
-__pycache__
-*.pyc
-.claude
+.github
 .lavish
-.dvc
-tests
-notebooks
-scripts
-docs
+.agents
+.claude
+CLAUDE.md
+
+# Python working files
+.venv
+**/__pycache__
+*.py[cod]
+*.egg-info
+.eggs
+
+# Local data, model repos, and experiment state not copied into the image
 data/raw
 data/eval
+models
+mlruns
+mlflow.db
+mlartifacts
+.tmp
+
+# DVC internals and pointer files
+.dvc
+*.dvc
+
+# Dev tooling and docs not needed at runtime
+scripts
+tests
+docs
+
+# Scratch and logs
 temp
 *.log

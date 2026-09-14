@@ -7,3 +7,8 @@ pytest==9.1.1
 pytest-asyncio==1.4.0
 ruff==0.14.7
 black==25.12.0
+
+# The eval judge and the answer/prompt drafters import ollama at module load,
+# and the eval tests collect those modules. The served image never imports it,
+# so it stays out of serve.txt.
+ollama==0.6.1

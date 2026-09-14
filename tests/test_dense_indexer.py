@@ -8,7 +8,6 @@ exercising the indexer is what really matters here.
 
 import numpy as np
 
-from src.rag.retrieval.chunker import Chunk
 from src.rag.retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
 from src.rag.retrieval.dense.indexer import Indexer
 

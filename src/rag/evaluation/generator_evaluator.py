@@ -136,7 +136,7 @@ def _ingredient_lines(response: str) -> list[str]:
     )
     return [
         line
-        for line in (l.strip() for l in lines[start + 1:end])
+        for line in (raw.strip() for raw in lines[start + 1:end])
         if line and not line.startswith("#")
     ]
 
@@ -152,7 +152,7 @@ def structural_checks(response: str, reference_texts: Sequence[str]) -> dict:
     count the same defect.
     """
     flags = {}
-    lines = [line for line in (l.strip() for l in response.splitlines()) if line]
+    lines = [line for line in (raw.strip() for raw in response.splitlines()) if line]
     name_line = lines[0] if lines else ""
 
     # The persona contract wants the recipe to open on its name, so a chatty

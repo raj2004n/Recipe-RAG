@@ -3,20 +3,22 @@
 The baseline is promoted by the gate into the registry's baseline target, but a
 promotion only records which snapshot is the deployment baseline; the runnable
 form is the serve image with that snapshot baked in. The deployment target is
-this machine, so the ship is a local build followed by a local run: it builds the
-serve image with the baseline snapshot baked in, starts a container with the GPU
-passed through and the service port mapped to the host, and waits until the
-service reports healthy before returning.
+this machine, so the ship is a pull followed by a local run: it pulls the serve
+image for the baseline snapshot from ghcr (or a repository given with
+--image-repo), starts a container with the GPU passed through and the service
+port mapped to the host, and waits until the service reports healthy before
+returning.
 
 The script fails closed: no baseline target in the registry, a baseline whose
-status is not complete, a missing promotion record, missing or malformed
-RECIPE_RAG_API_KEYS (the service refuses to start without it), a failed docker
-call, or a service that never reports healthy each stop the ship and exit
-non-zero. A pre-existing recipe-rag container is replaced, so re-running the
-script ships a newer baseline with the same command. Docker access is expected
-to be available as plain `docker`; if your user is not in the docker group,
-either prefix the script's docker calls with sudo or add the user to the group
-once (root-equivalent access; effective on the next login).
+status is not complete, a missing promotion record, an image that cannot be
+pulled, missing or malformed RECIPE_RAG_API_KEYS (the service refuses to start
+without it), a failed docker call, or a service that never reports healthy each
+stop the ship and exit non-zero. A pre-existing recipe-rag container is
+replaced, so re-running the script ships a newer baseline with the same command.
+Docker access is expected to be available as plain `docker`; if your user is
+not in the docker group, either prefix the script's docker calls with sudo or
+add the user to the group once (root-equivalent access; effective on the next
+login).
 """
 
 import argparse
@@ -27,7 +29,6 @@ import subprocess
 import sys
 import time
 import urllib.request
-from pathlib import Path
 
 from src.rag.core.logging import configure_logging
 from src.rag.core.snapshot import registry
@@ -35,7 +36,7 @@ from src.rag.core.snapshot.paths import SnapshotPaths
 
 logger = logging.getLogger(__name__)
 
-_IMAGE = "recipe-rag"
+_IMAGE_REPO = "ghcr.io/raj2004n/recipe-rag"
 _CONTAINER = "recipe-rag"
 _API_KEYS_ENV = "RECIPE_RAG_API_KEYS"
 _HOST_PORT = 8000
@@ -46,11 +47,17 @@ _HEALTH_POLL_S = 2
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Build and run the serve image for the promoted baseline on this machine")
+        description="Pull and run the serve image for the promoted baseline on "
+                    "this machine")
     parser.add_argument(
-        "--no-build", action="store_true",
-        help="Skip the docker build and expect the image to exist; only useful "
-             "if a build is already cached.",
+        "--image-repo", default=_IMAGE_REPO,
+        help="image repository to pull the baseline from; pass e.g. 'recipe-rag' "
+             "to use an image built locally (default ghcr)",
+    )
+    parser.add_argument(
+        "--no-pull", action="store_true",
+        help="skip the pull and expect an image tagged <image-repo>:<baseline> "
+             "to exist locally",
     )
     parser.add_argument(
         "--port", type=int, default=_HOST_PORT,
@@ -102,12 +109,15 @@ def _baseline_folder(paths) -> str:
     return folder
 
 
-def _build_image(tag: str, snapshot: str) -> None:
-    logger.info("building %s from the repo root with SNAPSHOT=%s", tag, snapshot)
-    subprocess.run(
-        ["docker", "build", "--build-arg", f"SNAPSHOT={snapshot}", "-t", tag, "."],
-        check=True,
-    )
+def _pull_image(tag: str) -> None:
+    logger.info("pulling %s", tag)
+    proc = subprocess.run(["docker", "pull", tag])
+    if proc.returncode != 0:
+        raise SystemExit(
+            f"error: could not pull {tag}. Is the image in ghcr? Push it first "
+            f"(run the build workflow), or pass --image-repo to point at an "
+            f"image built locally, e.g. --image-repo recipe-rag."
+        )
 
 
 def _run_container(tag: str, api_keys: str, port: int) -> None:
@@ -150,18 +160,12 @@ def main() -> None:
 
     paths = SnapshotPaths.from_paths_config({})
     folder = _baseline_folder(paths)
-    tag = f"{_IMAGE}:{folder}"
-    local_folder = Path("snapshots") / folder
-    if not local_folder.is_dir():
-        raise SystemExit(
-            f"error: local snapshot folder {local_folder} is missing; cannot "
-            f"build the image with SNAPSHOT={folder}."
-        )
+    tag = f"{args.image_repo}:{folder}"
 
-    if not args.no_build:
-        _build_image(tag, folder)
+    if not args.no_pull:
+        _pull_image(tag)
     else:
-        logger.info("--no-build set; expecting an existing %s image", tag)
+        logger.info("--no-pull set; expecting an existing %s image", tag)
 
     api_keys = _api_keys()
     _run_container(tag, api_keys, args.port)
@@ -171,7 +175,7 @@ def main() -> None:
     print(f"Container {_CONTAINER} is up and healthy on port {args.port}.")
     print()
     print(f"  curl -H 'X-API-Key: <a public key from {_API_KEYS_ENV}>' \\")
-    print(f"       -H 'content-type: application/json' \\")
+    print("       -H 'content-type: application/json' \\")
     print(f"       -d '{{\"query\":\"quick chicken dinner\"}}' http://127.0.0.1:{args.port}/query")
     print()
 

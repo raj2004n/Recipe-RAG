@@ -14,7 +14,6 @@ verified prompt rows for the answer-drafting step.
 
 import argparse
 import json
-import re
 from html import escape
 from pathlib import Path
 

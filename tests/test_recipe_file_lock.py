@@ -8,7 +8,6 @@ verify the lock semantics rather than the swapping behaviour directly.
 """
 
 import threading
-import time
 from pathlib import Path
 
 import pytest

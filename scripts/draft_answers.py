@@ -16,7 +16,6 @@ from src.rag.core.config import BASE_CONFIG, DATA_PATHS
 from src.rag.data.answers_drafter import draft_answers
 from src.rag.data.answers_drafter.selection import load_prompts
 from src.rag.data.answers_drafter.types import QUERY_TYPES
-from src.rag.data.prompts_drafter.selection import load_recipes
 
 
 _DRAFTER_CONFIG_KEY = "answers_drafter"
