@@ -51,6 +51,10 @@ mlflow.db
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
+# Notebook experiments are personal working files rather than project source.
+# Files already tracked under here stay tracked; this only keeps new ones out.
+notebook/
+
 # IDE
 .vscode/
 .idea/
