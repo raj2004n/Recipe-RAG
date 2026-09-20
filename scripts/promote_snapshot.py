@@ -19,10 +19,10 @@ from pathlib import Path
 
 import mlflow
 
-from scripts._eval_common import MLFLOW_TRACKING_URI, resolve_snapshot_folder
 from src.rag.core.logging import configure_logging
 from src.rag.core.snapshot import registry
 from src.rag.core.snapshot.paths import SnapshotPaths
+from src.rag.evaluation.harness import MLFLOW_TRACKING_URI, resolve_snapshot_folder
 from src.rag.evaluation.promotion import (
     PromotionConfigError,
     evaluate,

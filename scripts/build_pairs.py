@@ -32,11 +32,11 @@ from pathlib import Path
 
 import numpy as np
 
-from ._eval_common import load_snapshot, resolve_snapshot_folder
 from src.rag.core.datasets.resolver import LocalDatasetResolver
 from src.rag.core.logging import configure_logging
 from src.rag.core.snapshot import registry
 from src.rag.core.snapshot.paths import SnapshotPaths
+from src.rag.evaluation.harness import load_snapshot, resolve_snapshot_folder
 from src.rag.retrieval.chunker import chunk_recipes
 from src.rag.retrieval.dense.encoder import Encoder
 

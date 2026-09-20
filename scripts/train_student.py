@@ -52,11 +52,11 @@ from peft import LoraConfig, get_peft_model
 from torch.utils.checkpoint import checkpoint
 from transformers import AutoModelForCausalLM
 
-from scripts._eval_common import begin_mlflow_run
 from scripts.design_prompts import file_checksum, write_manifest
 from src.rag.core.logging import configure_logging
 from src.rag.data.preprocessor import Recipe
 from src.rag.data.source_block import user_message
+from src.rag.evaluation.harness import begin_mlflow_run
 
 logger = logging.getLogger(__name__)
 

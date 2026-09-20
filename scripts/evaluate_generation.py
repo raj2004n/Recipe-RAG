@@ -22,7 +22,9 @@ from pathlib import Path
 
 import mlflow
 
-from scripts._eval_common import (
+from src.rag.core.config import DATA_PATHS
+from src.rag.core.logging import configure_logging
+from src.rag.evaluation.harness import (
     add_common_args,
     begin_mlflow_run,
     build_generator,
@@ -38,8 +40,6 @@ from scripts._eval_common import (
     resolve_snapshot_folder,
     tokenizer_for,
 )
-from src.rag.core.config import DATA_PATHS
-from src.rag.core.logging import configure_logging
 from src.rag.evaluation.generator_evaluator import GeneratorEvaluator
 from src.rag.evaluation.judge_prompts import judge_prompt_hash
 

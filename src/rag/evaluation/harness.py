@@ -1,11 +1,12 @@
 """Shared snapshot, pipeline, and judge plumbing for the evaluation scripts.
 
-The three evaluation scripts (retrieval, generation, end-to-end) all follow the
-same shape: resolve a sealed snapshot, build the components for its strategy,
-load the eval rows, run an evaluator, then log to MLflow. The helpers here are
-the single definition of that resolution and construction so the scripts stay
-thin and never drift on how a snapshot target, a corpus path, a pipeline, or
-the judge client is built.
+Every evaluation run follows the same shape: resolve a sealed snapshot, build
+the components for its strategy, load the rows, run an evaluator, then log to
+MLflow. The helpers here are the single definition of that resolution and
+construction, so the scripts stay thin and never drift on how a snapshot
+target, a corpus path, a pipeline, or the judge client is built. The pair
+builders and the student training run draw on the same plumbing, which is what
+keeps them reading a snapshot exactly the way an evaluation does.
 """
 
 import argparse
@@ -17,14 +18,14 @@ from pathlib import Path
 import mlflow
 from transformers import AutoTokenizer
 
-from src.rag.core.config import BASE_CONFIG
-from src.rag.core.datasets.resolver import LocalDatasetResolver
-from src.rag.core.snapshot import loader, registry
-from src.rag.core.snapshot.paths import SnapshotPaths
-from src.rag.data.recipe_format import recipe_to_string
-from src.rag.evaluation.generator_evaluator import JudgeClient
-from src.rag.generation.generator import Generator
-from src.rag.generation.prompt_builder import PromptBuilder
+from ..core.config import BASE_CONFIG
+from ..core.datasets.resolver import LocalDatasetResolver
+from ..core.snapshot import loader, registry
+from ..core.snapshot.paths import SnapshotPaths
+from ..data.recipe_format import recipe_to_string
+from ..generation.generator import Generator
+from ..generation.prompt_builder import PromptBuilder
+from .generator_evaluator import JudgeClient
 
 
 logger = logging.getLogger(__name__)
@@ -126,8 +127,8 @@ def build_pipeline(snapshot, recipes_path: Path | None = None):
     Dense pipelines need only the snapshot; hybrid pipelines need the registered
     corpus path to resolve reranked chunks back to whole recipes.
     """
-    from src.rag.pipeline.dense_pipeline import DensePipeline
-    from src.rag.pipeline.hybrid_pipeline import HybridPipeline
+    from ..pipeline.dense_pipeline import DensePipeline
+    from ..pipeline.hybrid_pipeline import HybridPipeline
 
     strategy = snapshot.retrieval_strategy
     if strategy == "dense":
