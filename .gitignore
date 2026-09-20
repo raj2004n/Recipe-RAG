@@ -98,6 +98,10 @@ data/eval/.quality_report.json
 #MlFlow
 mlruns/
 mlartifacts/
+
+# Student adapters and their run manifests, written by scripts/train_student.py
+artifacts/
+
 # DVC auto-manages the contents of snapshots/ via dvc add. Each versioned
 # snapshot folder gets added to .gitignore by dvc; the .dvc pointer files
 # (created alongside the snapshots) are git-tracked.
