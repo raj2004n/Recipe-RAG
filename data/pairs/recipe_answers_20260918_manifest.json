@@ -1,0 +1,53 @@
+{
+  "created_at": "2026-09-18T17:45:06+00:00",
+  "state": "complete",
+  "run": "full",
+  "prompts_file": "data/pairs/recipe_prompts_20260918.jsonl",
+  "output": "data/pairs/recipe_answers_20260918.jsonl",
+  "method": "pair-answer-v1",
+  "rule": "the instructions as written in the system prompt of this script",
+  "dataset": {
+    "key": "cleaned_recipes_f47524c9_20260824",
+    "path": "data/processed/cleaned_recipes.json",
+    "checksum": "sha256:f47524c93348dcb39a4c2c3194b5d0c4242fd57b8152224411fe84293976450a",
+    "registered_at": "2026-08-24 17:22:17",
+    "source": "registry"
+  },
+  "writer": {
+    "model_id": "qwen3.5:397b-cloud",
+    "route": "the local ollama client, against a cloud model",
+    "temperature": 0.0,
+    "seed": 42,
+    "seed_note": "passed through for reproducible reruns; the provider may ignore it",
+    "thinking": false,
+    "num_ctx": 16384,
+    "num_predict": 1600,
+    "max_retries": 3,
+    "workers": 3,
+    "system_prompt_hash": "sha256:30ff8c1d87d90ee0c60df25dfd36cdc25acabb94d9e46f8a39a58269c191c50e"
+  },
+  "counts": {
+    "prompts_in_input": 2966,
+    "answers_written": 2966,
+    "prompts_resumed": 0,
+    "prompts_pending_at_start": 2966,
+    "prompts_skipped": 0,
+    "by_done_reason": {
+      "stop": 2966
+    },
+    "words": {
+      "min": 203,
+      "max": 611,
+      "mean": 401.4,
+      "over_ceiling": 549
+    }
+  },
+  "usage": {
+    "prompt_tokens": 5287332,
+    "output_tokens": 1673043,
+    "calls": 2966,
+    "retries": 0
+  },
+  "skipped": [],
+  "failures": []
+}

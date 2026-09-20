@@ -1,0 +1,84 @@
+{
+  "created_at": "2026-09-19T17:02:49+00:00",
+  "run": "split",
+  "output": "data/pairs/distillation_split_20260919.jsonl",
+  "seed": 42,
+  "answers_file": "data/pairs/recipe_answers_20260918.jsonl",
+  "answers_checksum": "sha256:fdbc67e56b2dc06ad18bfe7d7d0d26470f28ca9257ad6cd79468dcfaa7839ad6",
+  "categories_file": "data/pairs/recipe_categories.jsonl",
+  "categories_checksum": "sha256:64ed1b4745bea65d4359275b4bb41195405df21a4d55076bbc406c845e1422a9",
+  "rule": "rows are drawn, not recipes, because a recipe carries two primary rows and a recipe level hold-out can only give even counts. The eval takes 297 rows from the savoury recipes that are never a partner, 74 from the sweet recipes that are never a partner and 223 from the sweet recipes that are, which makes it 297 savoury rows against 297 sweet. The dev slice is then drawn from the rows left within each category, shaped like the training rows it comes from. Everything else trains.",
+  "draw": {
+    "eval": {
+      "savoury_primary_only": 297,
+      "sweet_primary_only": 74,
+      "sweet_with_partners": 223
+    },
+    "dev": {
+      "savoury": 186,
+      "sweet": 14
+    }
+  },
+  "pools": {
+    "savoury_primary_only": {
+      "rows": 908,
+      "recipes": 454
+    },
+    "savoury_with_partners": {
+      "rows": 1586,
+      "recipes": 793
+    },
+    "sweet_primary_only": {
+      "rows": 148,
+      "recipes": 74
+    },
+    "sweet_with_partners": {
+      "rows": 324,
+      "recipes": 162
+    }
+  },
+  "counts": {
+    "rows": 2966,
+    "train": 2172,
+    "dev": 200,
+    "eval": 594,
+    "by_category": {
+      "train": {
+        "savoury": 2011,
+        "sweet": 161
+      },
+      "dev": {
+        "savoury": 186,
+        "sweet": 14
+      },
+      "eval": {
+        "savoury": 297,
+        "sweet": 297
+      }
+    }
+  },
+  "leak": {
+    "measured_against": "the training rows the model learns from",
+    "trained_rows": {
+      "eval_rows": 594,
+      "rows_with_a_trained_partner": 551,
+      "rows_whose_primary_is_absent_from_the_partner_slot": 447,
+      "rows_whose_primary_appears_anywhere_in_training": 394,
+      "sweet_eval_rows": 297,
+      "sweet_rows_whose_primary_appears_in_training": 200,
+      "rows_behind_this_reading": 2172
+    },
+    "also_measured_for_comparison": {
+      "measured_against": "everything the eval does not hold, dev included",
+      "eval_rows": 594,
+      "rows_with_a_trained_partner": 558,
+      "rows_whose_primary_is_absent_from_the_partner_slot": 443,
+      "rows_whose_primary_appears_anywhere_in_training": 416,
+      "sweet_eval_rows": 297,
+      "sweet_rows_whose_primary_appears_in_training": 207,
+      "rows_behind_this_reading": 2372
+    },
+    "definitions": "a row's partner is trained when that recipe appears in a training row on either side. A row's primary is absent from the partner slot when that recipe appears in no training row's partner position, which is the reading the split was priced against, and it is separately counted as present in training whenever that recipe appears in any training row at all, which is what the model has actually read about the dish"
+  },
+  "state": "complete"
+}

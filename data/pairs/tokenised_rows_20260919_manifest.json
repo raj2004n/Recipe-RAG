@@ -1,0 +1,62 @@
+{
+  "created_at": "2026-09-19T17:03:03+00:00",
+  "state": "complete",
+  "run": "tokenise",
+  "output": "data/pairs/tokenised_rows_20260919.pt",
+  "split_file": "data/pairs/distillation_split_20260919.jsonl",
+  "split_checksum": "sha256:0e6c4c9c260a7e70df3dff6019994093403121ae0ad7160a0ed25348e0411cf4",
+  "answers_file": "data/pairs/recipe_answers_20260918.jsonl",
+  "answers_checksum": "sha256:fdbc67e56b2dc06ad18bfe7d7d0d26470f28ca9257ad6cd79468dcfaa7839ad6",
+  "dataset": {
+    "key": "cleaned_recipes_f47524c9_20260824",
+    "path": "data/processed/cleaned_recipes.json",
+    "checksum": "sha256:f47524c93348dcb39a4c2c3194b5d0c4242fd57b8152224411fe84293976450a",
+    "registered_at": "2026-08-24 17:22:17",
+    "source": "registry"
+  },
+  "tokenizer": {
+    "model_id": "Qwen/Qwen3.5-0.8B",
+    "eos_token": "<|im_end|>",
+    "eos_token_id": 248046,
+    "pad_token": "<|endoftext|>",
+    "template_sha256": "sha256:925fa81a7392d617729a17ecaf5d050298614512ce645fc99c4279caa54db4a3",
+    "padding": "none; the rows are written at their own length and padded by the batch"
+  },
+  "masking": {
+    "rule": "the context the service hands in is masked and the assistant turn carries the loss, the empty reasoning block included, so the student writes a complete turn whether or not its server opens one for it",
+    "masked": "the system turn, the user turn and the assistant turn's first line",
+    "supervised": "the empty reasoning block, the answer, and the end of turn token"
+  },
+  "counts": {
+    "rows": 2966,
+    "by_split": {
+      "train": 2172,
+      "dev": 200,
+      "eval": 594
+    },
+    "over_cap": 0
+  },
+  "tokens": {
+    "cap": 4096,
+    "median_total": 1802,
+    "max_total": 3965,
+    "median_supervised": 566,
+    "by_split": {
+      "train": {
+        "rows": 2172,
+        "median_tokens": 1813,
+        "max_tokens": 3826
+      },
+      "dev": {
+        "rows": 200,
+        "median_tokens": 1815,
+        "max_tokens": 3425
+      },
+      "eval": {
+        "rows": 594,
+        "median_tokens": 1722,
+        "max_tokens": 3965
+      }
+    }
+  }
+}

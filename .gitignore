@@ -34,6 +34,14 @@ data/processed/*.json
 # Tracked via DVC once the canonical prompts.jsonl + golden.jsonl are ready.
 data/eval/
 
+# Pair-building, distillation and training working files. The artifacts that
+# are costly to rebuild are DVC-tracked, so the .dvc pointers stay in git, the
+# run manifests stay in git (negated after the blanket *.json rule below), and
+# the data itself does not.
+data/pairs/*
+!data/pairs/*.dvc
+!data/pairs/.gitignore
+
 # Model files (tracked by DVC, not Git)
 models/*.bin
 models/*.pkl
@@ -90,6 +98,17 @@ temp/
 logs/
 
 *.json
+
+# The rule above ignores every JSON in the tree. The pair-building and
+# distillation run manifests are the provenance record for their artifacts, so
+# they are the exception. The negation has to sit after the blanket rule
+# because the last matching pattern wins.
+!data/pairs/*_manifest.json
+
+# The smoke and probe manifests describe reads of a prompt that never became
+# the real set, so they stay working files beside their labels.
+data/pairs/*_smoke_manifest.json
+data/pairs/*_probe_manifest.json
 
 # Generated dataset-quality reports (regenerated on every CLI run; the root
 # *.json rule also catches these, but the explicit line is defence-in-depth).
