@@ -6,8 +6,8 @@ form is the serve image with that snapshot baked in. The deployment target is
 this machine, so the ship is a pull followed by a local run: it pulls the serve
 image for the baseline snapshot from ghcr (or a repository given with
 --image-repo), starts a container with the GPU passed through and the service
-port mapped to the host, and waits until the service reports healthy before
-returning.
+port published on loopback only, and waits until the service reports healthy
+before returning.
 
 The script fails closed: no serve target in the registry, a baseline whose
 status is not complete, a missing promotion record, an image that cannot be
@@ -65,7 +65,8 @@ def parse_args():
     )
     parser.add_argument(
         "--port", type=int, default=_HOST_PORT,
-        help=f"host port mapped to the service port 8000 (default {_HOST_PORT})",
+        help=f"loopback port published to the service port 8000 "
+             f"(default {_HOST_PORT})",
     )
     return parser.parse_args()
 
@@ -153,10 +154,15 @@ def _run_container(tag: str, api_keys: str, port: int) -> None:
         ["docker", "rm", "-f", _CONTAINER],
         check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    logger.info("starting %s on port %s with the GPU passed through", tag, port)
+    logger.info(
+        "starting %s on 127.0.0.1:%s with the GPU passed through", tag, port
+    )
+    # The published port is bound to loopback on purpose. The UI page is
+    # keyless, so anything that can reach the port can drive the generator;
+    # keeping it off the network interfaces is what bounds that.
     subprocess.run(
         ["docker", "run", "--gpus", "all", "-d", "--restart", "unless-stopped",
-         "--name", _CONTAINER, "-p", f"{port}:8000",
+         "--name", _CONTAINER, "-p", f"127.0.0.1:{port}:8000",
          "-e", f"{_API_KEYS_ENV}={api_keys}", tag],
         check=True,
     )

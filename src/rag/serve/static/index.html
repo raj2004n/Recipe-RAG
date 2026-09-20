@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="caramellatte">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RecipeRAG</title>
+    <link rel="stylesheet" href="/static/vendor/daisyui.css" />
+    <link rel="stylesheet" href="/static/vendor/daisyui-themes.css" />
+    <link rel="stylesheet" href="/static/app.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-bar">
+      <div class="bar-inner">
+        <span class="brand">RecipeRAG</span>
+        <div class="bar-status">
+          <span class="badge badge-sm chip" id="chip" data-state="checking">
+            <span class="chip-dot" aria-hidden="true"></span>
+            <span id="chip-text">checking service</span>
+          </span>
+          <details class="about" id="about" hidden>
+            <summary class="about-summary">About this build</summary>
+            <div class="about-panel" id="about-body"></div>
+          </details>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="entry">
+        <h1 class="entry-title">What do you want to make?</h1>
+        <p class="entry-sub">
+          Describe a dish, a craving, or the ingredients sitting in your fridge.
+          You will get one complete recipe back.
+        </p>
+
+        <form class="form" id="form" novalidate>
+          <label class="sr-only" for="prompt">What do you want to make?</label>
+          <textarea
+            class="textarea prompt"
+            id="prompt"
+            rows="3"
+            placeholder="a quick weeknight dinner with chickpeas and spinach"
+          ></textarea>
+          <p class="field-error" id="field-error" hidden>
+            Write what you want to make, even a few words is enough.
+          </p>
+          <div class="form-actions">
+            <button class="btn btn-primary btn-lg" id="submit" type="submit">
+              Generate recipe
+            </button>
+            <span class="hint">
+              Press <kbd class="kbd kbd-sm">Enter</kbd> to generate
+            </span>
+          </div>
+        </form>
+
+        <div class="examples">
+          <p class="examples-label">Try one of these</p>
+          <div class="examples-row">
+            <button class="btn btn-sm btn-ghost example" type="button">
+              something with leftover roast chicken
+            </button>
+            <button class="btn btn-sm btn-ghost example" type="button">
+              a 20-minute vegetarian lunch
+            </button>
+            <button class="btn btn-sm btn-ghost example" type="button">
+              a birthday cake for a small crowd
+            </button>
+            <button class="btn btn-sm btn-ghost example" type="button">
+              use up half a cabbage
+            </button>
+          </div>
+        </div>
+
+        <p class="expectation">
+          Every recipe is newly written from a corpus of crawled recipes: the
+          system adapts and combines them rather than returning one page
+          verbatim. Amounts are a starting point, so taste as you go.
+        </p>
+      </section>
+
+      <section class="result" id="result" hidden aria-label="The recipe you asked for">
+        <p class="echo" id="echo"></p>
+
+        <div class="panel" id="recipe-panel" hidden>
+          <h2 class="recipe-title" id="recipe-title"></h2>
+          <ul class="recipe-meta" id="recipe-meta"></ul>
+          <p class="provenance" id="provenance" hidden></p>
+
+          <section class="recipe-section" id="ingredients-block" hidden>
+            <h3 class="section-title">Ingredients</h3>
+            <ul class="ingredients" id="ingredients"></ul>
+          </section>
+
+          <section class="recipe-section" id="steps-block" hidden>
+            <h3 class="section-title">Method</h3>
+            <ol class="method" id="steps"></ol>
+          </section>
+
+          <section class="recipe-section" id="notes-block" hidden>
+            <h3 class="section-title">Notes</h3>
+            <ul class="notes" id="notes"></ul>
+          </section>
+
+          <p class="notice notice-aside" id="remainder-notice" hidden>
+            The model also wrote
+          </p>
+          <p class="remainder" id="remainder" hidden></p>
+        </div>
+
+        <div class="panel" id="answer-panel" hidden>
+          <p class="notice">Shown as the model wrote it</p>
+          <pre class="answer" id="answer"></pre>
+        </div>
+
+        <div class="result-actions" id="result-actions" hidden>
+          <button class="btn btn-primary btn-sm" id="another" type="button">
+            Generate another
+          </button>
+          <span class="hint">A different recipe, not a variation of this one.</span>
+          <button class="btn btn-outline btn-sm" id="copy" type="button">
+            Copy recipe
+          </button>
+        </div>
+
+        <div class="panel panel-failure" id="failure-panel" hidden>
+          <h2 class="failure-title" id="failure-title"></h2>
+          <p class="failure-body" id="failure-body"></p>
+          <p class="failure-code"><code id="failure-code"></code></p>
+          <button class="btn btn-primary btn-sm" id="retry" type="button">
+            Try again
+          </button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

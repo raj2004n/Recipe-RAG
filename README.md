@@ -67,10 +67,37 @@ export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
 uvicorn src.rag.serve.app:create_app --factory
 # then: curl -H 'X-API-Key: dev-public-key' -H 'content-type: application/json' \
 #   -d '{"query":"quick chicken dinner"}' http://localhost:8000/query
+# or open http://localhost:8000/ for the browser interface
 ```
 
 You'll need a local Ollama instance running `gemma3:4b` for the eval-dataset
 generator; the inference-time generator is loaded in-process.
+
+### The browser interface
+
+`GET /` serves a single page, and its stylesheets and script come from
+`src/rag/serve/static/`, so the page makes no network requests to anything: the
+DaisyUI stylesheets are vendored under `static/vendor/` at a pinned version and
+the layout is hand-written in `static/app.css`. There is no CDN and no build
+step, which is what lets the image keep its offline claim while serving a UI.
+
+The page cannot hold an API key, so it never sends one. Its three routes,
+`POST /ui/query`, `GET /ui/health` and `GET /ui/info`, are keyless and each
+forwards to the keyed route it names, adding the key server-side. The forward
+goes through an in-process ASGI transport rather than a socket, so `POST /query`
+stays the only entrance to the generator and the UI inherits its validation and
+its error envelope unchanged.
+
+`RAMSAY_UI_KEY` names which configured key those forwarders act as. Leave it
+unset and the first `public` key in `RECIPE_RAG_API_KEYS` is used. Setting it to
+a key that is not in the map stops the service at startup, the same way a
+malformed key map does.
+
+Because the page needs no key, anything that can reach the port can spend GPU
+time. `scripts/ship_baseline.py` therefore publishes the container on loopback
+(`-p 127.0.0.1:8000:8000`), so the keyless route is reachable from this machine
+and not from the network. Binding the port to a wider interface means removing
+that, and it is the one thing standing between the UI and the rest of the LAN.
 
 ## Architecture
 
@@ -127,8 +154,8 @@ python -m scripts.ship_baseline
 
 The script resolves the promoted baseline from the registry, pulls the image
 tagged `<baseline folder>` from ghcr, starts a `docker run --gpus all`
-container mapping port 8000 to the host, and waits for `/health` to report ok
-before returning. Re-running it replaces the container, so shipping a new
+container publishing port 8000 on `127.0.0.1` only, and waits for `/health` to
+report ok before returning. Re-running it replaces the container, so shipping a new
 baseline is the same command. It fails closed: no baseline target in the
 registry, a baseline that is not sealed or not promoted, an image that cannot
 be pulled, missing `RECIPE_RAG_API_KEYS`, or a service that never reports
@@ -195,8 +222,9 @@ promoted baseline here:
 The deployed service is verified end to end on this machine: the container runs
 the promoted baseline from ghcr, `/health` reports the snapshot loaded, `/info`
 shows the retrieval strategy and models, and `POST /query` answers with the
-generator. The two-role (`admin` / `public`) API key auth applies to every
-endpoint.
+generator. `GET /` serves a keyless browser page over the same routes, and the
+two-role (`admin` / `public`) API key auth applies to every endpoint the page
+does not forward through.
 
 ## Author
 

@@ -1,0 +1,524 @@
+/* Layout for the RecipeRAG page.
+   The vendored stylesheets bring DaisyUI's components, its themes, and the
+   Tailwind preflight, but no utility classes, so everything the markup needs
+   beyond a component class is written here. Colours and radii come from the
+   theme's own variables, which is what keeps this file working if the page is
+   ever switched to another DaisyUI theme.
+
+   These rules are unlayered while DaisyUI's are inside @layer, so they win on
+   order alone. That is deliberate for the handful of component overrides below
+   and it is also why nothing here should restyle a component wholesale.
+
+   No class name here may be one DaisyUI already defines. DaisyUI's .hero, for
+   instance, is a grid that stacks its children in one cell, so taking that name
+   would silently lay a whole screen out on top of itself. */
+
+:root {
+  --muted: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --faint: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+body {
+  background-color: var(--color-base-100);
+  color: var(--color-base-content);
+}
+
+/* DaisyUI gives its components a display, which would outrank the user
+   agent's rule for [hidden]. Keep the attribute meaningful. */
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── app bar ─────────────────────────────────────────────────────────── */
+
+/* Held at the top: the status chip and the build facts are what make a dead
+   snapshot legible, and a long answer would otherwise scroll both away. */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  border-bottom: 1px solid var(--color-base-300);
+  background-color: var(--color-base-100);
+}
+
+.bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 60rem;
+  margin-inline: auto;
+  padding: 0.6rem 1rem;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bar-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── about this build ────────────────────────────────────────────────── */
+
+/* Collapsed on purpose. The snapshot facts are what makes a failure legible
+   and a printed recipe traceable, and neither is a thing a cook wants open
+   while reading. */
+.about {
+  position: relative;
+}
+
+.about-summary {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  font-size: 0.7rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.about-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2rem));
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background-color: var(--color-base-100);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.14);
+  font-size: 0.72rem;
+}
+
+.about-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  margin-top: 0.3rem;
+}
+
+.about-group {
+  margin-top: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+  color: var(--faint);
+}
+
+.about-group:first-child {
+  margin-top: 0;
+}
+
+.about-term {
+  color: var(--faint);
+}
+
+.about-value {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+/* The chip is a courtesy reading of /ui/health, not a gate: the prompt stays
+   usable while it reports anything at all. */
+.chip {
+  gap: 0.4rem;
+  border-color: transparent;
+}
+
+.chip-dot {
+  display: inline-block;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background-color: currentColor;
+}
+
+.chip[data-state="checking"] {
+  background-color: var(--color-base-300);
+  color: var(--color-base-content);
+}
+
+.chip[data-state="ok"] {
+  background-color: var(--color-success);
+  color: var(--color-success-content);
+}
+
+.chip[data-state="down"] {
+  background-color: var(--color-error);
+  color: var(--color-error-content);
+}
+
+/* ── the page column ─────────────────────────────────────────────────── */
+
+.shell {
+  max-width: 44rem;
+  margin-inline: auto;
+  padding: 0 1rem 4rem;
+}
+
+/* ── entry ───────────────────────────────────────────────────────────── */
+
+/* Named .entry rather than .hero on purpose: DaisyUI defines .hero as a grid
+   that stacks its direct children in a single cell, so reusing that name lays
+   the whole screen out on top of itself. Nothing here may take a class name
+   DaisyUI already defines; tests/test_serve/test_ui.py checks that. */
+.entry {
+  padding: 3rem 0 0;
+  text-align: center;
+}
+
+.entry-title {
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.entry-sub {
+  max-width: 32rem;
+  margin: 0.6rem auto 0;
+  font-size: 0.925rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.form {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.prompt {
+  width: 100%;
+  background-color: var(--color-base-100);
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.field-error {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
+.examples {
+  margin-top: 1.75rem;
+}
+
+.examples-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+.examples-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.example {
+  border: 1px solid var(--color-base-300);
+}
+
+.expectation {
+  max-width: 34rem;
+  margin: 1.75rem auto 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-base-300);
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: var(--muted);
+  text-align: left;
+}
+
+/* ── result ──────────────────────────────────────────────────────────── */
+
+.result {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-base-300);
+  text-align: left;
+  /* The bar is sticky, so scrolling the answer to the top has to leave room
+     for it rather than tucking the echo underneath. */
+  scroll-margin-top: 3.5rem;
+}
+
+.echo {
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
+.panel {
+  margin-top: 0.9rem;
+}
+
+.notice {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+.answer {
+  margin-top: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background-color: var(--color-base-200);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── the recipe ──────────────────────────────────────────────────────── */
+
+.recipe-title {
+  font-size: clamp(1.35rem, 1.15rem + 0.9vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* What the recipe yields and how long it takes, which is what a cook reads
+   before anything else. The row always holds the freshness pill, so it never
+   renders as a gap when the answer states no facts at all. */
+.recipe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The freshness note sits in the badge row but is not one of the badges: it
+   says nothing about the dish. */
+.fresh {
+  align-self: center;
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+
+/* The one line on the page the model did not write: which snapshot answered,
+   and which model wrote it. */
+.provenance {
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--faint);
+}
+
+.recipe-section {
+  margin-top: 1.75rem;
+}
+
+.section-title {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-base-300);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.ingredients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Two columns with the amount in a fixed gutter, which is the whole reason
+   to lay the list out rather than print it as prose: the amounts line up down
+   the page, so the eye can find one without reading the names. */
+.ingredient {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.34rem 0;
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--color-base-300) 55%, transparent);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.ingredient-qty {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* A label naming what the ingredients under it are for. A heading, not a
+   row: it carries no amount and nothing to measure. */
+.ingredient-group,
+.method-group {
+  margin-top: 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ingredient-group:first-child,
+.method-group:first-child {
+  margin-top: 0.6rem;
+}
+
+.method {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: method-step;
+}
+
+/* Real list items, numbered by the page rather than by whatever the model
+   typed, and set at body size with room between the lines: this is the part
+   read at arm's length. */
+.method-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  counter-increment: method-step;
+}
+
+.method-step::before {
+  flex: 0 0 1.4rem;
+  content: counter(method-step);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.7;
+  color: var(--faint);
+  text-align: right;
+}
+
+.notes {
+  margin: 0;
+  padding-left: 1.15rem;
+  list-style: disc;
+}
+
+.note {
+  margin-top: 0.55rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.notice-aside {
+  margin-top: 2rem;
+}
+
+/* Whatever the parse could not place, kept as one plain block so that a
+   section this build does not recognise costs layout and never text. */
+.remainder {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── the action rail ─────────────────────────────────────────────────── */
+
+/* Held at the foot of the viewport while the recipe scrolls past it. A
+   recorded answer can run to three courses and 22 steps, and the two actions
+   that are the only way a recipe leaves the screen are no use at the bottom
+   of that. */
+.result-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--color-base-300);
+  background-color: var(--color-base-100);
+}
+
+.panel-failure {
+  padding: 1.25rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background-color: var(--color-base-200);
+}
+
+.failure-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.failure-body {
+  max-width: 34rem;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.failure-code {
+  margin-top: 0.6rem;
+}
+
+.failure-code code {
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-field);
+  background-color: var(--color-base-100);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+
+.panel-failure .btn {
+  margin-top: 0.9rem;
+}
+
+/* One width, deliberately: the wireframes settle a desktop layout and put the
+   phone pass out of scope, so nothing here has been checked below ~490px. */

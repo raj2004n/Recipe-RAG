@@ -2,7 +2,9 @@
 
 The lifespan does the following, in order:
 
-1. Parse `RECIPE_RAG_API_KEYS`. If missing or malformed, exit 2.
+1. Parse `RECIPE_RAG_API_KEYS`. If missing or malformed, exit 2. Then
+   resolve the key the UI forwarders act as; if it names a key that is not
+   in the map, exit 2.
 2. Load the snapshot the `serve` target names, via
    `load_snapshot_by_target("serve")`. That is the folder a human promoted, so
    the service answers from what was promoted and not from whatever was built
@@ -18,9 +20,17 @@ The lifespan does the following, in order:
    actually feel). The generator stays lazy - its forward pass cannot
    share VRAM with an already-resident cross-encoder on small GPUs.
 6. Store the warm Pipeline on `app.state.pipeline`.
+7. Build the UI forwarder's HTTP client, bound to this app through an
+   in-process ASGI transport.
 
-On shutdown, call `getattr(pipeline, "close", lambda: None)()` so the
-Pipeline has a future-friendly shutdown hook without forcing one today.
+On shutdown, close that client and call
+`getattr(pipeline, "close", lambda: None)()` so the Pipeline has a
+future-friendly shutdown hook without forcing one today.
+
+The app also serves the browser UI: `static/` is mounted at `/static`,
+`GET /` returns the page, and the three `/ui/*` routes forward to the
+keyed API with the UI's key injected server-side, so the page itself
+never carries one.
 
 The whole pipeline is `def` (sync) - FastAPI runs sync handlers in a
 threadpool so they do not block the event loop. With `--workers 1`, each
@@ -32,15 +42,21 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import auth as auth_module
 from .errors import install_error_handlers
 from .routes import health as health_route
 from .routes import info as info_route
 from .routes import query as query_route
+from .routes import ui as ui_route
 
 logger = logging.getLogger(__name__)
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 def _exit_2_on_failure(message: str, exc: Exception) -> None:
@@ -136,9 +152,17 @@ def create_app() -> FastAPI:
 
         # 1. API keys - fail closed at startup if missing or malformed.
         try:
-            auth_module._load_api_keys()
+            keys = auth_module._load_api_keys()
         except Exception as exc:
             _exit_2_on_failure("RECIPE_RAG_API_KEYS not configured", exc)
+
+        # 1b. The key the UI forwarders act as, from the same map. This is
+        #     the only key the page can use, and it never reaches the
+        #     browser - the server injects it on the way upstream.
+        try:
+            app.state.ui_key = auth_module._resolve_ui_key(keys)
+        except Exception as exc:
+            _exit_2_on_failure("The UI forward key is not usable", exc)
 
         # 2. Load the promoted snapshot.
         snapshot = _load_snapshot_or_exit()
@@ -160,10 +184,21 @@ def create_app() -> FastAPI:
         app.state.pipeline = pipeline
         logger.info("lifespan: pipeline ready")
 
+        # 5. The forwarder's client. It talks to this same app through an
+        #    in-process ASGI transport, so /query stays the single entrance
+        #    to the generator and no socket is opened.
+        app.state.ui_client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://ui-forward",
+        )
+
         try:
             yield
         finally:
             logger.info("lifespan: shutting down")
+            client = getattr(app.state, "ui_client", None)
+            if client is not None:
+                await client.aclose()
             close = getattr(pipeline, "close", None)
             if callable(close):
                 close()
@@ -180,6 +215,18 @@ def create_app() -> FastAPI:
     app.include_router(health_route.router)
     app.include_router(info_route.router)
     app.include_router(query_route.router)
+    app.include_router(ui_route.router)
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        """The browser page. Keyless, like the assets and the UI routes."""
+        return FileResponse(STATIC_DIR / "index.html")
+
+    app.mount(
+        "/static",
+        StaticFiles(directory=STATIC_DIR),
+        name="static",
+    )
     return app
 
 

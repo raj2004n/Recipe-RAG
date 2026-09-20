@@ -6,9 +6,13 @@
 # cu124 wheels are not on PyPI, so installs use the PyTorch index first.
 #
 # Build with:  docker build -t recipe-rag:$(git rev-parse --short=12 HEAD) .
-# Run with:    docker run --gpus all -p 8000:8000 \
+# Run with:    docker run --gpus all -p 127.0.0.1:8000:8000 \
 #                -e RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}' \
 #                recipe-rag:<sha>
+#
+# The port is published on loopback because the browser page at / needs no key,
+# so anything that can reach the port can spend GPU time. Widen the bind only
+# with that in mind.
 
 FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS builder
 
