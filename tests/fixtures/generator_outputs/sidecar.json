@@ -1,0 +1,35 @@
+{
+  "recorded_from": "http://127.0.0.1:8000",
+  "endpoint": "POST /query",
+  "recorded_at": "2026-09-20 19:20:50",
+  "service_info": {
+    "snapshot": {
+      "retrieval_strategy": "hybrid",
+      "created_at": "2026-08-24 17:23:13",
+      "dataset_key": "cleaned_recipes_f47524c9_20260824"
+    },
+    "models": {
+      "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+      "generator": "google/gemma-3-1b-it"
+    },
+    "chunk_sets": {
+      "dense": [
+        "dense"
+      ],
+      "bm25": [
+        "sparse"
+      ]
+    }
+  },
+  "recordings": [
+    "plain-dinner",
+    "comforting",
+    "exact-ingredients",
+    "vegetarian-pasta",
+    "asks-for-tips",
+    "two-components",
+    "prose-question",
+    "long-answer"
+  ],
+  "note": "Raw answers from the served model, recorded once and not edited. The parser in src/rag/serve/parser.py is tested against these."
+}

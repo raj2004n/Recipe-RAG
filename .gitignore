@@ -98,6 +98,9 @@ temp/
 logs/
 
 *.json
+# The sidecar that records where the generator fixtures came from is tracked
+# with the fixtures themselves, so the rule above does not drop it in silence.
+!tests/fixtures/**/*.json
 
 # The rule above ignores every JSON in the tree. The pair-building and
 # distillation run manifests are the provenance record for their artifacts, so
