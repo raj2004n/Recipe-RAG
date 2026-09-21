@@ -6,14 +6,17 @@ them, and the teacher's answer to it. This package holds the tooling behind
 those files. The pool pass ranks every recipe's nearest neighbours and marks the
 near copies the chooser may not be offered; the chooser reads that pool and
 writes the pairs; the design pass writes one request per pair; the answer pass
-puts each request to the teacher and keeps the recipe that comes back.
+puts each request to the teacher and keeps the recipe that comes back. Beside
+those sits the labelling pass, which reads the pair set's titles and marks each
+recipe savoury or sweet, and the reviewed calls that settle the titles the pass
+abstained on.
 
 The re-exports below are the surface a caller outside the package should use.
-The pool, the chooser and the answer pass are reached through their own module
-instead, so a caller that wants the manifest helpers and nothing else does not
-pay for the encoder the pool pass reads the corpus with. The selection loaders
-are reached through ``.selection`` by the passes that need them, the same way
-the drafter packages are entered.
+The pool, the chooser, the answer and the labelling pass are reached through
+their own module instead, so a caller that wants the manifest helpers and
+nothing else does not pay for the encoder the pool pass reads the corpus with.
+The selection loaders are reached through ``.selection`` by the passes that need
+them, the same way the drafter packages are entered.
 """
 
 from .design import design_prompts
