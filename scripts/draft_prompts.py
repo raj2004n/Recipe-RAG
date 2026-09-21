@@ -8,7 +8,7 @@ run as a small smoke test before committing to the full 88 rows.
 
 import argparse
 
-from ._draft_common import build_encoder, draft_kwargs, resolve_paths
+from src.rag.data.drafter_common import build_encoder, draft_kwargs, resolve_paths
 from src.rag.data.prompts_drafter import draft_prompts
 
 

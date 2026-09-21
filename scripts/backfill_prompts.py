@@ -22,7 +22,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from ._draft_common import build_encoder, draft_kwargs, resolve_paths
+from src.rag.data.drafter_common import build_encoder, draft_kwargs, resolve_paths
 from src.rag.data.prompts_drafter import QUERY_TYPES
 from src.rag.data.prompts_drafter.drafter import _selection_to_row
 from src.rag.data.prompts_drafter.rendering import call_model

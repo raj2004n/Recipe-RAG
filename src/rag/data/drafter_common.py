@@ -9,8 +9,8 @@ so the two scripts can stay focused on their orchestration differences.
 
 from pathlib import Path
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
-from src.rag.retrieval.dense.encoder import Encoder
+from ..core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
+from ..retrieval.dense.encoder import Encoder
 
 
 _DRAFTER_CONFIG_KEY = "prompts_drafter"
