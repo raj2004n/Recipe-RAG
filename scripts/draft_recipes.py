@@ -46,8 +46,9 @@ from pathlib import Path
 
 from ollama import chat
 
-from scripts.design_prompts import dataset_key_of, load_recipes, resolve_corpus, write_manifest
 from src.rag.core.logging import configure_logging
+from src.rag.data.pairs import write_manifest
+from src.rag.data.pairs.selection import dataset_key_of, load_recipes, resolve_corpus
 from src.rag.data.preprocessor import Recipe
 from src.rag.data.source_block import user_message
 

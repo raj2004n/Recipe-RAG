@@ -37,13 +37,6 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
-from scripts.design_prompts import (
-    dataset_key_of,
-    load_pairs,
-    load_recipes,
-    resolve_corpus,
-    write_manifest,
-)
 from scripts.train_student import (
     CHAT_TEMPLATE,
     EMPTY_REASONING,
@@ -53,6 +46,13 @@ from scripts.train_student import (
     render_student_prompt,
 )
 from src.rag.core.logging import configure_logging
+from src.rag.data.pairs import write_manifest
+from src.rag.data.pairs.selection import (
+    dataset_key_of,
+    load_pairs,
+    load_recipes,
+    resolve_corpus,
+)
 from src.rag.data.source_block import user_message
 
 logger = logging.getLogger(__name__)

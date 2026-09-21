@@ -32,15 +32,14 @@ from collections import Counter
 from pathlib import Path
 
 from src.rag.core.logging import configure_logging
-
-from scripts.design_prompts import (
-    PAIRS_JSONL,
+from src.rag.data.pairs.rendering import instructions_text
+from src.rag.data.pairs.selection import (
     dataset_key_of,
-    instructions_text,
     load_pairs,
     load_recipes,
     resolve_corpus,
 )
+from src.rag.data.pairs.types import PAIRS_JSONL
 
 logger = logging.getLogger(__name__)
 
