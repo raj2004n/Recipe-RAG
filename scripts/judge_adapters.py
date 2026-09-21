@@ -32,12 +32,12 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from scripts.train_student import EMPTY_REASONING
 from src.rag.core.logging import configure_logging
 from src.rag.data.pairs import file_checksum, write_manifest
 from src.rag.evaluation.generator_evaluator import structural_checks
 from src.rag.evaluation.harness import begin_mlflow_run, build_judge, judge_config
 from src.rag.evaluation.scoring import judgment
+from src.rag.training.student import EMPTY_REASONING
 
 logger = logging.getLogger(__name__)
 

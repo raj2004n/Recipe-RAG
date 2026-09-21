@@ -16,11 +16,11 @@ The leak figures in the manifest are measured after the draw rather than assumed
 row can still share a dish with training through the other side of its pair, and a reader should see
 how much of the eval that is before trusting what it scores.
 
-Tokenising pins the student's prompt through the parity assertions in train_student, renders each
-row as the service would hand it in, and appends the teacher's answer. The prompt is masked and the
-answer carries the loss, the empty reasoning block included, so a student served without that
-opening still writes a complete assistant turn. Rows are written unpadded, since padding belongs to
-the batch a trainer builds.
+Tokenising pins the student's prompt through the parity assertions in
+src/rag/training/student.py, renders each row as the service would hand it in, and appends the
+teacher's answer. The prompt is masked and the answer carries the loss, the empty reasoning block
+included, so a student served without that opening still writes a complete assistant turn. Rows are
+written unpadded, since padding belongs to the batch a trainer builds.
 """
 
 import argparse
@@ -37,14 +37,6 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
-from scripts.train_student import (
-    CHAT_TEMPLATE,
-    EMPTY_REASONING,
-    STUDENT_MODEL_ID,
-    STUDENT_SYSTEM,
-    assert_template_matches,
-    render_student_prompt,
-)
 from src.rag.core.logging import configure_logging
 from src.rag.data.pairs import write_manifest
 from src.rag.data.pairs.selection import (
@@ -54,6 +46,14 @@ from src.rag.data.pairs.selection import (
     resolve_corpus,
 )
 from src.rag.data.source_block import user_message
+from src.rag.training.student import (
+    CHAT_TEMPLATE,
+    EMPTY_REASONING,
+    STUDENT_MODEL_ID,
+    STUDENT_SYSTEM,
+    assert_template_matches,
+    render_student_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -341,10 +341,10 @@ def context_template() -> str:
 def check_tokenizer(tokenizer, template: str) -> list[int]:
     """The facts the row layout rests on, each one compared rather than assumed.
 
-    The checkpoint's own template has to be the string in train_student, the end of an answer has to
-    be the sequence the model stops on, and the join between the assistant opening and the reasoning
-    block has to be clean. That last one is a property of two constants rather than of any row, so
-    it is checked once, on the same probe the template parity uses.
+    The checkpoint's own template has to be the string in src/rag/training/student.py, the end of an
+    answer has to be the sequence the model stops on, and the join between the assistant opening and
+    the reasoning block has to be clean. That last one is a property of two constants rather than of
+    any row, so it is checked once, on the same probe the template parity uses.
     """
     assert_template_matches(tokenizer)
     block = tokenizer(EMPTY_REASONING, add_special_tokens=False)["input_ids"]
