@@ -14,7 +14,7 @@ from src.rag.data.prompts_drafter import draft_prompts
 
 def run(args: argparse.Namespace) -> int:
     """Run the drafter with the given args; returns 0 on success."""
-    corpus_path, output_path = resolve_paths(args)
+    corpus_path, output_path = resolve_paths(args.output)
     kwargs = draft_kwargs(include_per_type_count=True)
     if args.per_type_count is not None:
         kwargs["per_type_count"] = args.per_type_count

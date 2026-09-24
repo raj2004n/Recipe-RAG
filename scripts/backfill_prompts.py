@@ -80,7 +80,7 @@ def run(args: argparse.Namespace) -> int:
     model is called for those survivors in parallel and the resulting rows
     are appended to the output file.
     """
-    corpus_path, prompts_path = resolve_paths(args)
+    corpus_path, prompts_path = resolve_paths(args.output)
     type_counts = _parse_types(args.types)
 
     from src.rag.data.prompts_drafter.selection import load_recipes

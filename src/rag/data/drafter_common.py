@@ -44,14 +44,14 @@ def draft_kwargs(*, include_per_type_count: bool = False) -> dict:
     return out
 
 
-def resolve_paths(args) -> tuple[Path, Path]:
+def resolve_paths(output: str | None = None) -> tuple[Path, Path]:
     """Resolve the cleaned-recipes corpus and the prompts.jsonl output path.
 
-    ``args.output`` (if provided) overrides the default location from
+    ``output`` (if provided) overrides the default location from
     ``DATA_PATHS["eval_prompts"]``. The output's parent directory is created
     on demand so a fresh repo state can run either script without manual setup.
     """
     corpus_path = Path(DATA_PATHS["cleaned_recipes"])
-    prompts_path = Path(args.output or DATA_PATHS["eval_prompts"])
+    prompts_path = Path(output or DATA_PATHS["eval_prompts"])
     prompts_path.parent.mkdir(parents=True, exist_ok=True)
     return corpus_path, prompts_path
