@@ -41,9 +41,9 @@ from ..data.pairs.types import PAIRS_JSONL
 
 logger = logging.getLogger(__name__)
 
-# The file a pass measures when it is not pointed at one. The v3 sample is where the flag can be
-# checked by hand, because the rows in it have already been read one at a time.
-DEFAULT_PROMPTS = Path("data/pairs/recipe_prompts_v3_smoke.jsonl")
+# The file a pass measures when it is not pointed at one: the designed prompt set in use, whose
+# annotated copy lands beside it.
+DEFAULT_PROMPTS = Path("data/pairs/recipe_prompts_20260918.jsonl")
 
 # The ways of cooking a prompt can ask for, as the words a recipe uses for them. Each carries the
 # family it belongs to, which is what decides whether a technique a parent does not name is still
