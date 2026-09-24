@@ -118,7 +118,7 @@ data/eval/.quality_report.json
 mlruns/
 mlartifacts/
 
-# Student adapters and their run manifests, written by scripts/train_student.py
+# Student adapters and their run manifests, written by src/rag/training/student.py
 artifacts/
 
 # DVC auto-manages the contents of snapshots/ via dvc add. Each versioned
