@@ -12,8 +12,9 @@ from typing import Any
 from tqdm import tqdm
 
 from ...retrieval.dense.encoder import Encoder
+from ..drafter_common import load_recipes
 from .rendering import call_model, prompt_template_tag
-from .selection import Selection, load_recipes, selections_for_type
+from .selection import Selection, selections_for_type
 from .types import QUERY_TYPES, TYPES_WITH_ONE_PRIMARY
 
 

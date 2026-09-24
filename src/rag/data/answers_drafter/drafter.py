@@ -19,8 +19,9 @@ from typing import Any
 
 from tqdm import tqdm
 
+from ..drafter_common import load_recipes
 from .rendering import assert_query_types_covered, call_model
-from .selection import AnswerSelection, load_prompts, load_recipes, selections_from_prompts
+from .selection import AnswerSelection, load_prompts, selections_from_prompts
 
 
 def _load_processed_keys(output_path: Path) -> set[tuple[str, int]]:

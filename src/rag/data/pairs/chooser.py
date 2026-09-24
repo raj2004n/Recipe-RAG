@@ -37,11 +37,10 @@ from pathlib import Path
 from ollama import chat
 from pydantic import BaseModel, Field, ValidationError
 
-from ...core.datasets.resolver import LocalDatasetResolver
-from ...core.snapshot import registry
-from ...core.snapshot.paths import SnapshotPaths
 from ...evaluation.harness import load_snapshot, resolve_snapshot_folder
 from ..recipe_format import recipe_to_string
+from .rendering import strip_markdown_fence
+from .selection import resolve_snapshot_corpus
 
 logger = logging.getLogger(__name__)
 
@@ -118,26 +117,6 @@ class Choice(BaseModel):
     fallback: bool = False
 
 
-def strip_markdown_fence(content: str) -> str:
-    """Drop a leading and trailing ``` fence, which some models add anyway."""
-    text = content.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-    return text.strip()
-
-
-def resolve_corpus(snapshot):
-    """The registered corpus behind the snapshot's dataset key, and its registry entry."""
-    paths = SnapshotPaths.from_paths_config({})
-    resolver = LocalDatasetResolver(
-        registry_path=paths.registry_file,
-        registry_get_dataset=registry.get_dataset,
-    )
-    return resolver.resolve(snapshot.dataset_key), registry.get_dataset(paths.registry_file, snapshot.dataset_key)
-
-
 def load_inputs(snapshot_target: str = "latest", limit: int | None = None,
                 primaries_file: str | None = None) -> dict:
     """The pool, the corpus it points into, and the prompt the run will send."""
@@ -147,7 +126,7 @@ def load_inputs(snapshot_target: str = "latest", limit: int | None = None,
 
     snapshot_folder = resolve_snapshot_folder(snapshot_target)
     snapshot = load_snapshot(snapshot_folder)
-    resolved, entry = resolve_corpus(snapshot)
+    resolved, entry = resolve_snapshot_corpus(snapshot)
     recipes = json.load(open(resolved.path))
 
     primaries = pool

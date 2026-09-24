@@ -83,7 +83,7 @@ def run(args: argparse.Namespace) -> int:
     corpus_path, prompts_path = resolve_paths(args.output)
     type_counts = _parse_types(args.types)
 
-    from src.rag.data.prompts_drafter.selection import load_recipes
+    from src.rag.data.drafter_common import load_recipes
     recipes = load_recipes(corpus_path)
     if not recipes:
         raise ValueError(f"no recipes in {corpus_path}")

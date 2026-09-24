@@ -61,12 +61,6 @@ def load_prompts(prompts_path: Path) -> list[dict[str, Any]]:
         return [json.loads(line) for line in f if line.strip()]
 
 
-def load_recipes(recipes_path: Path) -> list[Recipe]:
-    """Read the cleaned-recipe corpus from disk."""
-    with recipes_path.open() as f:
-        return [Recipe(**r) for r in json.load(f)]
-
-
 def _whole_text(recipes_by_id: dict[int, Recipe], recipe_id: int) -> str:
     """Render a whole-recipe chunk for one recipe."""
     for c in _WHOLE_CHUNKER([recipes_by_id[recipe_id]]):

@@ -77,6 +77,21 @@ def resolve_corpus(dataset_key: str, override: str | None) -> dict:
     }
 
 
+def resolve_snapshot_corpus(snapshot):
+    """The registered corpus behind the snapshot's dataset key, and its registry entry.
+
+    The registry entry is read alongside the resolved path so the manifest can
+    carry the size the corpus was registered at, which the resolver does not
+    expose.
+    """
+    paths = SnapshotPaths.from_paths_config({})
+    resolver = LocalDatasetResolver(
+        registry_path=paths.registry_file,
+        registry_get_dataset=registry.get_dataset,
+    )
+    return resolver.resolve(snapshot.dataset_key), registry.get_dataset(paths.registry_file, snapshot.dataset_key)
+
+
 def load_recipes(path: Path) -> dict[int, Recipe]:
     """The cleaned corpus, indexed by recipe id."""
     with path.open() as handle:

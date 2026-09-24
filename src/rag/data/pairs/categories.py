@@ -47,6 +47,8 @@ from typing import Literal
 from ollama import chat
 from pydantic import BaseModel, Field, ValidationError
 
+from .rendering import strip_markdown_fence
+
 logger = logging.getLogger(__name__)
 
 # The pair set this reads and where the labels land. A limited run writes the
@@ -111,16 +113,6 @@ class Label(BaseModel):
     category: Literal["savoury", "sweet", "unresolved"]
     confidence: Literal["high", "medium", "low"]
     evidence: str = Field(min_length=1, max_length=300)
-
-
-def strip_markdown_fence(content: str) -> str:
-    """Drop a leading and trailing ``` fence, which some models add anyway."""
-    text = content.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-    return text.strip()
 
 
 def load_titles(path: Path) -> tuple[dict[int, str], list[dict]]:

@@ -31,12 +31,10 @@ from pathlib import Path
 
 import numpy as np
 
-from ...core.datasets.resolver import LocalDatasetResolver
-from ...core.snapshot import registry
-from ...core.snapshot.paths import SnapshotPaths
 from ...evaluation.harness import load_snapshot, resolve_snapshot_folder
 from ...retrieval.chunker import chunk_recipes
 from ...retrieval.dense.encoder import Encoder
+from .selection import resolve_snapshot_corpus
 
 logger = logging.getLogger(__name__)
 
@@ -67,21 +65,6 @@ def role_for(rank: int) -> str:
     return "band" if rank >= BAND_START else "gap"
 
 
-def resolve_corpus(snapshot):
-    """The registered corpus behind the snapshot's dataset key, and its registry entry.
-
-    The registry entry is read alongside the resolved path so the manifest can
-    carry the size the corpus was registered at, which the resolver does not
-    expose.
-    """
-    paths = SnapshotPaths.from_paths_config({})
-    resolver = LocalDatasetResolver(
-        registry_path=paths.registry_file,
-        registry_get_dataset=registry.get_dataset,
-    )
-    return resolver.resolve(snapshot.dataset_key), registry.get_dataset(paths.registry_file, snapshot.dataset_key)
-
-
 def load_space(snapshot_target: str = "latest", limit: int | None = None) -> dict:
     """The corpus, the encoder's identity, and one whole-recipe vector per recipe.
 
@@ -89,7 +72,7 @@ def load_space(snapshot_target: str = "latest", limit: int | None = None) -> dic
     reused while the cache still belongs to the same corpus and the same encoder.
     """
     snapshot = load_snapshot(resolve_snapshot_folder(snapshot_target))
-    resolved, entry = resolve_corpus(snapshot)
+    resolved, entry = resolve_snapshot_corpus(snapshot)
     encoder_cfg = snapshot.base_config["encoder"]
     recipes = json.load(open(resolved.path))
     fingerprints = (encoder_cfg["model_id"], resolved.checksum)

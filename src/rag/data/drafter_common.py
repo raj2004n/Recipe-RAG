@@ -2,15 +2,18 @@
 
 Both ``scripts/draft_prompts.py`` (full fresh draft) and
 ``scripts/backfill_prompts.py`` (targeted append) need the same encoder
-constructor, the same drafter-config kwargs, and the same corpus/output
-path resolution. This module is the single source of truth for those bits
-so the two scripts can stay focused on their orchestration differences.
+constructor, the same drafter-config kwargs, the same corpus/output path
+resolution, and the same read of the cleaned corpus into ``Recipe`` objects.
+This module is the single source of truth for those bits so the two scripts
+can stay focused on their orchestration differences.
 """
 
+import json
 from pathlib import Path
 
 from ..core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
 from ..retrieval.dense.encoder import Encoder
+from .preprocessor import Recipe
 
 
 _DRAFTER_CONFIG_KEY = "prompts_drafter"
@@ -55,3 +58,9 @@ def resolve_paths(output: str | None = None) -> tuple[Path, Path]:
     prompts_path = Path(output or DATA_PATHS["eval_prompts"])
     prompts_path.parent.mkdir(parents=True, exist_ok=True)
     return corpus_path, prompts_path
+
+
+def load_recipes(recipes_path: Path) -> list[Recipe]:
+    """Read the cleaned-recipe corpus from disk."""
+    with recipes_path.open() as f:
+        return [Recipe(**r) for r in json.load(f)]
