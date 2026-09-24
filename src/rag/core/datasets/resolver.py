@@ -10,10 +10,11 @@ and exits with code 2.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+from ..checksum import file_checksum
 
 
 class MissingDatasetError(LookupError):
@@ -80,7 +81,7 @@ class LocalDatasetResolver:
             )
 
         registered_checksum = entry.get("checksum", "")
-        actual_checksum = _sha256(path)
+        actual_checksum = file_checksum(path)
         if registered_checksum and actual_checksum != registered_checksum:
             raise ChecksumMismatchError(
                 f"Dataset {key!r} at {path} has checksum {actual_checksum} "
@@ -101,13 +102,3 @@ class LocalDatasetResolver:
         except (MissingDatasetError, ChecksumMismatchError):
             return False
         return True
-
-
-def _sha256(path: Path) -> str:
-    """Compute the SHA-256 of a file, prefixed with `sha256:` to match the
-    registry's checksum format."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return f"sha256:{h.hexdigest()}"

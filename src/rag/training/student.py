@@ -51,7 +51,8 @@ from peft import LoraConfig, get_peft_model
 from torch.utils.checkpoint import checkpoint
 from transformers import AutoModelForCausalLM
 
-from ..data.pairs import file_checksum, write_manifest
+from ..core.checksum import file_checksum
+from ..data.pairs import write_manifest
 from ..data.preprocessor import Recipe
 from ..data.source_block import user_message
 from ..evaluation.harness import begin_mlflow_run

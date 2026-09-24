@@ -3,7 +3,8 @@
 The registry's `datasets` section maps a dataset key to its location,
 checksum, and size. A dataset key is a stable identifier the snapshot's
 metadata carries so the inference side can find the dataset that was used
-to build it.
+to build it. The key is derived from the file's name and the first eight
+characters of its checksum.
 
 Registering is idempotent: registering the same file (by checksum) twice
 returns the existing key. A different file at the same path gets a new key
@@ -12,22 +13,11 @@ because its checksum differs.
 
 from __future__ import annotations
 
-import hashlib
 import time
 from pathlib import Path
 
+from ..checksum import file_checksum
 from ..snapshot import registry
-
-
-def _file_checksum_and_size(path: Path) -> tuple[str, int]:
-    """Compute SHA-256 and total size of a file."""
-    h = hashlib.sha256()
-    size = 0
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-            size += len(chunk)
-    return f"sha256:{h.hexdigest()}", size
 
 
 def _derive_key(path: Path, checksum: str) -> str:
@@ -60,7 +50,8 @@ def register_dataset(
     if not path.is_file():
         raise FileNotFoundError(f"Cannot register dataset: {path} is not a file")
 
-    checksum, size = _file_checksum_and_size(path)
+    checksum = file_checksum(path)
+    size = path.stat().st_size
 
     existing = registry.list_datasets(registry_file)
     for key, entry in existing.items():

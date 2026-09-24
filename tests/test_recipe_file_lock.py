@@ -73,10 +73,3 @@ def test_concurrent_lock_blocks(tmp_path: Path):
         t.join(timeout=2.0)
 
     assert results == ["blocked"]
-
-
-def test_sha256_of_matches_format(tmp_path: Path):
-    recipes = _make_recipes(tmp_path)
-    digest = lifecycle.sha256_of(recipes)
-    assert digest.startswith("sha256:")
-    assert len(digest.split(":", 1)[1]) == 64  # SHA-256 hex is 64 chars

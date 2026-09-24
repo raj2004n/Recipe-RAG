@@ -14,8 +14,8 @@ from src.rag.core.snapshot.paths import SnapshotPaths
 
 def _seed_registry_with_dataset(tmp_path, *, dataset_path, checksum):
     """Write a registry file that points at dataset_path with the given
-    checksum. The resolver's `_sha256` will recompute and detect drift
-    when the file on disk does not match."""
+    checksum. The resolver will recompute the file's checksum and detect
+    drift when what is on disk does not match."""
     snapshots_dir = tmp_path / "snapshots"
     registry_file = snapshots_dir / "registry.json"
     registry_module.upsert_dataset(

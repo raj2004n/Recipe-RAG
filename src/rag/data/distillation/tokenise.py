@@ -17,6 +17,7 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
+from ...core.checksum import file_checksum
 from ...training.student import (
     CHAT_TEMPLATE,
     EMPTY_REASONING,
@@ -33,7 +34,6 @@ from ..pairs.selection import (
     resolve_corpus,
 )
 from ..source_block import user_message
-from .manifest import file_checksum
 from .selection import check_provenance, load_answers, load_split, newest_split
 from .types import (
     ANSWERS_JSONL,

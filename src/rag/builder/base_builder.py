@@ -21,7 +21,9 @@ module-level path singleton.
 from abc import ABC, abstractmethod
 import json
 import logging
+from pathlib import Path
 
+from ..core.checksum import file_checksum
 from ..core.snapshot.paths import SnapshotPaths
 from ..core.snapshot import lifecycle
 
@@ -41,9 +43,8 @@ def _log_dataset_identity(stage: str, paths: SnapshotPaths, recipes_path=None) -
     key = metadata.get("dataset_key", "<unset>")
 
     if recipes_path is not None:
-        from pathlib import Path
         try:
-            checksum = lifecycle.sha256_of(Path(recipes_path))
+            checksum = file_checksum(Path(recipes_path))
         except OSError as e:
             checksum = f"<unreadable: {e}>"
         logger.info(

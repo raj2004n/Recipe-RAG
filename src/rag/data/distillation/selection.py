@@ -16,7 +16,7 @@ import logging
 from collections import Counter
 from pathlib import Path
 
-from .manifest import file_checksum
+from ...core.checksum import file_checksum
 from .types import EXPECTED_SPLIT, OUTPUT_DIR
 
 logger = logging.getLogger(__name__)

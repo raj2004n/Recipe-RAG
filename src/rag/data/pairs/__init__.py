@@ -20,6 +20,6 @@ them, the same way the drafter packages are entered.
 """
 
 from .design import design_prompts
-from .manifest import file_checksum, write_manifest
+from .manifest import write_manifest
 
-__all__ = ["design_prompts", "file_checksum", "write_manifest"]
+__all__ = ["design_prompts", "write_manifest"]

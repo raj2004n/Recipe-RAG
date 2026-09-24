@@ -31,7 +31,8 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from ..data.pairs import file_checksum, write_manifest
+from ..core.checksum import file_checksum
+from ..data.pairs import write_manifest
 from ..training.student import EMPTY_REASONING
 from .generator_evaluator import structural_checks
 from .harness import begin_mlflow_run, build_judge, judge_config

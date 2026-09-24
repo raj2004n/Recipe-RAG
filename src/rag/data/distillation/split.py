@@ -23,8 +23,9 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ...core.checksum import file_checksum
 from ..pairs import write_manifest
-from .manifest import file_checksum, write_jsonl
+from .manifest import write_jsonl
 from .selection import load_answers, load_categories
 from .types import (
     ANSWERS_JSONL,

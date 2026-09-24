@@ -16,7 +16,6 @@ the identity is captured at the start of the build.
 
 import contextlib
 import fcntl
-import hashlib
 import json
 import logging
 import os
@@ -29,17 +28,6 @@ from .paths import SnapshotPaths
 from . import registry
 
 logger = logging.getLogger(__name__)
-
-_CHUNK_SIZE = 1024 * 1024
-
-
-def sha256_of(path: Path) -> str:
-    """Return `sha256:<hex>` for the file at `path`."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for block in iter(lambda: f.read(_CHUNK_SIZE), b""):
-            h.update(block)
-    return f"sha256:{h.hexdigest()}"
 
 
 @contextlib.contextmanager
