@@ -11,15 +11,14 @@ those sits the labelling pass, which reads the pair set's titles and marks each
 recipe savoury or sweet, and the reviewed calls that settle the titles the pass
 abstained on.
 
-The re-exports below are the surface a caller outside the package should use.
-The pool, the chooser, the answer and the labelling pass are reached through
-their own module instead, so a caller that wants the manifest helpers and
-nothing else does not pay for the encoder the pool pass reads the corpus with.
-The selection loaders are reached through ``.selection`` by the passes that need
-them, the same way the drafter packages are entered.
+Only the manifest write is re-exported. The pool, the chooser, the design pass,
+the answer pass and the labelling pass are each reached through their own module,
+so a caller that wants the manifest helper and nothing else does not pay for what
+a pass loads on the way in. The selection loaders are reached through
+``.selection`` by the passes that need them, the same way the drafter packages
+are entered.
 """
 
-from .design import design_prompts
 from .manifest import write_manifest
 
-__all__ = ["design_prompts", "write_manifest"]
+__all__ = ["write_manifest"]
