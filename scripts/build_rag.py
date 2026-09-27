@@ -25,6 +25,13 @@ logger = logging.getLogger(__name__)
 _MLFLOW_TRACKING_URI = os.environ.get("RECIPE_RAG_MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
 _MLFLOW_EXPERIMENT = "rag-builds"
 
+# Where the build experiment keeps its artifacts. MLflow pins an experiment's
+# artifact location when the experiment is created and has no supported way to
+# change it afterwards, so the location is given here rather than left to the
+# default: a store used locally gets a local root, and a build then writes its
+# artifacts without an MLflow server needing to be reachable.
+_MLFLOW_ARTIFACT_ROOT = Path(__file__).resolve().parents[1] / "mlartifacts" / "rag-builds"
+
 _DVC_STAGES = [
     "set_strategy",
     "chunk",
@@ -94,6 +101,56 @@ def _resolve_recipes_path() -> Path:
     )
     resolved = resolver.resolve(key)
     return Path(resolved.path)
+
+
+def _prepare_experiment() -> None:
+    """Create the build experiment with a local artifact root if it is missing.
+
+    MLflow fixes an experiment's artifact location at creation and offers no
+    supported API for changing it later, so an experiment created while a
+    tracking server was in use carries an `mlflow-artifacts:` location that only
+    that server resolves. A build logging to the local store then cannot write
+    artifacts at all. Creating the experiment here gives a fresh store the local
+    root; an existing experiment still pointing at a server is reported rather
+    than repaired, because rewriting the tracking store is not something a build
+    should do behind the operator's back.
+    """
+    experiment = mlflow.get_experiment_by_name(_MLFLOW_EXPERIMENT)
+    if experiment is None:
+        mlflow.create_experiment(_MLFLOW_EXPERIMENT, artifact_location=str(_MLFLOW_ARTIFACT_ROOT))
+        return
+    location = experiment.artifact_location
+    if location.startswith("mlflow-artifacts:") and not _MLFLOW_TRACKING_URI.startswith("http"):
+        logger.warning(
+            "experiment %s stores artifacts at %s, which only an MLflow server resolves, so this "
+            "run cannot write artifacts. Repoint it at %s before the next build.",
+            _MLFLOW_EXPERIMENT, location, _MLFLOW_ARTIFACT_ROOT,
+        )
+
+
+def _snapshot_metrics(paths) -> dict[str, float]:
+    """Counts and sizes describing what the build wrote, read back off disk.
+
+    The numbers come from the sealed folder rather than from the builder, so a
+    run's history describes the snapshot as it actually exists. Chunk counts are
+    recorded per chunk set, and the file and byte totals cover the folder and its
+    index directory.
+    """
+    metrics: dict[str, float] = {}
+
+    for chunk_set in json.loads((paths.chunks / "chunk_sets.json").read_text()):
+        metrics[f"counts.chunks.{chunk_set['name']}"] = len(chunk_set["chunks"])
+
+    for label, manifest in (("dense", "indexed_chunk_sets.json"), ("bm25", "bm25_index_chunk_sets.json")):
+        metrics[f"counts.indexes.{label}"] = len(json.loads((paths.index / manifest).read_text()))
+
+    files = [path for path in paths.building.rglob("*") if path.is_file()]
+    metrics["counts.files"] = len(files)
+    metrics["bytes.snapshot"] = sum(path.stat().st_size for path in files)
+    metrics["bytes.index"] = sum(
+        path.stat().st_size for path in paths.index.rglob("*") if path.is_file()
+    )
+    return metrics
 
 
 def set_strategy(recipes_path: Path | None = None, dataset_name: str | None = None) -> None:
@@ -166,6 +223,7 @@ def finalise_build() -> None:
 
 def build_rag(recipes_path: Path | None = None, dataset_name: str | None = None):
     mlflow.set_tracking_uri(_MLFLOW_TRACKING_URI)
+    _prepare_experiment()
     mlflow.set_experiment(_MLFLOW_EXPERIMENT)
 
     strategy = BASE_CONFIG["rag"]["strategy"]
@@ -180,19 +238,37 @@ def build_rag(recipes_path: Path | None = None, dataset_name: str | None = None)
             logger.info("running dvc stage %s", stage)
             subprocess.run(["dvc", "repro", stage], check=True)
         duration = time.time() - t0
-        mlflow.log_metric("build.duration_sec", duration)
         logger.info("build finished in %.1fs", duration)
 
-        paths = get_snapshot_paths(versioned_name=_current_versioned_name())
-        mlflow.log_param("snapshot_name", paths.building.name)
-        mlflow.log_artifact(str(paths.building / "metadata.json"))
+        # The build has succeeded by the time anything below runs, so a tracking
+        # failure is a gap in the run's history rather than a failed build. One
+        # guard around the whole of it keeps the run FINISHED and warns, instead
+        # of leaving a sealed snapshot behind by a run marked FAILED.
         try:
-            mlflow.log_artifact(str(paths.building), artifact_path="snapshot")
+            paths = get_snapshot_paths(versioned_name=_current_versioned_name())
+            dataset_key = _active_dataset_key()
+            dataset = registry.get_dataset(_registry_file(), dataset_key) or {}
+
+            # The dataset key and its checksum are read after the stages have
+            # run, because set_strategy is what registers the dataset and pins
+            # the key into the build's metadata.
+            mlflow.log_param("snapshot_name", paths.building.name)
+            mlflow.log_param("dataset_key", dataset_key)
+            mlflow.log_param("dataset.checksum", dataset.get("checksum", ""))
+            mlflow.log_metric("build.duration_sec", duration)
+            mlflow.log_metrics(_snapshot_metrics(paths))
+
+            # metadata.json names the build and the dataset it came from, and the
+            # sealed configs are the copies the service itself reads. Those are
+            # the artifacts worth carrying. The whole folder is not copied: 172 MB
+            # of encoded vectors and index files already live in the snapshot and
+            # in the DVC cache, and the artifact store is not a third home for
+            # them.
+            mlflow.log_artifact(str(paths.metadata))
+            for config_file in sorted(paths.configs.glob("*.yaml")):
+                mlflow.log_artifact(str(config_file))
         except Exception as e:
-            logger.warning("failed to log snapshot artifact: %s", e)
-        mlflow.log_artifact("configs/base_config.yaml")
-        mlflow.log_artifact("configs/paths_config.yaml")
-        mlflow.log_artifact("configs/prompts_config.yaml")
+            logger.warning("build %s sealed but could not be recorded: %s", run_name, e)
 
 
 def test_build_rag(recipes_path: Path | None = None, dataset_name: str | None = None):
