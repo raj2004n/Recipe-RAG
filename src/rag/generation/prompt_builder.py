@@ -1,14 +1,22 @@
-""" 
-Dense Pipeline: dense retrieval, prompt, generate.
+"""Build the (system, user) prompt pair the generator answers from.
 
+Whole recipes and whole-recipe chunk text are two different starting points, so the pair is built two
+ways. The hybrid path renders recipes into the student's own prompt: the system line the snapshot's
+prompts config carries and a user turn carrying the recipes and the request, laid out by the renderer
+the training rows were built from. The dense path has no recipe objects to render, because a
+whole-recipe chunk carries the formatted text itself, so it fills the persona template from
+configs/prompts_config.yaml with the text it retrieved.
 
-Note to self: rename to baseline or naive or something in the future, since
-this is a very basic pipeline. 
+Either way the context is held to a token budget: a recipe that would take the turn past the ceiling
+ends the list, so what a prompt carries is always a prefix of the ranked recipes.
 """
 
 
 from transformers import AutoTokenizer
 from ..retrieval.dense.retriever import RetrievalResult
+from ..data.preprocessor import Recipe
+from ..data.source_block import labelled_blocks
+from ..data.student_prompt import student_prompt, student_system
 
 
 GENERATION_PERSONA = "generation"
@@ -85,43 +93,46 @@ class PromptBuilder:
         return system_prompt, user_prompt
 
 
+    def _kept_blocks(self, recipes: list[dict]) -> list[str]:
+        """The rendered recipe blocks that fit the context budget, in rank order.
+
+        The recipes arrive as corpus rows, the shape a pipeline indexes and an evaluator holds, so
+        each is read as a Recipe before it is rendered. A block that would take the context past its
+        ceiling ends the list rather than being trimmed, so the labels a turn carries always run from
+        the first ranked recipe onward.
+        """
+        kept = []
+        current_tokens = 0
+
+        blocks = labelled_blocks([Recipe(**row) for row in recipes])
+        for index, block in enumerate(blocks, start=1):
+            tokens = self.tokenizer.encode(block)
+            if current_tokens + len(tokens) > self.max_context_tokens:
+                print(f"Max context tokens exceeded, breaking at recipe {index}")
+                break
+
+            kept.append(block)
+            current_tokens += len(tokens)
+
+        return kept
+
+
     def build_prompt_from_recipes(
         self,
         query: str,
         recipes: list[dict],
-        recipe_to_string,
     ) -> tuple[str, str]:
-        """Build the (system, user) prompt pair from whole recipe dicts.
+        """Build the (system, user) prompt pair from whole recipes, as the student was trained.
 
         Used by HybridPipeline after rerank: chunks are resolved back to
-        whole recipes before the prompt is built, so the LLM gets full
-        recipes instead of fragments.
-
-        `recipe_to_string` is injected rather than imported so this module
-        stays decoupled from the data layer and the same helper can be
-        reused by notebooks.
+        whole recipes before the prompt is built, so the model gets full
+        recipes instead of fragments. The pair is the student's own rather than a persona's, since
+        it is the prompt the adapter in the snapshot was fitted on, and the request is the whole of
+        the user turn rather than an instruction wrapped around the recipes. Its system line is read
+        from the snapshot's prompts config, which is the copy the build sealed.
         """
-        context_parts = []
-        current_tokens = 0
-
-        for i, recipe in enumerate(recipes):
-            text = recipe_to_string(recipe)
-
-            tokens = self.tokenizer.encode(text)
-            if current_tokens + len(tokens) > self.max_context_tokens:
-                print(f"Max context tokens exceeded, breaking at recipe {i}")
-                break
-
-            context_parts.append(text)
-            current_tokens += len(tokens)
-
-        context = "\n\n".join(context_parts)
-
-        user_prompt = self._persona_template(
-            GENERATION_PERSONA, "generate", "user"
-        ).format(context=context, query=query)
-        system_prompt = self._persona_template(
-            GENERATION_PERSONA, "generate", "system"
+        return student_prompt(
+            student_system(self.prompt_templates),
+            self._kept_blocks(recipes),
+            query,
         )
-
-        return system_prompt, user_prompt

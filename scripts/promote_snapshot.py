@@ -114,6 +114,10 @@ def print_report(folder: str, run, gate: dict, checks: list) -> None:
     if params.get("judge_model_id"):
         print(f"  judge:         {params.get('judge_model_id')} "
               f"(temp {params.get('judge_temperature', 'n/a')})")
+    if params.get("generator_model_id"):
+        adapter = params.get("generator_adapter_path") or "none"
+        print(f"  generator:     {params.get('generator_model_id')} "
+              f"(adapter {adapter})")
     print(f"  caveat:        {caveat}")
     print()
 

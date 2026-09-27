@@ -95,7 +95,6 @@ class EndToEndEvaluator:
         system, user = self.prompt_builder.build_prompt_from_recipes(
             query=query,
             recipes=recipes,
-            recipe_to_string=recipe_to_string,
         )
         response = self.generator.generate(system, user)
 

@@ -111,6 +111,7 @@ def main():
             "snapshot_name": folder,
             "dataset_key": snapshot.dataset_key,
             "generator_model_id": gen_cfg["model_id"],
+            "generator_adapter_path": gen_cfg.get("adapter_path") or "",
             "judge_model_id": judge_cfg["model_id"],
             "judge_temperature": judge_cfg["temperature"],
             "judge_calls": judge_cfg["judge_calls"],

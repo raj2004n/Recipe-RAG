@@ -5,15 +5,10 @@ student is trained to answer the same way from the same pair: a one line system 
 turn the teacher read, and the teacher's answer as the target. This file holds that prompt and the
 turn it renders into, which is the whole of the student's side of a training row.
 
-The system prompt is a single line because the shape and the voice of an answer are carried by the
-targets rather than asked for in words. A sentence that reads identically in every row tells the
-model nothing about what separates a good answer from a poor one, since it never varies with the
-answer, while every target shows the shape directly. Fine-tuning is what moves style into the
-weights, so instructions about style are the part of a prompt a student needs least.
-
-The user turn is rendered by the same function the pair prompts were designed against, so the
-student reads the two recipes exactly as the teacher did, labels and all, with the request
-untouched at the end of the turn.
+The system prompt and the user turn come from src/rag/data/student_prompt.py rather than being held
+here. The service renders a request's prompt through that same definition, so the row a student is
+trained on and the request it answers cannot drift apart, and the reasoning behind the one line
+system prompt is written down in that one place.
 
 The chat template is written out here rather than read from the checkpoint. The serving path
 renders prompts with the tokenizer built for the snapshot's generator model, which is gemma, and
@@ -52,19 +47,20 @@ from torch.utils.checkpoint import checkpoint
 from transformers import AutoModelForCausalLM
 
 from ..core.checksum import file_checksum
+from ..core.config import PROMPTS_CONFIG
 from ..data.pairs import write_manifest
 from ..data.preprocessor import Recipe
-from ..data.source_block import user_message
+from ..data.source_block import labelled_blocks
+from ..data.student_prompt import student_prompt, student_system
 from ..evaluation.harness import begin_mlflow_run
 
 logger = logging.getLogger(__name__)
 
-# The whole of the student's system prompt. Kept to one line for the reason the module docstring
-# gives: the targets carry the style, and a constant line carries nothing.
-STUDENT_SYSTEM = "You are a recipe developer who writes for home cooks."
-
 # The checkpoint the student starts from, before any adapter is attached.
 STUDENT_MODEL_ID = "Qwen/Qwen3.5-0.8B"
+
+# The line the student opens with, read from the live prompts config the service also reads.
+STUDENT_SYSTEM = student_system(PROMPTS_CONFIG["template"])
 
 # Qwen3.5's generation prompt closes an empty reasoning block before the answer begins, so the
 # answer starts straight after it. The angle brackets are escaped so the tag cannot be read as
@@ -113,9 +109,10 @@ MLFLOW_EXPERIMENT = "rag-student"
 
 def student_messages(primary: Recipe, partner: Recipe, request: str) -> list[dict[str, str]]:
     """The messages a training row's prompt is made of, without the target."""
+    system, user = student_prompt(STUDENT_SYSTEM, labelled_blocks([primary, partner]), request)
     return [
-        {"role": "system", "content": STUDENT_SYSTEM},
-        {"role": "user", "content": user_message(primary, partner, request)},
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
     ]
 
 

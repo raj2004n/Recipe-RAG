@@ -31,15 +31,15 @@ hybrid:
     max_length: 512
     top_n: 10
   prompt:
-    final_top_k: 3         # recipes after dedupe-by-recipe-id
+    final_top_k: 2         # recipes after dedupe-by-recipe-id
 
 generator:
-  model_id: google/gemma-3-1b-it
+  model_id: Qwen/Qwen3.5-0.8B
   max_input_tokens: 5000
   max_new_tokens: 2000
   truncation: true
   return_tensors: pt
-  adapter_path: null
+  adapter_path: artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02
 
 evaluation dataset generator:
   model_id: gemma3:4b

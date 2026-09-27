@@ -17,7 +17,6 @@ from ..retrieval.hybrid.fuser import ChunkFuser, FusedChunk
 from ..retrieval.hybrid.reranker import CrossEncoderReranker
 from ..generation.prompt_builder import PromptBuilder
 from ..generation.generator import Generator
-from ..data.recipe_format import recipe_to_string
 from transformers import AutoTokenizer
 from ..core.snapshot import Snapshot
 
@@ -142,7 +141,6 @@ class HybridPipeline:
         system, user = self.prompt_builder.build_prompt_from_recipes(
             query=query,
             recipes=recipes,
-            recipe_to_string=recipe_to_string,
         )
         answer = self.load_generator().generate(system, user)
 
@@ -181,7 +179,6 @@ class HybridPipeline:
         prompts = self.prompt_builder.build_prompt_from_recipes(
             query=query,
             recipes=recipes,
-            recipe_to_string=recipe_to_string,
         )
 
         return recipes, "", prompts

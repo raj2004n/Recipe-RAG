@@ -1,8 +1,9 @@
-"""Render retrieved recipes into the source block the teacher is handed.
+"""Render retrieved recipes into the source block a model is handed.
 
 A training row shows a teacher model two recipes and the request they were chosen for, and asks it
 to invent one new dish out of them. This module renders the first half of that row: a recipe's
-label, its name, its servings, and the two working sections.
+label, its name, its servings, and the two working sections. The count is the caller's, so a served
+turn carrying three recipes is laid out by the same code as a two-recipe training turn.
 
 Ingredients and steps come from the chunker's own formatters, so the teacher reads the same text
 the sparse index is built from, and the same text the pair prompt was designed against. Everything
@@ -35,18 +36,29 @@ def source_block(label: str, recipe: Recipe) -> str:
     return "\n".join(lines)
 
 
-def user_message(primary: Recipe, partner: Recipe, request: str) -> str:
-    """The teacher's user turn: both recipes, then the request they were chosen for.
+def labelled_blocks(recipes: list[Recipe]) -> list[str]:
+    """One block per recipe, each labelled by its position in the turn it will be read in."""
+    return [
+        source_block(f"RECIPE {index}", recipe)
+        for index, recipe in enumerate(recipes, start=1)
+    ]
+
+
+def request_message(blocks: list[str], request: str) -> str:
+    """A user turn assembled from rendered blocks: each one in order, then the request.
 
     The recipes come first because a request refers back to them by position, and the labels are
     what make "the first recipe" unambiguous. The request goes in untouched, since it is the user
-    turn the student is being trained to answer.
+    turn the model is being asked to answer. A turn is laid out by how many blocks it was handed and
+    nothing else, so a pair of training sources and a longer serving context come out of one code
+    path, and a caller that drops a block drops it from the end.
     """
-    return (
-        f"{source_block('RECIPE 1', primary)}\n\n"
-        f"{source_block('RECIPE 2', partner)}\n\n"
-        f"{request}"
-    )
+    return "\n\n".join([*blocks, request])
+
+
+def user_message(primary: Recipe, partner: Recipe, request: str) -> str:
+    """The teacher's user turn: both recipes, then the request they were chosen for."""
+    return request_message(labelled_blocks([primary, partner]), request)
 
 
 def _servings_text(servings: float) -> str:

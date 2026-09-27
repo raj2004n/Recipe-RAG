@@ -27,6 +27,7 @@ def info(request: Request):
         "models": {
             "encoder": cfg.get("encoder", {}).get("model_id"),
             "generator": cfg.get("generator", {}).get("model_id"),
+            "generator_adapter": cfg.get("generator", {}).get("adapter_path"),
         },
         "chunk_sets": {
             "dense": [cs.name for cs in snapshot.indexed_chunk_sets],

@@ -68,10 +68,10 @@ def _serving_k(snapshot) -> int:
 
 
 def _retrieve_recipes(pipeline, snapshot, recipes_by_id):
-    """A retrieve callable serving recipe dicts in rank order for the strategy.
+    """A retrieve callable serving whole recipes in rank order for the strategy.
 
     Hybrid's debug_query already resolves chunks to whole recipes; dense
-    returns RetrievalResult objects, which are resolved back to recipe dicts
+    returns RetrievalResult objects, which are resolved back to recipes
     through the registered corpus so the two strategies feed the evaluator,
     and therefore the judge context and the prompt, identical shapes.
     """
@@ -150,6 +150,7 @@ def main():
             "dataset_key": snapshot.dataset_key,
             "serving_k": k,
             "generator_model_id": gen_cfg["model_id"],
+            "generator_adapter_path": gen_cfg.get("adapter_path") or "",
             "judge_model_id": judge_cfg["model_id"],
             "judge_temperature": judge_cfg["temperature"],
             "judge_calls": judge_cfg["judge_calls"],

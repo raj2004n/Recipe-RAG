@@ -1,67 +1,19 @@
+# The prompt a served student answers from, and the ceiling on the turn it reads.
+# A snapshot seals a copy of this file, so the service reads the sealed copy.
+
 settings:
-  model_name: google/gemma-3-1b-it
+  # The ceiling on the recipes a user turn carries. It bounds the turn the prompt
+  # renderer assembles: a recipe that would take the turn past it ends the list,
+  # so what is carried is always a prefix of the ranked recipes.
   max_context_tokens: 4000
 
 template:
-  # each persona is designed for a specific objective.
-  # e.g. suggest a recipe, generation a recipe, etc.
-  # under each persona, 'generate' produces the response. The judge prompts
-  # for the generation eval live in configs/eval_system_messages.yaml, read
-  # from the live config at eval time; 'judge' stanzas here are unused by the
-  # eval harness.
   personas:
-    # Persona: suggest existing recipes that match the query (original objective).
-    suggestion:
+    # The fine-tuned student, served the prompt it was trained on. Only the system
+    # line lives here. Its user turn is the recipes and the request assembled by
+    # the renderer, so there is no user template to fill, and the value is quoted
+    # rather than a block scalar because a trailing newline would change the
+    # prompt the adapter was fitted on.
+    student:
       generate:
-        system: |
-          Use the RELEVANT RECIPES and USER QUERY to answer the question.
-        user: |
-          RELEVANT RECIPES: {context}
-
-          USER QUERY: {query}
-      judge:
-        system: |
-          You are a judge for a recipe RAG model.
-
-          Score the following:
-          1. Query relevance (0 - 2)
-          0 = irrelevant
-          1 = partially relevant
-          2 = relevant
-
-          2. Faithfulness (0 - 2)
-          0 = irrelevant
-          1 = partially relevant
-          2 = relevant
-
-          Return JSON:
-          {{
-              "query_relevance": int,
-              "faithfulness": int
-          }}
-        user: |
-          User Query: {query}
-
-          Retrieved Recipe:
-          Name: {recipe["name"]}
-          Ingredients: {ingredients}
-          Instructions: {recipe["instructions"]}
-
-          Response: {response}
-
-    generation:
-      generate:
-        system: |
-          You are a recipe developer. Using the REFERENCE RECIPES as inspiration
-          for techniques, ingredient combinations, and proportions, create a NEW
-          recipe that satisfies the USER REQUEST. Do not reproduce an existing
-          recipe - adapt and combine ideas from the references to produce
-          something new that meets the request's requirements and constraints.
-        user: |
-          REFERENCE RECIPES:
-          {context}
-
-          USER REQUEST: {query}
-
-          Generate a complete recipe: a name, ingredients with amounts, and
-          step-by-step instructions.
+        system: "You are a recipe developer who writes for home cooks."

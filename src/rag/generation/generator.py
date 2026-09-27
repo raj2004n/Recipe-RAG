@@ -1,6 +1,12 @@
+import logging
+from pathlib import Path
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 import torch
+
+logger = logging.getLogger(__name__)
+
 
 class Generator:
     def __init__(
@@ -18,6 +24,15 @@ class Generator:
         self.truncation = truncation
         self.return_tensors = return_tensors
 
+        # The served generator is the base model plus, when one is configured,
+        # a LoRA adapter trained on top of it. Both names are logged so a
+        # serving incident can be traced back to the weights that produced it
+        # rather than only to the checkpoint they were attached to.
+        logger.info(
+            "loading generator %s with adapter %s",
+            model_id, adapter_path or "none",
+        )
+
         # pipeline laods a tokenizer for PromptBuilder, use if there
         if tokenizer is None:
             tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -31,8 +46,12 @@ class Generator:
         )
 
         if adapter_path is not None:
+            if not Path(adapter_path).is_dir():
+                raise FileNotFoundError(
+                    f"adapter_path {adapter_path!r} does not exist"
+                )
             self.model = PeftModel.from_pretrained(
-                self.model, 
+                self.model,
                 adapter_path
             )
         
