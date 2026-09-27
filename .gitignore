@@ -118,8 +118,15 @@ data/eval/.quality_report.json
 mlruns/
 mlartifacts/
 
-# Student adapters and their run manifests, written by src/rag/training/student.py
-artifacts/
+# Student adapters and their run manifests, written by src/rag/training/student.py.
+# The weights stay out of git and the DVC pointer stays in, so the directory itself
+# is not excluded: git will not descend into an excluded directory, which would hide
+# the pointer beneath it. The directories are re-included so git walks down, then the
+# pointer, and the .gitignore dvc writes beside it when it needs one.
+artifacts/**/*
+!artifacts/**/
+!artifacts/**/*.dvc
+!artifacts/**/.gitignore
 
 # DVC auto-manages the contents of snapshots/ via dvc add. Each versioned
 # snapshot folder gets added to .gitignore by dvc; the .dvc pointer files
