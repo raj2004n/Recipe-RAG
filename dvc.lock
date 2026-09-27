@@ -5,12 +5,12 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 268304a0f3d9c2eb27df9b551b032141
-      size: 1010
+      md5: 4699da22d44dc7ebd7af440a470cc396
+      size: 2541
     - path: configs/paths_config.yaml
       hash: md5
-      md5: 4b0001175112d9b3be5f3b963b793ec3
-      size: 407
+      md5: 88450aab8f79de16e18e1b0c70dfc31d
+      size: 1776
   collect:
     cmd: python -m scripts.collect_data
     deps:
@@ -64,8 +64,8 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 268304a0f3d9c2eb27df9b551b032141
-      size: 1010
+      md5: 4699da22d44dc7ebd7af440a470cc396
+      size: 2541
     - path: data/processed/cleaned_recipes.json
       hash: md5
       md5: 8eab36d61aad1983ec16cdcbd871b78f
@@ -75,32 +75,32 @@ stages:
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 268304a0f3d9c2eb27df9b551b032141
-      size: 1010
+      md5: 4699da22d44dc7ebd7af440a470cc396
+      size: 2541
   index:
     cmd: python -m scripts.build_rag --run index
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 268304a0f3d9c2eb27df9b551b032141
-      size: 1010
+      md5: 4699da22d44dc7ebd7af440a470cc396
+      size: 2541
   finalise_build:
     cmd: python -m scripts.build_rag --run finalise_build
     deps:
     - path: configs/base_config.yaml
       hash: md5
-      md5: 268304a0f3d9c2eb27df9b551b032141
-      size: 1010
+      md5: 4699da22d44dc7ebd7af440a470cc396
+      size: 2541
     - path: configs/paths_config.yaml
       hash: md5
-      md5: 4b0001175112d9b3be5f3b963b793ec3
-      size: 407
+      md5: 88450aab8f79de16e18e1b0c70dfc31d
+      size: 1776
     - path: configs/prompts_config.yaml
       hash: md5
-      md5: f4d5beda7c746c7321a48a2510199255
-      size: 3326
+      md5: 4b7cfd04f384b3e1c3ff20dd9b7fd50c
+      size: 913
     - path: src/rag/core/snapshot/
       hash: md5
-      md5: 2f8a39e8009ff97f47e252c9df96ce8b.dir
-      size: 74139
+      md5: d9feb002f6b376bf276fe44af47850f6.dir
+      size: 78909
       nfiles: 14
