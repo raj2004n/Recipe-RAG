@@ -114,8 +114,12 @@ def start_new_build(
     with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2)
 
-    registry.update_target(registry_file, "build_in_progress", name)
+    # The status is written before the target, because a target that names a
+    # folder which is not `building` is dropped on read. The other order would
+    # write the claim while the folder had no status yet, and the next step's
+    # read would drop the claim it had just made.
     registry.update_status(registry_file, name, "building")
+    registry.update_target(registry_file, "build_in_progress", name)
 
     return name
 

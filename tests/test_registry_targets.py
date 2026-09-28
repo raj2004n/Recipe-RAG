@@ -39,7 +39,7 @@ def test_old_target_names_read_under_their_new_names(tmp_path):
     registry_file = tmp_path / "registry.json"
     registry_file.write_text(json.dumps({
         "targets": {"current": "hybrid_1", "latest": "hybrid_1", "baseline": "hybrid_0"},
-        "status": {"hybrid_0": "complete", "hybrid_1": "complete"},
+        "status": {"hybrid_0": "complete", "hybrid_1": "building"},
     }))
 
     assert registry.get_folder_for_target(registry_file, "build_in_progress") == "hybrid_1"
@@ -50,6 +50,41 @@ def test_old_target_names_read_under_their_new_names(tmp_path):
     b = registry.get_folder_for_target(registry_file, "baseline")
     c = registry.get_folder_for_target(registry_file, "latest")
     assert (a, b, c) == (None, None, None)
+
+
+def test_a_legacy_current_that_names_a_sealed_folder_is_dropped(tmp_path):
+    """`current` was never released at seal, so a migrated one can be stale."""
+    registry_file = tmp_path / "registry.json"
+    registry_file.write_text(json.dumps({
+        "targets": {"current": "hybrid_1", "latest": "hybrid_1"},
+        "status": {"hybrid_1": "complete"},
+    }))
+
+    assert registry.get_folder_for_target(registry_file, "build_in_progress") is None
+    assert registry.get_folder_for_target(registry_file, "latest_build") == "hybrid_1"
+
+
+def test_a_build_in_progress_is_dropped_from_the_file_by_the_next_write(tmp_path):
+    registry_file = tmp_path / "registry.json"
+    registry_file.write_text(json.dumps({
+        "targets": {"current": "hybrid_1", "latest": "hybrid_1", "baseline": "hybrid_0"},
+        "status": {"hybrid_0": "complete", "hybrid_1": "complete"},
+    }))
+
+    registry.update_status(registry_file, "hybrid_1", "complete")
+
+    on_disk = json.loads(registry_file.read_text())
+    assert on_disk["targets"] == {"latest_build": "hybrid_1", "serve": "hybrid_0"}
+
+
+def test_a_running_build_in_progress_survives_a_read(tmp_path):
+    registry_file = tmp_path / "registry.json"
+    registry_file.write_text(json.dumps({
+        "targets": {"current": "hybrid_1"},
+        "status": {"hybrid_1": "building"},
+    }))
+
+    assert registry.get_folder_for_target(registry_file, "build_in_progress") == "hybrid_1"
 
 
 def test_the_next_write_persists_the_new_names(tmp_path):
@@ -78,6 +113,26 @@ def test_a_key_already_carrying_its_new_name_wins(tmp_path):
 
 
 # --- releasing build_in_progress -----------------------------------------
+
+
+def test_a_new_build_leaves_a_resolvable_build_in_progress(tmp_path):
+    """The claim a build makes survives its own writes.
+
+    The claim is only kept while the folder it names is `building`, and the
+    status and the target are two separate writes, so the order they go in
+    decides whether the second write's read keeps the first write's claim.
+    """
+    snapshots_dir = tmp_path / "snapshots"
+    registry_file = snapshots_dir / "registry.json"
+    name = lifecycle.start_new_build(
+        snapshots_dir=snapshots_dir,
+        registry_file=registry_file,
+        strategy="hybrid",
+        dataset_key="test-dataset",
+    )
+
+    assert registry.get_folder_for_target(registry_file, "build_in_progress") == name
+    assert registry.get_status_for_folder(registry_file, name) == "building"
 
 
 def test_a_seal_clears_build_in_progress(tmp_path):
@@ -109,6 +164,7 @@ def test_a_seal_leaves_a_build_in_progress_that_names_another_folder(tmp_path):
         dataset_key="test-dataset",
     )
     registry_file = snapshots_dir / "registry.json"
+    registry.update_status(registry_file, "hybrid_newer", "building")
     registry.update_target(registry_file, "build_in_progress", "hybrid_newer")
 
     paths = _paths(snapshots_dir, first)

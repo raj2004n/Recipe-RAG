@@ -127,6 +127,14 @@ def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
 
 def _read_registry(registry_path: Path) -> RegistryData:
     """Read the registry file, migrating legacy shapes to the current one.
+
+    Two invariants are applied on the way out, both of them idempotent so a
+    read never changes what a later read sees. The target keys are renamed to
+    the names that describe their readers, and `build_in_progress` is dropped
+    when the folder it names is not `building`, because a build that has sealed
+    or been abandoned is not in progress. Registries written before either rule
+    existed still carry the keys they violate, so applying them here is also
+    what lets the next write persist the corrected shape.
     """
     if not registry_path.exists():
         return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
@@ -141,9 +149,15 @@ def _read_registry(registry_path: Path) -> RegistryData:
         return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
     migrated = _migrate_legacy(raw)
+    targets = _migrate_target_names(dict(migrated.get("targets", {})))
+    status = dict(migrated.get("status", {}))
+    running = targets.get("build_in_progress")
+    if running and status.get(running) != "building":
+        del targets["build_in_progress"]
+
     return {
-        "targets": _migrate_target_names(dict(migrated.get("targets", {}))),
-        "status": dict(migrated.get("status", {})),
+        "targets": targets,
+        "status": status,
         "datasets": dict(migrated.get("datasets", {})),
         "promoted": dict(migrated.get("promoted", {})),
     }
