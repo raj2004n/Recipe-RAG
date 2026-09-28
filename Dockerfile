@@ -40,8 +40,15 @@ ENV HF_HOME=/models
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# the venv's bin/python symlinks to the system python, so the runtime needs it
-RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/*
+# the venv's bin/python symlinks to the system python, so the runtime needs it.
+# gcc is a run-time need rather than a build one: the Qwen3.5 modeling file
+# imports flash-linear-attention, whose triton imports compile a small C shim on
+# first use. Without a compiler that import fails, and transformers reports the
+# failure as a missing model class, which buries the real cause. The shim includes
+# stdlib.h and dlfcn.h, which come from libc6-dev, and Python.h, which comes from
+# python3-dev. Triton carries cuda.h itself and the toolkit supplies libcuda, so
+# the CUDA development packages are not needed.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 gcc libc6-dev python3-dev && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv
 
