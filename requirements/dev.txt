@@ -8,6 +8,13 @@ pytest-asyncio==1.4.0
 ruff==0.14.7
 black==25.12.0
 
+# The build and promotion CLIs import mlflow at module load, and the promotion
+# and registry tests collect those modules. Collecting them needs the tracking
+# API and nothing else, which mlflow-skinny carries whole, so the flavor and
+# server halves of mlflow are not pulled in here. The served image never imports
+# it, so it stays out of serve.txt.
+mlflow-skinny==3.14.0
+
 # The eval judge and the answer/prompt drafters import ollama at module load,
 # and the eval tests collect those modules. The served image never imports it,
 # so it stays out of serve.txt.
