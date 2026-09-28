@@ -14,8 +14,8 @@ from src.rag.core.snapshot.paths import SnapshotPaths
 
 def _seed_registry_with_dataset(tmp_path, *, dataset_path, checksum):
     """Write a registry file that points at dataset_path with the given
-    checksum. The resolver's `_sha256` will recompute and detect drift
-    when the file on disk does not match."""
+    checksum. The resolver will recompute the file's checksum and detect
+    drift when what is on disk does not match."""
     snapshots_dir = tmp_path / "snapshots"
     registry_file = snapshots_dir / "registry.json"
     registry_module.upsert_dataset(
@@ -74,7 +74,7 @@ def test_lifespan_exits_2_when_dataset_missing(tmp_path, monkeypatch):
         indexed_chunk_sets = []
         bm25_indexed_chunk_sets = []
 
-    monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="latest": _Stub())
+    monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="serve": _Stub())
 
     monkeypatch.setenv("RECIPE_RAG_API_KEYS", '{"demo-public-2026": "public"}')
     app = app_module.create_app()
@@ -127,7 +127,7 @@ def test_lifespan_exits_2_on_checksum_drift(tmp_path, monkeypatch):
         indexed_chunk_sets = []
         bm25_indexed_chunk_sets = []
 
-    monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="latest": _Stub())
+    monkeypatch.setattr(loader, "load_snapshot_by_target", lambda target="serve": _Stub())
     monkeypatch.setenv("RECIPE_RAG_API_KEYS", '{"demo-public-2026": "public"}')
     app = app_module.create_app()
 
@@ -183,3 +183,46 @@ def test_lifespan_exits_2_when_api_keys_missing(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc_info:
         asyncio.run(_enter())
     assert exc_info.value.code == 2
+
+
+def test_lifespan_serves_the_promoted_snapshot(tmp_path, monkeypatch):
+    """The lifespan answers from the `serve` target.
+
+    That target names the folder a human promoted, so the service starts from
+    what was promoted rather than from whatever was built most recently. The
+    image bakes the same target, which is what keeps the snapshot the image
+    carries and the snapshot the app loads from diverging.
+    """
+    from src.rag.core.snapshot import loader
+    from src.rag.serve import app as app_module
+
+    class _StubSnapshot:
+        retrieval_strategy = "dense"
+        dataset_key = "test-dataset"
+        created_at = "2026-08-23 11:42:01"
+        base_config = {"retriever": {"top_k": 3}}
+        prompts_config = {"settings": {"max_context_tokens": 1024}, "template": {}}
+        indexed_chunk_sets = []
+        bm25_indexed_chunk_sets = []
+
+    asked: list[str] = []
+
+    def _record_target(target="latest_build"):
+        asked.append(target)
+        return _StubSnapshot()
+
+    monkeypatch.setattr(loader, "load_snapshot_by_target", _record_target)
+    monkeypatch.setattr(app_module, "_build_pipeline", lambda s, r=None: object())
+    monkeypatch.setattr(app_module, "_eager_load_models", lambda p: None)
+    monkeypatch.setenv("RECIPE_RAG_API_KEYS", '{"demo-public-2026": "public"}')
+
+    app = app_module.create_app()
+
+    import asyncio
+
+    async def _enter():
+        async with app.router.lifespan_context(app):
+            pass
+
+    asyncio.run(_enter())
+    assert asked == ["serve"]

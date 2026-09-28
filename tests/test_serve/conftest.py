@@ -40,7 +40,7 @@ class StubSnapshot:
         self.created_at = created_at
         self.base_config = {
             "encoder": {"model_id": "sentence-transformers/test"},
-            "generator": {"model_id": "test/generator"},
+            "generator": {"model_id": "test/generator", "adapter_path": "test/adapter"},
             "indexer": {"type": "flatip", "dimension": 4},
             "retriever": {"top_k": 3, "score_threshold": 0.0},
             "hybrid": {

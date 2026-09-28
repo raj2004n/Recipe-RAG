@@ -1,0 +1,5 @@
+outs:
+- md5: 1cf186f064fc7071b22fab53cf169c24
+  size: 2912757
+  hash: md5
+  path: recipe_prompts_20260918.jsonl

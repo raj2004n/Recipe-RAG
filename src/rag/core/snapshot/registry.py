@@ -8,11 +8,11 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, NotRequired
 
 
 class RegistryData(TypedDict, total=False):
-    targets: dict[str, str]  # target_name -> folder_name (e.g., "latest" -> "dense_2026_0")
+    targets: dict[str, str]  # target_name -> folder_name (e.g. "latest_build" -> "dense_2026_0")
     status: dict[str, str]   # folder_name -> status ("building" | "complete" | "abandoned")
     promoted: dict[str, "PromotionRecord"]  # folder_name -> record of its promotion
 
@@ -35,11 +35,24 @@ class PromotionRecord(TypedDict):
 
     Carries the identity of the end-to-end MLflow run the verdict came from and
     the per-check outcome, so a promotion is auditable from the registry alone.
+    `verdict` is the gate's own outcome for that run, "pass" or "fail"; it is
+    what marks a promotion that went ahead against the bars. A record written
+    before the gate could record an override has no verdict key and reads as a
+    pass.
     """
     run_id: str
     run_name: str
     promoted_at: str
     checks: list
+    verdict: NotRequired[str]
+
+
+# The target keys as they were named before the names described their readers.
+_TARGET_RENAMES = {
+    "current": "build_in_progress",
+    "latest": "latest_build",
+    "baseline": "serve",
+}
 
 
 def _migrate_legacy(data: dict) -> dict:
@@ -70,6 +83,26 @@ def _migrate_legacy(data: dict) -> dict:
     return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
 
+def _migrate_target_names(targets: dict) -> dict:
+    """Rename the target keys a registry may still carry under their old names.
+
+    The targets are named for what reads them: `build_in_progress` for the
+    folder the active build writes into, `latest_build` for the newest sealed
+    folder, and `serve` for the folder a human promoted. Registries written
+    before those names hold `current`, `latest` and `baseline` instead, so
+    reading maps them across and the next write persists the new spelling. A
+    key already carrying its new name wins over a renamed one, so a registry
+    holding both resolves the same way on every read.
+    """
+    renamed: dict[str, str] = {}
+    for key, folder in targets.items():
+        if key in _TARGET_RENAMES:
+            renamed.setdefault(_TARGET_RENAMES[key], folder)
+        else:
+            renamed[key] = folder
+    return renamed
+
+
 def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
     """Atomically reserve a unique snapshot name and create its folder.
 
@@ -94,6 +127,14 @@ def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
 
 def _read_registry(registry_path: Path) -> RegistryData:
     """Read the registry file, migrating legacy shapes to the current one.
+
+    Two invariants are applied on the way out, both of them idempotent so a
+    read never changes what a later read sees. The target keys are renamed to
+    the names that describe their readers, and `build_in_progress` is dropped
+    when the folder it names is not `building`, because a build that has sealed
+    or been abandoned is not in progress. Registries written before either rule
+    existed still carry the keys they violate, so applying them here is also
+    what lets the next write persist the corrected shape.
     """
     if not registry_path.exists():
         return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
@@ -108,9 +149,15 @@ def _read_registry(registry_path: Path) -> RegistryData:
         return {"targets": {}, "status": {}, "datasets": {}, "promoted": {}}
 
     migrated = _migrate_legacy(raw)
+    targets = _migrate_target_names(dict(migrated.get("targets", {})))
+    status = dict(migrated.get("status", {}))
+    running = targets.get("build_in_progress")
+    if running and status.get(running) != "building":
+        del targets["build_in_progress"]
+
     return {
-        "targets": dict(migrated.get("targets", {})),
-        "status": dict(migrated.get("status", {})),
+        "targets": targets,
+        "status": status,
         "datasets": dict(migrated.get("datasets", {})),
         "promoted": dict(migrated.get("promoted", {})),
     }
@@ -127,10 +174,26 @@ def _write_registry(registry_path: Path, data: RegistryData) -> None:
 
 
 def update_target(registry_path: Path, target: str, folder: str) -> None:
-    """Map a target (e.g., 'latest') to a specific snapshot folder.
+    """Map a target (e.g. 'latest_build') to a specific snapshot folder.
     """
     data = _read_registry(registry_path)
     data["targets"][target] = folder
+    _write_registry(registry_path, data)
+
+
+def clear_target(registry_path: Path, target: str, folder: str | None = None) -> None:
+    """Drop a target from the registry.
+
+    Passing `folder` guards the drop: the target is cleared only while it still
+    names that folder, so a caller releasing its own claim cannot take away a
+    newer one that has since been written.
+    """
+    data = _read_registry(registry_path)
+    if target not in data["targets"]:
+        return
+    if folder is not None and data["targets"][target] != folder:
+        return
+    del data["targets"][target]
     _write_registry(registry_path, data)
 
 
@@ -148,25 +211,28 @@ def record_promotion(
     *,
     run_id: str,
     run_name: str,
+    verdict: str,
     checks: list,
     promoted_at: str | None = None,
 ) -> None:
-    """Record a snapshot as the promoted baseline together with what the gate saw.
+    """Record a snapshot as the one to serve together with what the gate saw.
 
-    Sets targets["baseline"] to the folder and stores a promoted record keyed
-    by the folder name carrying the governing MLflow run's identity and the
-    gate's per-check outcome, so a promotion is auditable from the registry
-    alone. Re-promoting the same folder overwrites its record in place;
-    promoting a different folder keeps earlier promoted records intact. Writes
-    atomically like the other registry helpers.
+    Sets targets["serve"] to the folder and stores a promoted record keyed by
+    the folder name carrying the governing MLflow run's identity, the gate's
+    verdict and its per-check outcome, so a promotion is auditable from the
+    registry alone and a promotion that went ahead against the bars is
+    distinguishable from one that cleared them. Re-promoting the same folder
+    overwrites its record in place; promoting a different folder keeps earlier
+    promoted records intact. Writes atomically like the other registry helpers.
     """
     data = _read_registry(registry_path)
-    data["targets"]["baseline"] = folder
+    data["targets"]["serve"] = folder
     promoted = data.setdefault("promoted", {})
     promoted[folder] = {
         "run_id": run_id,
         "run_name": run_name,
         "promoted_at": promoted_at or time.strftime("%Y-%m-%d %H:%M:%S"),
+        "verdict": verdict,
         "checks": checks,
     }
     _write_registry(registry_path, data)
@@ -242,6 +308,9 @@ def sweep_stale_building_builds(
         - the build folder is missing the required subdirs (e.g. `chunks/`),
         - the build folder's `metadata.json` mtime is older than `max_age_hours`.
 
+    Abandoning the folder also releases `build_in_progress` when that target
+    still names it, so the target only ever points at a build that is running.
+
     Returns the list of folder names that were flipped to `"abandoned"`.
     """
     data = _read_registry(registry_path)
@@ -268,6 +337,9 @@ def sweep_stale_building_builds(
             swept.append(folder)
 
     if swept:
+        for folder in swept:
+            if data["targets"].get("build_in_progress") == folder:
+                del data["targets"]["build_in_progress"]
         _write_registry(registry_path, data)
 
     return swept

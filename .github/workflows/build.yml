@@ -3,10 +3,10 @@
 # The full payload the image needs (the sealed snapshot folder, the dataset it
 # pins, the registry, and the staged model weights) lives only on this machine,
 # so the job runs in the machine's checkout rather than a fresh workspace. It
-# fires only after ci.yml has passed on a push to main, and bakes the promoted
-# baseline snapshot (resolved from the registry) into the image. The image is
-# pushed as recipe-rag:<sha>, recipe-rag:latest, and recipe-rag:<baseline
-# folder>, so a deploy can pull whatever baseline is promoted.
+# fires only after ci.yml has passed on a push to main, and bakes the snapshot
+# the registry's serve target names into the image. The image is pushed as
+# recipe-rag:<sha>, recipe-rag:latest, and recipe-rag:<serve folder>, so a
+# deploy can pull whatever is promoted.
 
 name: build
 
@@ -45,14 +45,14 @@ jobs:
           cd "$REPO_PATH"
           bash scripts/stage_weights.sh
 
-      - name: Resolve the promoted baseline
-        id: baseline
+      - name: Resolve the serve target
+        id: serve
         run: |
           set -euo pipefail
           cd "$REPO_PATH"
-          folder=$(python3 -c "import json; print(json.load(open('snapshots/registry.json'))['targets']['baseline'])")
+          folder=$(python3 -c "import json; print(json.load(open('snapshots/registry.json'))['targets']['serve'])")
           if [ -z "$folder" ]; then
-            echo "error: no baseline target in the registry" >&2
+            echo "error: no serve target in the registry" >&2
             exit 1
           fi
           echo "folder=$folder" >> "$GITHUB_OUTPUT"
@@ -62,10 +62,10 @@ jobs:
           set -euo pipefail
           cd "$REPO_PATH"
           docker build \
-            --build-arg "SNAPSHOT=${{ steps.baseline.outputs.folder }}" \
+            --build-arg "SNAPSHOT=${{ steps.serve.outputs.folder }}" \
             -t "$IMAGE:${{ steps.sync.outputs.sha }}" \
             -t "$IMAGE:latest" \
-            -t "$IMAGE:${{ steps.baseline.outputs.folder }}" \
+            -t "$IMAGE:${{ steps.serve.outputs.folder }}" \
             .
 
       - name: Push to ghcr
@@ -73,7 +73,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "$IMAGE:${{ steps.sync.outputs.sha }}"
           docker push "$IMAGE:latest"
-          docker push "$IMAGE:${{ steps.baseline.outputs.folder }}"
+          docker push "$IMAGE:${{ steps.serve.outputs.folder }}"
 
       # The token used for the login above is the short-lived GITHUB_TOKEN,
       # which stops working when this workflow ends. Left behind in

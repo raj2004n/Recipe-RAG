@@ -7,10 +7,8 @@ neighbour search, and the per-query-type branches that pick primary and
 sibling chunks.
 """
 
-import json
 import random
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 from ...retrieval.chunker import (
@@ -45,12 +43,6 @@ class Selection:
     # Used only by recipe_with_a_swap.
     reference_text: str | None = None
     swap_text: str | None = None
-
-
-def load_recipes(recipes_path: Path) -> list[Recipe]:
-    """Read the cleaned-recipe corpus from disk."""
-    with recipes_path.open() as f:
-        return [Recipe(**r) for r in json.load(f)]
 
 
 def _build_whole_chunks(recipes: list[Recipe]) -> list[Chunk]:

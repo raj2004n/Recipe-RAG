@@ -241,7 +241,7 @@ class _PromptBuilder:
         self.tokenizer = _Tokenizer()
         self.max_context_tokens = max_context_tokens
 
-    def build_prompt_from_recipes(self, query, recipes, recipe_to_string):
+    def build_prompt_from_recipes(self, query, recipes):
         return "system", "user: " + query
 
 

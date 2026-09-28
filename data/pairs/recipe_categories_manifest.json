@@ -1,0 +1,155 @@
+{
+  "created_at": "2026-09-18T12:12:14+00:00",
+  "run": "full",
+  "input": "data/pairs/recipe_pairs_20260918.jsonl",
+  "output": "data/pairs/recipe_categories.jsonl",
+  "method": "name-judgement-v2",
+  "rule": "the boundary rule as written in the system prompt of this script",
+  "labeller": {
+    "model_id": "minimax-m3:cloud",
+    "temperature": 0.0,
+    "seed": 42,
+    "seed_note": "passed through for reproducible reruns; the provider may ignore it",
+    "thinking": false,
+    "num_ctx": 8192,
+    "num_predict": 400,
+    "max_retries": 3,
+    "workers": 3,
+    "prompt_hash": "sha256:673c38513e5581cc3ca5ce75bbbd7941ead2ff4236d36f4fe6b2b5dd72d67bcd"
+  },
+  "titles": {
+    "recipes_in_input": 1494,
+    "labelled_this_run": 1494,
+    "name_conflicts": []
+  },
+  "counts": {
+    "labels": 1494,
+    "by_category": {
+      "savoury": 1249,
+      "sweet": 231,
+      "unresolved": 14
+    },
+    "by_confidence": {
+      "high": 1472,
+      "low": 10,
+      "medium": 12
+    },
+    "confidence_by_category": {
+      "savoury": {
+        "high": 1242,
+        "medium": 7
+      },
+      "sweet": {
+        "high": 225,
+        "medium": 5,
+        "low": 1
+      },
+      "unresolved": {
+        "low": 9,
+        "high": 5
+      }
+    },
+    "flagged": 27,
+    "flagged_reasons": {
+      "unresolved": 14,
+      "medium confidence": 12,
+      "low confidence": 1
+    },
+    "flagged_ids": [
+      53,
+      82,
+      86,
+      92,
+      154,
+      208,
+      226,
+      238,
+      239,
+      293,
+      337,
+      358,
+      407,
+      424,
+      477,
+      482,
+      516,
+      716,
+      756,
+      814,
+      816,
+      939,
+      1078,
+      1113,
+      1186,
+      1274,
+      1303
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 761772,
+    "output_tokens": 48076,
+    "calls": 1494,
+    "retries": 0
+  },
+  "failures": [],
+  "updated_at": "2026-09-19T14:43:52+00:00",
+  "human_calls": {
+    "applied_at": "2026-09-19T14:43:52+00:00",
+    "source": "category review, batch of fourteen calls, September 2026",
+    "calls": [
+      {
+        "recipe_id": 53,
+        "name": "Jb\u2019S Cr\u00eapes",
+        "from": "unresolved",
+        "to": "sweet"
+      },
+      {
+        "recipe_id": 154,
+        "name": "Holiday Stuffed Sweet Potato",
+        "from": "unresolved",
+        "to": "savoury"
+      },
+      {
+        "recipe_id": 238,
+        "name": "Purple Rice",
+        "from": "unresolved",
+        "to": "savoury"
+      },
+      {
+        "recipe_id": 337,
+        "name": "Blood Orange Salad",
+        "from": "unresolved",
+        "to": "sweet"
+      },
+      {
+        "recipe_id": 407,
+        "name": "Peach Salad Ii With Orange Poppyseed Dressing",
+        "from": "unresolved",
+        "to": "sweet"
+      },
+      {
+        "recipe_id": 424,
+        "name": "Peach Salad",
+        "from": "unresolved",
+        "to": "sweet"
+      },
+      {
+        "recipe_id": 1186,
+        "name": "Watermelon Salad",
+        "from": "unresolved",
+        "to": "sweet"
+      },
+      {
+        "recipe_id": 1274,
+        "name": "Build Your Own Homemade Granola (Muesli)",
+        "from": "unresolved",
+        "to": "sweet"
+      }
+    ],
+    "counts_after": {
+      "savoury": 1251,
+      "sweet": 237,
+      "unresolved": 6
+    }
+  }
+}

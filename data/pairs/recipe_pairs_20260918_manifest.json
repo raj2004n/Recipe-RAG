@@ -1,0 +1,92 @@
+{
+  "created_at": "2026-09-18T11:13:41+00:00",
+  "run": "full",
+  "pool": "data/pairs/candidate_pool.jsonl",
+  "pool_rows": 1494,
+  "output": "data/pairs/recipe_pairs_20260918.jsonl",
+  "primaries_file": null,
+  "chooser": {
+    "model_id": "qwen3.5:397b-cloud",
+    "temperature": 0.0,
+    "seed": 42,
+    "seed_note": "passed through for reproducible reruns; the provider may ignore it",
+    "thinking": false,
+    "num_ctx": 16384,
+    "num_predict": 6000,
+    "max_retries": 3,
+    "workers": 3,
+    "prompt_hash": "sha256:86c882dab470f675ac5ba6c019bf5ad05134ce998cbdcbd60f9c366ae0275122"
+  },
+  "dataset_key": "cleaned_recipes_f47524c9_20260824",
+  "dataset_path": "data/processed/cleaned_recipes.json",
+  "dataset_checksum": "sha256:f47524c93348dcb39a4c2c3194b5d0c4242fd57b8152224411fe84293976450a",
+  "dataset_registered_at": "2026-08-24 17:22:17",
+  "snapshot": "hybrid_20260824_1722_0",
+  "counts": {
+    "attempted": 1494,
+    "primaries": 1494,
+    "pairs": 2988,
+    "pairs_per_primary": {
+      "2": 1494
+    },
+    "fallbacks": 0,
+    "failures": 0,
+    "distinct_partners": 961,
+    "picks_trimmed": 0
+  },
+  "partner_ranks": {
+    "10": 117,
+    "11": 178,
+    "12": 236,
+    "13": 210,
+    "14": 187,
+    "15": 183,
+    "16": 160,
+    "17": 121,
+    "18": 130,
+    "19": 147,
+    "20": 150,
+    "21": 106,
+    "22": 114,
+    "23": 163,
+    "24": 135,
+    "25": 104,
+    "26": 115,
+    "27": 105,
+    "28": 83,
+    "29": 127,
+    "30": 117
+  },
+  "categories": {
+    "note": "the corpus carries no category field, so these are title-keyword buckets over both recipe names, counted per pair, with 'other' for anything unmatched",
+    "buckets": {
+      "dessert": 566,
+      "sauce or condiment": 480,
+      "pasta or noodle": 279,
+      "soup or stew": 276,
+      "rice": 218,
+      "chicken": 204,
+      "salad": 196,
+      "pork or lamb": 169,
+      "other": 123,
+      "beef": 121,
+      "seafood": 112,
+      "bread or bake": 90,
+      "vegetable": 79,
+      "curry": 75
+    }
+  },
+  "usage": {
+    "prompt_tokens": 4822539,
+    "output_tokens": 148025,
+    "calls": 1494,
+    "retries": 0,
+    "wall_clock_seconds": 1483.8,
+    "cost_usd": 3.4264,
+    "rates": {
+      "input_per_m": 0.6,
+      "output_per_m": 3.6
+    }
+  },
+  "failures": []
+}

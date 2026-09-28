@@ -4,12 +4,20 @@ The gate logic is exercised against a small synthetic criteria config so the
 tests pin the behavior (per-type floors, the judge-disagreement rule, fail
 closed on missing metrics) without coupling to whatever the bars are calibrated
 to; the repo's real config gets a structural validation check only.
+
+The approval branches get their own section at the end: what a snapshot that
+failed the bars needs before the gate will promote it, and what the registry
+records when it does.
 """
 
+import builtins
 import json
+import sys
+import types
 
 import pytest
 
+from scripts import promote_snapshot
 from src.rag.core.snapshot import registry
 from src.rag.evaluation.promotion import (
     Check,
@@ -180,14 +188,14 @@ def test_missing_gate_section_raises(tmp_path):
 # --- registry promotion record -------------------------------------------
 
 
-def test_record_promotion_sets_targets_baseline_and_record(tmp_path):
+def test_record_promotion_sets_the_serve_target_and_record(tmp_path):
     registry_file = tmp_path / "registry.json"
     checks = [Check("structure_pass_rate", "slice", ">=", 0.95, 0.97).as_dict()]
     registry.record_promotion(
         registry_file, "hybrid_1",
-        run_id="r1", run_name="eval-e2e-hybrid_1", checks=checks,
+        run_id="r1", run_name="eval-e2e-hybrid_1", verdict="pass", checks=checks,
     )
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_1"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_1"
     record = registry.get_promotion_record(registry_file, "hybrid_1")
     assert record["run_id"] == "r1"
     assert record["run_name"] == "eval-e2e-hybrid_1"
@@ -198,23 +206,23 @@ def test_record_promotion_sets_targets_baseline_and_record(tmp_path):
 def test_promoted_survives_unrelated_registry_write(tmp_path):
     registry_file = tmp_path / "registry.json"
     registry.record_promotion(
-        registry_file, "hybrid_1", run_id="r1", run_name="n", checks=[]
+        registry_file, "hybrid_1", run_id="r1", run_name="n", verdict="pass", checks=[]
     )
     registry.update_status(registry_file, "hybrid_2", "complete")
     assert registry.get_promotion_record(registry_file, "hybrid_1")["run_id"] == "r1"
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_1"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_1"
 
 
 def test_repromote_keeps_earlier_promoted_record(tmp_path):
     registry_file = tmp_path / "registry.json"
     registry.record_promotion(
-        registry_file, "hybrid_1", run_id="r1", run_name="n1", checks=[]
+        registry_file, "hybrid_1", run_id="r1", run_name="n1", verdict="pass", checks=[]
     )
     registry.record_promotion(
-        registry_file, "hybrid_2", run_id="r2", run_name="n2", checks=[]
+        registry_file, "hybrid_2", run_id="r2", run_name="n2", verdict="pass", checks=[]
     )
     data = json.loads(registry_file.read_text())
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_2"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_2"
     assert set(data["promoted"]) == {"hybrid_1", "hybrid_2"}
     assert data["promoted"]["hybrid_1"]["run_id"] == "r1"
 
@@ -229,10 +237,103 @@ def test_promoted_section_survives_legacy_migration(tmp_path):
     }))
     registry.update_status(registry_file, "b", "building")
     assert registry.get_promotion_record(registry_file, "a")["run_id"] == "r9"
-    assert registry.get_folder_for_target(registry_file, "baseline") == "a"
+    assert registry.get_folder_for_target(registry_file, "serve") == "a"
 
 
 def test_missing_registry_has_empty_promoted(tmp_path):
     registry_file = tmp_path / "missing.json"
-    assert registry.get_folder_for_target(registry_file, "baseline") is None
+    assert registry.get_folder_for_target(registry_file, "serve") is None
     assert registry.get_promotion_record(registry_file, "hybrid_1") is None
+
+
+def test_record_promotion_stores_the_verdict_and_the_check_outcome(tmp_path):
+    registry_file = tmp_path / "registry.json"
+    failed = Check("mean.faithfulness", "slice", ">=", 0.8, 0.5)
+    registry.record_promotion(
+        registry_file, "hybrid_1",
+        run_id="r1", run_name="n", verdict="fail", checks=[failed.as_dict()],
+    )
+    record = registry.get_promotion_record(registry_file, "hybrid_1")
+    assert record["verdict"] == "fail"
+    assert record["checks"][0]["passed"] is False
+
+
+# --- approval branches ----------------------------------------------------
+
+
+class _RunWithoutMetrics:
+    """The slice of an MLflow run the gate reads, with nothing logged.
+
+    Every bar fails against it, which is what a snapshot that cannot clear the
+    gate looks like to the script without depending on the calibrated numbers.
+    """
+
+    def __init__(self):
+        self.info = types.SimpleNamespace(run_id="r1", run_name="eval-e2e-hybrid_1")
+        self.data = types.SimpleNamespace(metrics={}, params={})
+
+
+def _failing_gate(monkeypatch, tmp_path, argv):
+    """Run the gate against a throwaway registry and a snapshot that fails."""
+    paths = types.SimpleNamespace(registry_file=tmp_path / "registry.json")
+    monkeypatch.setattr(
+        promote_snapshot.SnapshotPaths, "from_paths_config",
+        staticmethod(lambda config: paths),
+    )
+    monkeypatch.setattr(promote_snapshot, "resolve_snapshot_folder", lambda target: "hybrid_1")
+    monkeypatch.setattr(
+        promote_snapshot.registry, "get_status_for_folder", lambda *args: "complete"
+    )
+    monkeypatch.setattr(promote_snapshot, "find_latest_run", lambda *args, **kwargs: _RunWithoutMetrics())
+    monkeypatch.setattr(sys, "argv", ["promote_snapshot", *argv])
+    return paths
+
+
+def test_approve_takes_a_yes_above_the_bar(monkeypatch):
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "y")
+    assert promote_snapshot._approve("hybrid_1", passed=True, non_interactive=False)
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "")
+    assert not promote_snapshot._approve("hybrid_1", passed=True, non_interactive=False)
+
+
+def test_approve_below_the_bar_wants_the_folder_name(monkeypatch):
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "y")
+    assert not promote_snapshot._approve("hybrid_1", passed=False, non_interactive=False)
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "hybrid_1")
+    assert promote_snapshot._approve("hybrid_1", passed=False, non_interactive=False)
+
+
+def test_gate_refuses_to_approve_a_failing_snapshot_with_yes(monkeypatch, tmp_path, capsys):
+    paths = _failing_gate(monkeypatch, tmp_path, ["--yes"])
+    with pytest.raises(SystemExit) as exit_info:
+        promote_snapshot.main()
+    assert exit_info.value.code == 1
+    assert "--yes cannot approve" in capsys.readouterr().out
+    assert not paths.registry_file.exists()
+
+
+def test_gate_promotes_a_failing_snapshot_once_the_name_is_typed(monkeypatch, tmp_path):
+    paths = _failing_gate(monkeypatch, tmp_path, [])
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "hybrid_1")
+    promote_snapshot.main()
+    assert registry.get_folder_for_target(paths.registry_file, "serve") == "hybrid_1"
+    record = registry.get_promotion_record(paths.registry_file, "hybrid_1")
+    assert record["verdict"] == "fail"
+    assert record["checks"] and any(not check["passed"] for check in record["checks"])
+
+
+def test_gate_leaves_the_registry_alone_when_the_name_does_not_match(monkeypatch, tmp_path):
+    paths = _failing_gate(monkeypatch, tmp_path, [])
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "hybrid_9")
+    with pytest.raises(SystemExit) as exit_info:
+        promote_snapshot.main()
+    assert exit_info.value.code == 1
+    assert not paths.registry_file.exists()
+
+
+def test_gate_report_only_writes_nothing_on_a_failing_run(monkeypatch, tmp_path):
+    paths = _failing_gate(monkeypatch, tmp_path, ["--report-only"])
+    with pytest.raises(SystemExit) as exit_info:
+        promote_snapshot.main()
+    assert exit_info.value.code == 1
+    assert not paths.registry_file.exists()

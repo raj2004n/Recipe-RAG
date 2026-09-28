@@ -16,7 +16,6 @@ the identity is captured at the start of the build.
 
 import contextlib
 import fcntl
-import hashlib
 import json
 import logging
 import os
@@ -29,17 +28,6 @@ from .paths import SnapshotPaths
 from . import registry
 
 logger = logging.getLogger(__name__)
-
-_CHUNK_SIZE = 1024 * 1024
-
-
-def sha256_of(path: Path) -> str:
-    """Return `sha256:<hex>` for the file at `path`."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for block in iter(lambda: f.read(_CHUNK_SIZE), b""):
-            h.update(block)
-    return f"sha256:{h.hexdigest()}"
 
 
 @contextlib.contextmanager
@@ -103,12 +91,12 @@ def start_new_build(
     strategy: str,
     dataset_key: Optional[str] = None,
 ) -> str:
-    """Claim a new versioned folder for a build and register it as `current`.
+    """Claim a new versioned folder for a build and register it as `build_in_progress`.
 
     Returns the versioned folder name (e.g. `dense_20260821_1430_0`).
     The folder is created, `metadata.json` is written with the strategy and
-    (optionally) the dataset key, and the registry's `current` target and
-    `status` are updated. Capturing the dataset key at `set_strategy` time
+    (optionally) the dataset key, and the registry's `build_in_progress` target
+    and `status` are updated. Capturing the dataset key at `set_strategy` time
     rather than at finalise is what protects the build from a mid-flight
     preprocessing swap: by the time the build finishes, the key and the
     indexed model agree, because both were pinned against the same dataset.
@@ -126,8 +114,12 @@ def start_new_build(
     with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2)
 
-    registry.update_target(registry_file, "current", name)
+    # The status is written before the target, because a target that names a
+    # folder which is not `building` is dropped on read. The other order would
+    # write the claim while the folder had no status yet, and the next step's
+    # read would drop the claim it had just made.
     registry.update_status(registry_file, name, "building")
+    registry.update_target(registry_file, "build_in_progress", name)
 
     return name
 
@@ -141,7 +133,9 @@ def finalise_snapshot(
 
     No rename: the versioned folder is the same folder the build has been
     writing to. Copies configs, stamps `created_at`, makes the snapshot
-    read-only, and updates the registry so `latest` resolves to this build.
+    read-only, and updates the registry so `latest_build` resolves to this
+    build and `build_in_progress` stops naming it, since the build it named is
+    no longer in progress.
     """
     registry_file = Path(registry_file)
 
@@ -158,7 +152,8 @@ def finalise_snapshot(
         json.dump(metadata, f, indent=2)
 
     registry.update_status(registry_file, versioned_name, "complete")
-    registry.update_target(registry_file, "latest", versioned_name)
+    registry.update_target(registry_file, "latest_build", versioned_name)
+    registry.clear_target(registry_file, "build_in_progress", versioned_name)
 
     # Make the snapshot read-only. Directories stay user-writable (0o755)
     # so the user can still delete the tree if needed; only files and the

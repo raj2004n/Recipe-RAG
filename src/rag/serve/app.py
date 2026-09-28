@@ -3,8 +3,11 @@
 The lifespan does the following, in order:
 
 1. Parse `RECIPE_RAG_API_KEYS`. If missing or malformed, exit 2.
-2. Load the latest sealed snapshot via `load_snapshot_by_target("latest")`.
-   If no snapshot is complete, exit 2.
+2. Load the snapshot the `serve` target names, via
+   `load_snapshot_by_target("serve")`. That is the folder a human promoted, so
+   the service answers from what was promoted and not from whatever was built
+   most recently. If nothing is promoted, or the named folder is not complete,
+   exit 2.
 3. Resolve the snapshot's `dataset_key` through `LocalDatasetResolver`.
    If the file is gone or the checksum has drifted, exit 2 - there is no
    degraded mode for hybrid. (Dense also fails closed for consistency;
@@ -48,19 +51,19 @@ def _exit_2_on_failure(message: str, exc: Exception) -> None:
 
 
 def _load_snapshot_or_exit():
-    """Resolve the latest sealed snapshot, exit 2 if there isn't one."""
+    """Resolve the promoted snapshot, exit 2 if there isn't one."""
     from ..core.snapshot import loader
 
     try:
-        return loader.load_snapshot_by_target("latest")
+        return loader.load_snapshot_by_target("serve")
     except FileNotFoundError as exc:
-        _exit_2_on_failure("No sealed snapshot to load", exc)
+        _exit_2_on_failure("No promoted snapshot to serve", exc)
     except RuntimeError as exc:
         # load_snapshot_by_target raises RuntimeError when the registry
         # status is not "complete".
-        _exit_2_on_failure("Latest snapshot is not complete", exc)
+        _exit_2_on_failure("Promoted snapshot is not complete", exc)
     except Exception as exc:
-        _exit_2_on_failure("Failed to load latest snapshot", exc)
+        _exit_2_on_failure("Failed to load the promoted snapshot", exc)
 
 
 def _resolve_recipes_path_or_exit(snapshot) -> Path | None:
@@ -137,7 +140,7 @@ def create_app() -> FastAPI:
         except Exception as exc:
             _exit_2_on_failure("RECIPE_RAG_API_KEYS not configured", exc)
 
-        # 2. Load latest sealed snapshot.
+        # 2. Load the promoted snapshot.
         snapshot = _load_snapshot_or_exit()
         app.state.snapshot = snapshot
         logger.info(

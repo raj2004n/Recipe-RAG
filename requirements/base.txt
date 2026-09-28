@@ -9,6 +9,7 @@ torch==2.6.0+cu124
 torchvision==0.21.0+cu124
 torchaudio==2.6.0+cu124
 peft==0.18.0
+flash-linear-attention==0.5.2
 pydantic==2.12.5
 rank-bm25==0.2.2
 PyYAML==6.0.3

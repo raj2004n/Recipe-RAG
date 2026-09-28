@@ -395,7 +395,6 @@ class GeneratorEvaluator:
         system, user = self.prompt_builder.build_prompt_from_recipes(
             query=query,
             recipes=resolved,
-            recipe_to_string=recipe_to_string,
         )
         response = self.generator.generate(system, user)
 

@@ -40,8 +40,15 @@ ENV HF_HOME=/models
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# the venv's bin/python symlinks to the system python, so the runtime needs it
-RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/*
+# the venv's bin/python symlinks to the system python, so the runtime needs it.
+# gcc is a run-time need rather than a build one: the Qwen3.5 modeling file
+# imports flash-linear-attention, whose triton imports compile a small C shim on
+# first use. Without a compiler that import fails, and transformers reports the
+# failure as a missing model class, which buries the real cause. The shim includes
+# stdlib.h and dlfcn.h, which come from libc6-dev, and Python.h, which comes from
+# python3-dev. Triton carries cuda.h itself and the toolkit supplies libcuda, so
+# the CUDA development packages are not needed.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 gcc libc6-dev python3-dev && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv
 
@@ -51,13 +58,22 @@ COPY configs ./configs
 
 # the sealed snapshot, its registry, and the dataset it pins. The lifespan
 # fails closed if the dataset checksum drifts, so these three must stay in step.
-ARG SNAPSHOT=hybrid_20260824_1722_0
+# The workflow passes the folder the registry's serve target names. The default
+# is for a local build and has to be a real name: an empty value would make the
+# COPY below take the whole snapshots/ tree.
+ARG SNAPSHOT=hybrid_20260927_1431_0
 COPY snapshots/$SNAPSHOT ./snapshots/$SNAPSHOT
 COPY snapshots/registry.json ./snapshots/registry.json
 COPY data/processed/cleaned_recipes.json ./data/processed/cleaned_recipes.json
 
-# pre-baked HF hub cache for gemma-3-1b-it, bge-reranker-v2-m3, all-MiniLM-L6-v2
+# pre-baked HF hub cache for Qwen3.5-0.8B, bge-reranker-v2-m3, all-MiniLM-L6-v2
 COPY .docker/weights /models/hub
+
+# the LoRA adapter the served snapshot's generator config names. It goes to the
+# same relative path the config carries, so adapter_path resolves inside the
+# image without the sealed config differing from the one the host runs.
+COPY artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02 \
+     ./artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02
 
 EXPOSE 8000
 CMD ["uvicorn", "src.rag.serve.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

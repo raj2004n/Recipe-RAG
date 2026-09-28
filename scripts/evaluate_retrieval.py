@@ -16,7 +16,9 @@ from pathlib import Path
 
 import mlflow
 
-from scripts._eval_common import (
+from src.rag.core.config import DATA_PATHS
+from src.rag.core.logging import configure_logging
+from src.rag.evaluation.harness import (
     add_common_args,
     begin_mlflow_run,
     build_pipeline,
@@ -26,8 +28,6 @@ from scripts._eval_common import (
     resolve_recipes_path,
     resolve_snapshot_folder,
 )
-from src.rag.core.config import DATA_PATHS
-from src.rag.core.logging import configure_logging
 from src.rag.evaluation.retriever_evaluator import RetrievalEvaluator
 
 

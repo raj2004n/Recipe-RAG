@@ -1,0 +1,6 @@
+outs:
+- md5: 8d421452fec8c0a0fb3e104cd5304cfe.dir
+  size: 25591268
+  nfiles: 4
+  hash: md5
+  path: epoch_02

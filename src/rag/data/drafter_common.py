@@ -2,15 +2,18 @@
 
 Both ``scripts/draft_prompts.py`` (full fresh draft) and
 ``scripts/backfill_prompts.py`` (targeted append) need the same encoder
-constructor, the same drafter-config kwargs, and the same corpus/output
-path resolution. This module is the single source of truth for those bits
-so the two scripts can stay focused on their orchestration differences.
+constructor, the same drafter-config kwargs, the same corpus/output path
+resolution, and the same read of the cleaned corpus into ``Recipe`` objects.
+This module is the single source of truth for those bits so the two scripts
+can stay focused on their orchestration differences.
 """
 
+import json
 from pathlib import Path
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
-from src.rag.retrieval.dense.encoder import Encoder
+from ..core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
+from ..retrieval.dense.encoder import Encoder
+from .preprocessor import Recipe
 
 
 _DRAFTER_CONFIG_KEY = "prompts_drafter"
@@ -44,14 +47,20 @@ def draft_kwargs(*, include_per_type_count: bool = False) -> dict:
     return out
 
 
-def resolve_paths(args) -> tuple[Path, Path]:
+def resolve_paths(output: str | None = None) -> tuple[Path, Path]:
     """Resolve the cleaned-recipes corpus and the prompts.jsonl output path.
 
-    ``args.output`` (if provided) overrides the default location from
+    ``output`` (if provided) overrides the default location from
     ``DATA_PATHS["eval_prompts"]``. The output's parent directory is created
     on demand so a fresh repo state can run either script without manual setup.
     """
     corpus_path = Path(DATA_PATHS["cleaned_recipes"])
-    prompts_path = Path(args.output or DATA_PATHS["eval_prompts"])
+    prompts_path = Path(output or DATA_PATHS["eval_prompts"])
     prompts_path.parent.mkdir(parents=True, exist_ok=True)
     return corpus_path, prompts_path
+
+
+def load_recipes(recipes_path: Path) -> list[Recipe]:
+    """Read the cleaned-recipe corpus from disk."""
+    with recipes_path.open() as f:
+        return [Recipe(**r) for r in json.load(f)]

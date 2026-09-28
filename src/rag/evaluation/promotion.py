@@ -55,13 +55,18 @@ class Check:
         return False
 
     def as_dict(self) -> dict[str, Any]:
-        """A JSON-friendly record for the promotion log in the registry."""
+        """A JSON-friendly record for the promotion log in the registry.
+
+        `passed` is resolved here rather than left to a reader of the record, so
+        the registry says on its own which bars a promotion went ahead against.
+        """
         return {
             "metric": self.metric,
             "scope": self.scope,
             "operator": self.operator,
             "bar": self.bar,
             "value": self.value,
+            "passed": self.passed,
         }
 
 
