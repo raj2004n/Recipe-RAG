@@ -4,7 +4,7 @@ Reads a candidate snapshot's end-to-end MLflow run, applies the bars from
 configs/promotion.yaml (slice means, per-query-type floors, judge-disagreement
 caps, and the structure and retrieval rates), prints a pass/fail report whose
 header carries the sample-size caveat, and on explicit human approval records
-the promotion in the snapshot registry: targets["baseline"] plus a promoted
+the promotion in the snapshot registry: targets["serve"] plus a promoted
 record with the governing run's identity, the gate's verdict and the per-check
 outcome.
 
@@ -43,8 +43,8 @@ def _default_config_path() -> Path:
 def parse_args():
     parser = argparse.ArgumentParser(description="Promotion gate for snapshots")
     parser.add_argument(
-        "--snapshot", type=str, default="latest",
-        help="Snapshot target ('latest' or 'current') or folder name to gate.",
+        "--snapshot", type=str, default="latest_build",
+        help="Snapshot target ('latest_build' or 'build_in_progress') or folder name to gate.",
     )
     parser.add_argument(
         "--config", type=str, default=None,

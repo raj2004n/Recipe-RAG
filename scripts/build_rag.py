@@ -64,23 +64,31 @@ def _registry_file() -> Path:
     return _SNAPSHOTS_DIR / "registry.json"
 
 
-def _current_versioned_name() -> str:
+def _build_in_progress_name() -> str:
     """Return the versioned folder name registered as the active build.
 
-    Raises RuntimeError if set_strategy has not been run.
+    Raises RuntimeError if set_strategy has not been run, or if the build it
+    started has since sealed and released the target.
     """
-    name = registry.get_folder_for_target(_registry_file(), "current")
+    name = registry.get_folder_for_target(_registry_file(), "build_in_progress")
     if not name:
         raise RuntimeError(
-            "No active build in the registry. Run "
+            "No build in progress in the registry. Run "
             "'python -m scripts.build_rag --run set_strategy' first."
         )
     return name
 
 
-def _active_dataset_key() -> str:
-    """Read the dataset key captured at set_strategy from the active build."""
-    name = _current_versioned_name()
+def _sealed_name() -> str:
+    """Return the versioned folder name of the newest sealed build."""
+    name = registry.get_folder_for_target(_registry_file(), "latest_build")
+    if not name:
+        raise RuntimeError("No sealed build in the registry.")
+    return name
+
+
+def _active_dataset_key(name: str) -> str:
+    """Read the dataset key captured at set_strategy from the named build."""
     metadata_path = _SNAPSHOTS_DIR / name / "metadata.json"
     metadata = json.loads(metadata_path.read_text())
     return metadata["dataset_key"]
@@ -94,7 +102,7 @@ def _resolve_recipes_path() -> Path:
     (finalise_snapshot closes it), but the resolver still verifies the file
     is the same one we registered.
     """
-    key = _active_dataset_key()
+    key = _active_dataset_key(_build_in_progress_name())
     resolver = LocalDatasetResolver(
         registry_path=_registry_file(),
         registry_get_dataset=registry.get_dataset,
@@ -179,7 +187,7 @@ def set_strategy(recipes_path: Path | None = None, dataset_name: str | None = No
 
 
 def chunk() -> None:
-    paths = get_snapshot_paths(versioned_name=_current_versioned_name())
+    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
     recipes_path = _resolve_recipes_path()
     builder = BaseBuilder.from_paths(paths)
     with lifecycle.recipe_file_lock(recipes_path):
@@ -187,19 +195,19 @@ def chunk() -> None:
 
 
 def transform() -> None:
-    paths = get_snapshot_paths(versioned_name=_current_versioned_name())
+    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
     builder = BaseBuilder.from_paths(paths)
     builder.transform(paths)
 
 
 def index_stage() -> None:
-    paths = get_snapshot_paths(versioned_name=_current_versioned_name())
+    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
     builder = BaseBuilder.from_paths(paths)
     builder.index(paths)
 
 
 def finalise_build() -> None:
-    paths = get_snapshot_paths(versioned_name=_current_versioned_name())
+    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
     builder = BaseBuilder.from_paths(paths)
     builder.seal_snapshot(
         paths=paths,
@@ -245,8 +253,12 @@ def build_rag(recipes_path: Path | None = None, dataset_name: str | None = None)
         # guard around the whole of it keeps the run FINISHED and warns, instead
         # of leaving a sealed snapshot behind by a run marked FAILED.
         try:
-            paths = get_snapshot_paths(versioned_name=_current_versioned_name())
-            dataset_key = _active_dataset_key()
+            # Every stage has run by now, so the build this run produced is the
+            # newest sealed one: the stages' own target was released when
+            # finalise_build sealed the folder.
+            sealed = _sealed_name()
+            paths = get_snapshot_paths(versioned_name=sealed)
+            dataset_key = _active_dataset_key(sealed)
             dataset = registry.get_dataset(_registry_file(), dataset_key) or {}
 
             # The dataset key and its checksum are read after the stages have

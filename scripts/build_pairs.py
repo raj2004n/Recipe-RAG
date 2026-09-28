@@ -17,8 +17,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=pool.__doc__)
     parser.add_argument("--run", choices=("calibrate", "build"), default="calibrate",
                         help="Calibrate the repeat guard, or write the pool at a given cut.")
-    parser.add_argument("--snapshot", default="latest",
-                        help="Snapshot target ('latest' or 'current') or folder name.")
+    parser.add_argument("--snapshot", default="latest_build",
+                        help="Snapshot target ('latest_build' or 'build_in_progress') "
+                             "or folder name.")
     parser.add_argument("--threshold", type=float, default=None,
                         help="The repeat guard's cosine cut. Required by --run build.")
     parser.add_argument("--limit", type=int, default=None,

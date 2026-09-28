@@ -188,14 +188,14 @@ def test_missing_gate_section_raises(tmp_path):
 # --- registry promotion record -------------------------------------------
 
 
-def test_record_promotion_sets_targets_baseline_and_record(tmp_path):
+def test_record_promotion_sets_the_serve_target_and_record(tmp_path):
     registry_file = tmp_path / "registry.json"
     checks = [Check("structure_pass_rate", "slice", ">=", 0.95, 0.97).as_dict()]
     registry.record_promotion(
         registry_file, "hybrid_1",
         run_id="r1", run_name="eval-e2e-hybrid_1", verdict="pass", checks=checks,
     )
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_1"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_1"
     record = registry.get_promotion_record(registry_file, "hybrid_1")
     assert record["run_id"] == "r1"
     assert record["run_name"] == "eval-e2e-hybrid_1"
@@ -210,7 +210,7 @@ def test_promoted_survives_unrelated_registry_write(tmp_path):
     )
     registry.update_status(registry_file, "hybrid_2", "complete")
     assert registry.get_promotion_record(registry_file, "hybrid_1")["run_id"] == "r1"
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_1"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_1"
 
 
 def test_repromote_keeps_earlier_promoted_record(tmp_path):
@@ -222,7 +222,7 @@ def test_repromote_keeps_earlier_promoted_record(tmp_path):
         registry_file, "hybrid_2", run_id="r2", run_name="n2", verdict="pass", checks=[]
     )
     data = json.loads(registry_file.read_text())
-    assert registry.get_folder_for_target(registry_file, "baseline") == "hybrid_2"
+    assert registry.get_folder_for_target(registry_file, "serve") == "hybrid_2"
     assert set(data["promoted"]) == {"hybrid_1", "hybrid_2"}
     assert data["promoted"]["hybrid_1"]["run_id"] == "r1"
 
@@ -237,12 +237,12 @@ def test_promoted_section_survives_legacy_migration(tmp_path):
     }))
     registry.update_status(registry_file, "b", "building")
     assert registry.get_promotion_record(registry_file, "a")["run_id"] == "r9"
-    assert registry.get_folder_for_target(registry_file, "baseline") == "a"
+    assert registry.get_folder_for_target(registry_file, "serve") == "a"
 
 
 def test_missing_registry_has_empty_promoted(tmp_path):
     registry_file = tmp_path / "missing.json"
-    assert registry.get_folder_for_target(registry_file, "baseline") is None
+    assert registry.get_folder_for_target(registry_file, "serve") is None
     assert registry.get_promotion_record(registry_file, "hybrid_1") is None
 
 
@@ -316,7 +316,7 @@ def test_gate_promotes_a_failing_snapshot_once_the_name_is_typed(monkeypatch, tm
     paths = _failing_gate(monkeypatch, tmp_path, [])
     monkeypatch.setattr(builtins, "input", lambda prompt="": "hybrid_1")
     promote_snapshot.main()
-    assert registry.get_folder_for_target(paths.registry_file, "baseline") == "hybrid_1"
+    assert registry.get_folder_for_target(paths.registry_file, "serve") == "hybrid_1"
     record = registry.get_promotion_record(paths.registry_file, "hybrid_1")
     assert record["verdict"] == "fail"
     assert record["checks"] and any(not check["passed"] for check in record["checks"])

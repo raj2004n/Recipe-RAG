@@ -65,7 +65,7 @@ def role_for(rank: int) -> str:
     return "band" if rank >= BAND_START else "gap"
 
 
-def load_space(snapshot_target: str = "latest", limit: int | None = None) -> dict:
+def load_space(snapshot_target: str = "latest_build", limit: int | None = None) -> dict:
     """The corpus, the encoder's identity, and one whole-recipe vector per recipe.
 
     Encoding the corpus takes about a minute, so the vectors are cached and
@@ -202,7 +202,7 @@ def print_calibration(rows: list[dict], names: dict, space: dict) -> None:
     print()
 
 
-def calibrate_guard(snapshot_target: str = "latest", limit: int | None = None) -> int:
+def calibrate_guard(snapshot_target: str = "latest_build", limit: int | None = None) -> int:
     """Print where the pool's cosines sit and what each cut would take away.
 
     Nothing is written: the reach of a cut is read here before the pool is built at one.
@@ -214,7 +214,7 @@ def calibrate_guard(snapshot_target: str = "latest", limit: int | None = None) -
     return 0
 
 
-def build_pool(snapshot_target: str = "latest", limit: int | None = None, *,
+def build_pool(snapshot_target: str = "latest_build", limit: int | None = None, *,
                threshold: float) -> int:
     """Write the pool and its manifest at a given cut.
 

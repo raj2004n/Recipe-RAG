@@ -127,7 +127,7 @@ def test_registry_datasets_roundtrip_with_existing_keys(tmp_path: Path):
     datasets = registry.list_datasets(registry_file)
     assert datasets == {}
 
-    folder = registry.get_folder_for_target(registry_file, "latest")
+    folder = registry.get_folder_for_target(registry_file, "latest_build")
     assert folder == "dense_2026_0"
 
     status = registry.get_status_for_folder(registry_file, folder)

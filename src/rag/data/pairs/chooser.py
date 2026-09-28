@@ -117,7 +117,7 @@ class Choice(BaseModel):
     fallback: bool = False
 
 
-def load_inputs(snapshot_target: str = "latest", limit: int | None = None,
+def load_inputs(snapshot_target: str = "latest_build", limit: int | None = None,
                 primaries_file: str | None = None) -> dict:
     """The pool, the corpus it points into, and the prompt the run will send."""
     if not POOL_JSONL.exists():
@@ -347,7 +347,7 @@ def choose_for(primary_row: dict, inputs: dict, client: ChooserClient) -> tuple[
 
 
 def choose_pairs(
-    snapshot_target: str = "latest",
+    snapshot_target: str = "latest_build",
     limit: int | None = None,
     primaries_file: str | None = None,
     output_path: Path | None = None,
@@ -495,7 +495,7 @@ def print_reasons(rows: list[dict], failures: list[dict]) -> None:
             print(f"  {failure['primary_id']} {failure['primary_name'][:40]}: {failure['error']}")
 
 
-def probe_chooser(snapshot_target: str = "latest", limit: int | None = None,
+def probe_chooser(snapshot_target: str = "latest_build", limit: int | None = None,
                   primaries_file: str | None = None) -> int:
     """One call, printed whole, to check the wire shape before any batch."""
     inputs = load_inputs(snapshot_target, limit, primaries_file)

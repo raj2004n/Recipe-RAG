@@ -21,9 +21,10 @@ DATA_PATHS: dict = PATHS_CONFIG["data"]
 
 
 # Snapshots no longer have a single fixed location - each build gets a
-# versioned folder under snapshots/, and the registry tracks which folder
-# is 'current' or 'latest'. Callers that need paths for the active build
-# look up the versioned name in the registry first, then call this helper.
+# versioned folder under snapshots/, and the registry tracks which folder is
+# 'build_in_progress', 'latest_build' or 'serve'. Callers that need paths for
+# the active build look up the versioned name in the registry first, then call
+# this helper.
 def get_snapshot_paths(versioned_name: str | None = None) -> SnapshotPaths:
     """Return a SnapshotPaths resolved for the given versioned folder name.
 

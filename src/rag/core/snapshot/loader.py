@@ -4,7 +4,7 @@ A 'Snapshot' is the read-only artefact Pipelines consume at inference time.
 Each strategy declares which index loaders to run, so adding a strategy is a
 matter of adding a row to `_STRATEGY_LOADERS`.
 
-Loading is target-based: pass a target name (`'latest'`, `'current'`, or a
+Loading is target-based: pass a target name (`'latest_build'`, `'serve'`, or a
 build name) to `load_snapshot_by_target`. The registry is consulted to
 resolve the target to a folder, and the folder's status must be `"complete"`
 for the load to proceed.
@@ -67,7 +67,7 @@ def load_snapshot(folder: str | Path) -> Snapshot:
 
     Looks up the folder's name in the registry and refuses to load if the
     status is not `"complete"`. Use `load_snapshot_by_target` to resolve a
-    target name (e.g. `"latest"`) to a folder.
+    target name (e.g. `"latest_build"`) to a folder.
     """
     folder_path = _resolve_snapshot_dir(folder)
     registry_file = SnapshotPaths.from_paths_config({}).registry_file
@@ -118,8 +118,8 @@ def load_snapshot(folder: str | Path) -> Snapshot:
     )
 
 
-def load_snapshot_by_target(target: str = "latest") -> Snapshot:
-    """Resolve a target name (e.g. `'latest'`) to a snapshot folder and load it.
+def load_snapshot_by_target(target: str = "latest_build") -> Snapshot:
+    """Resolve a target name (e.g. `'latest_build'`) to a snapshot folder and load it.
 
     Raises:
         FileNotFoundError: If the target has no folder mapped in the registry.
@@ -136,11 +136,12 @@ def load_snapshot_by_target(target: str = "latest") -> Snapshot:
     return load_snapshot(folder_path)
 
 
-def load_current_snapshot() -> Snapshot:
-    """Load the snapshot mapped to the `'current'` target.
+def load_build_in_progress_snapshot() -> Snapshot:
+    """Load the snapshot mapped to the `'build_in_progress'` target.
 
-    The `'current'` target points at the most recently finalised build. It is
-    kept after finalisation so the build stages can resume / rebuild against
-    it.
+    That target names the folder the active build is writing into. It is set
+    when a build claims its folder and released when the build seals or is
+    abandoned, so a load through this path only succeeds while a build is
+    running.
     """
-    return load_snapshot_by_target("current")
+    return load_snapshot_by_target("build_in_progress")

@@ -35,14 +35,15 @@ logger = logging.getLogger(__name__)
 # at an HTTP URI only when you want a run to go through a server (for example to
 # watch it live in the UI).
 MLFLOW_TRACKING_URI = os.environ.get("RECIPE_RAG_MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-_DEFAULT_SNAPSHOT = "latest"
+_DEFAULT_SNAPSHOT = "latest_build"
 
 
 def add_common_args(parser: argparse.ArgumentParser, *, with_probe: bool = True):
     """The snapshot, limit, and MLflow args every eval script shares."""
     parser.add_argument(
         "--snapshot", type=str, default=_DEFAULT_SNAPSHOT,
-        help="Snapshot target ('latest' or 'current') or folder name to evaluate.",
+        help="Snapshot target ('latest_build' or 'build_in_progress') or "
+             "folder name to evaluate.",
     )
     parser.add_argument(
         "--limit", type=int, default=None,
@@ -64,7 +65,7 @@ def add_common_args(parser: argparse.ArgumentParser, *, with_probe: bool = True)
 
 def resolve_snapshot_folder(target: str) -> str:
     """Resolve a target name or folder name to a snapshot folder name."""
-    if target in ("latest", "current"):
+    if target in ("latest_build", "build_in_progress"):
         paths = SnapshotPaths.from_paths_config({})
         folder = registry.get_folder_for_target(paths.registry_file, target)
         if not folder:

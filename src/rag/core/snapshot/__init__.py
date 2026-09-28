@@ -26,14 +26,14 @@ _LOADER_NAMES = frozenset({
     "Snapshot",
     "load_snapshot",
     "load_snapshot_by_target",
-    "load_current_snapshot",
+    "load_build_in_progress_snapshot",
 })
 
 __all__ = [
     "Snapshot",
     "load_snapshot",
     "load_snapshot_by_target",
-    "load_current_snapshot",
+    "load_build_in_progress_snapshot",
 ]
 
 

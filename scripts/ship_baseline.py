@@ -1,6 +1,6 @@
 """Ship the promoted baseline to the local Docker daemon as a running service.
 
-The baseline is promoted by the gate into the registry's baseline target, but a
+The baseline is promoted by the gate into the registry's serve target, but a
 promotion only records which snapshot is the deployment baseline; the runnable
 form is the serve image with that snapshot baked in. The deployment target is
 this machine, so the ship is a pull followed by a local run: it pulls the serve
@@ -9,7 +9,7 @@ image for the baseline snapshot from ghcr (or a repository given with
 port mapped to the host, and waits until the service reports healthy before
 returning.
 
-The script fails closed: no baseline target in the registry, a baseline whose
+The script fails closed: no serve target in the registry, a baseline whose
 status is not complete, a missing promotion record, an image that cannot be
 pulled, missing or malformed RECIPE_RAG_API_KEYS (the service refuses to start
 without it), a failed docker call, or a service that never reports healthy each
@@ -60,7 +60,7 @@ def parse_args():
     )
     parser.add_argument(
         "--no-pull", action="store_true",
-        help="skip the pull and expect an image tagged <image-repo>:<baseline> "
+        help="skip the pull and expect an image tagged <image-repo>:<serve folder> "
              "to exist locally",
     )
     parser.add_argument(
@@ -104,18 +104,18 @@ def _failed_check_labels(record) -> list[str]:
     return labels
 
 
-def _baseline_folder(paths) -> str:
-    """The promoted baseline folder from the registry, or a hard stop if none."""
-    folder = registry.get_folder_for_target(paths.registry_file, "baseline")
+def _serve_folder(paths) -> str:
+    """The promoted folder from the registry, or a hard stop if none."""
+    folder = registry.get_folder_for_target(paths.registry_file, "serve")
     if not folder:
         raise SystemExit(
-            "error: no baseline target in the registry. Run the promotion gate "
+            "error: no serve target in the registry. Run the promotion gate "
             "(scripts.promote_snapshot) on a passing snapshot first."
         )
     status = registry.get_status_for_folder(paths.registry_file, folder)
     if status != "complete":
         raise SystemExit(
-            f"error: baseline {folder!r} has status {status!r}, not 'complete'; "
+            f"error: serve target {folder!r} has status {status!r}, not 'complete'; "
             f"refusing to ship an unsealed snapshot."
         )
     record = registry.get_promotion_record(paths.registry_file, folder)
@@ -187,7 +187,7 @@ def main() -> None:
     args = parse_args()
 
     paths = SnapshotPaths.from_paths_config({})
-    folder = _baseline_folder(paths)
+    folder = _serve_folder(paths)
     tag = f"{args.image_repo}:{folder}"
 
     if not args.no_pull:
