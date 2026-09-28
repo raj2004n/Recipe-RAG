@@ -8,7 +8,7 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, NotRequired
 
 
 class RegistryData(TypedDict, total=False):
@@ -35,11 +35,16 @@ class PromotionRecord(TypedDict):
 
     Carries the identity of the end-to-end MLflow run the verdict came from and
     the per-check outcome, so a promotion is auditable from the registry alone.
+    `verdict` is the gate's own outcome for that run, "pass" or "fail"; it is
+    what marks a promotion that went ahead against the bars. A record written
+    before the gate could record an override has no verdict key and reads as a
+    pass.
     """
     run_id: str
     run_name: str
     promoted_at: str
     checks: list
+    verdict: NotRequired[str]
 
 
 def _migrate_legacy(data: dict) -> dict:
@@ -148,17 +153,19 @@ def record_promotion(
     *,
     run_id: str,
     run_name: str,
+    verdict: str,
     checks: list,
     promoted_at: str | None = None,
 ) -> None:
     """Record a snapshot as the promoted baseline together with what the gate saw.
 
     Sets targets["baseline"] to the folder and stores a promoted record keyed
-    by the folder name carrying the governing MLflow run's identity and the
-    gate's per-check outcome, so a promotion is auditable from the registry
-    alone. Re-promoting the same folder overwrites its record in place;
-    promoting a different folder keeps earlier promoted records intact. Writes
-    atomically like the other registry helpers.
+    by the folder name carrying the governing MLflow run's identity, the gate's
+    verdict and its per-check outcome, so a promotion is auditable from the
+    registry alone and a promotion that went ahead against the bars is
+    distinguishable from one that cleared them. Re-promoting the same folder
+    overwrites its record in place; promoting a different folder keeps earlier
+    promoted records intact. Writes atomically like the other registry helpers.
     """
     data = _read_registry(registry_path)
     data["targets"]["baseline"] = folder
@@ -167,6 +174,7 @@ def record_promotion(
         "run_id": run_id,
         "run_name": run_name,
         "promoted_at": promoted_at or time.strftime("%Y-%m-%d %H:%M:%S"),
+        "verdict": verdict,
         "checks": checks,
     }
     _write_registry(registry_path, data)

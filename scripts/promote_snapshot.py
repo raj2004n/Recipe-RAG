@@ -3,13 +3,18 @@
 Reads a candidate snapshot's end-to-end MLflow run, applies the bars from
 configs/promotion.yaml (slice means, per-query-type floors, judge-disagreement
 caps, and the structure and retrieval rates), prints a pass/fail report whose
-header carries the sample-size caveat, and only on explicit human approval
-records the promotion in the snapshot registry: targets["baseline"] plus a
-promoted record with the governing run's identity and the per-check outcome.
+header carries the sample-size caveat, and on explicit human approval records
+the promotion in the snapshot registry: targets["baseline"] plus a promoted
+record with the governing run's identity, the gate's verdict and the per-check
+outcome.
 
-It never promotes automatically. A failed gate exits non-zero and offers no
-approval. Promotion is a registry write, not a deployment; carrying the
-baseline to the GPU host is a separate later step.
+The bars never promote anything by themselves; they inform a decision that
+stays with the human. A snapshot that cleared them takes a yes, and --yes says
+it without a prompt. One that failed them takes its folder name typed out
+instead, so a below-bar promotion is a deliberate act rather than a reflex or a
+flag, and the record it leaves says it went ahead against the gate. Promotion
+is a registry write, not a deployment; carrying the baseline to the GPU host is
+a separate later step.
 """
 
 import argparse
@@ -47,7 +52,7 @@ def parse_args():
     )
     parser.add_argument(
         "--yes", action="store_true",
-        help="Approve the promotion non-interactively. The human decision is still yours; this only skips the prompt.",
+        help="Approve a snapshot that cleared the bars without a prompt. The human decision is still yours; this only skips the prompt, and it cannot approve a snapshot that failed the bars.",
     )
     parser.add_argument(
         "--report-only", action="store_true",
@@ -135,6 +140,26 @@ def print_report(folder: str, run, gate: dict, checks: list) -> None:
     print()
 
 
+def _approve(folder: str, *, passed: bool, non_interactive: bool) -> bool:
+    """Whether the human approved promoting this snapshot.
+
+    A snapshot that cleared the bars takes the usual yes/no answer, and --yes
+    supplies it without a prompt. One that failed them takes its folder name
+    typed out: the decision is still the human's, but a below-bar promotion
+    should not be one keystroke away.
+    """
+    if non_interactive:
+        return True
+    if passed:
+        answer = input(f"Promote {folder!r} as the deployment baseline? [y/N] ").strip().lower()
+        return answer in ("y", "yes")
+    answer = input(
+        f"Promote {folder!r} as the deployment baseline against the gate? "
+        f"Type the snapshot folder name to confirm: "
+    ).strip()
+    return answer == folder
+
+
 def main():
     configure_logging()
     args = parse_args()
@@ -185,29 +210,43 @@ def main():
     print_report(folder, run, gate, checks)
 
     passed = all(check.passed for check in checks)
-    if not passed:
-        print(f"[VERDICT] FAIL - snapshot {folder!r} did not clear the bars; nothing promoted.")
-        sys.exit(1)
+    if passed:
+        print(f"[VERDICT] PASS - snapshot {folder!r} cleared the bars.")
+    else:
+        print(
+            f"[VERDICT] FAIL - snapshot {folder!r} did not clear the bars above. "
+            f"Promotion is still yours to decide."
+        )
 
-    print(f"[VERDICT] PASS - snapshot {folder!r} cleared the bars.")
     if args.report_only:
         print("--report-only set: no registry write; snapshot not promoted.")
-        return
+        sys.exit(0 if passed else 1)
 
-    if not args.yes:
-        answer = input(f"Promote {folder!r} as the deployment baseline? [y/N] ").strip().lower()
-        if answer not in ("y", "yes"):
-            print("Not promoted (no approval). The registry is unchanged.")
-            return
+    if not passed and args.yes:
+        print(
+            "error: --yes cannot approve a snapshot that failed the bars. Run "
+            "without --yes and type the folder name to promote it anyway."
+        )
+        sys.exit(1)
+
+    if not _approve(folder, passed=passed, non_interactive=args.yes):
+        print("Not promoted (no approval). The registry is unchanged.")
+        sys.exit(0 if passed else 1)
 
     registry.record_promotion(
         paths.registry_file,
         folder,
         run_id=run.info.run_id,
         run_name=run.info.run_name or "",
+        verdict="pass" if passed else "fail",
         checks=[check.as_dict() for check in checks],
     )
     print(f"Promoted {folder!r}: targets.baseline now points at it, recorded in the registry.")
+    if not passed:
+        print(
+            "The record carries the verdict and the failing checks, so the "
+            "promotion is readable as one that went ahead against the gate."
+        )
 
 
 if __name__ == "__main__":
