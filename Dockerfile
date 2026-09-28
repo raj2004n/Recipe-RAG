@@ -37,6 +37,12 @@ FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS runtime
 
 ENV PATH=/opt/venv/bin:$PATH
 ENV HF_HOME=/models
+# every model the service loads is already in the cache above, so the hub reads
+# it and never dials out. Without this the loaders revalidate each file against
+# huggingface.co on every start, which is a boot-time network dependency the
+# image is meant not to have: the request still fails closed on a missing file,
+# it just fails from the cache rather than the network.
+ENV HF_HUB_OFFLINE=1
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
