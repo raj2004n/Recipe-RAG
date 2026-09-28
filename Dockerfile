@@ -51,13 +51,22 @@ COPY configs ./configs
 
 # the sealed snapshot, its registry, and the dataset it pins. The lifespan
 # fails closed if the dataset checksum drifts, so these three must stay in step.
-ARG SNAPSHOT=hybrid_20260824_1722_0
+# The workflow passes the folder the registry's serve target names. The default
+# is for a local build and has to be a real name: an empty value would make the
+# COPY below take the whole snapshots/ tree.
+ARG SNAPSHOT=hybrid_20260927_1431_0
 COPY snapshots/$SNAPSHOT ./snapshots/$SNAPSHOT
 COPY snapshots/registry.json ./snapshots/registry.json
 COPY data/processed/cleaned_recipes.json ./data/processed/cleaned_recipes.json
 
-# pre-baked HF hub cache for gemma-3-1b-it, bge-reranker-v2-m3, all-MiniLM-L6-v2
+# pre-baked HF hub cache for Qwen3.5-0.8B, bge-reranker-v2-m3, all-MiniLM-L6-v2
 COPY .docker/weights /models/hub
+
+# the LoRA adapter the served snapshot's generator config names. It goes to the
+# same relative path the config carries, so adapter_path resolves inside the
+# image without the sealed config differing from the one the host runs.
+COPY artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02 \
+     ./artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02
 
 EXPOSE 8000
 CMD ["uvicorn", "src.rag.serve.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
