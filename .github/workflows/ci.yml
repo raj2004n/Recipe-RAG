@@ -3,6 +3,13 @@ name: ci
 on:
   push:
     branches: [main]
+    # A docs-only push changes nothing the serve image carries, so it should not
+    # claim the GPU runner. build.yml fires on this workflow's completion and its
+    # job requires a successful conclusion, so a run filtered out here skips the
+    # image build as well. pull_request stays unfiltered, so a required check
+    # always reports and no docs-only pull request is left waiting on one.
+    paths-ignore:
+      - '**/*.md'
   pull_request:
 
 jobs:
