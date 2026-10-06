@@ -48,7 +48,7 @@ hybrid path beat either single retriever on realistic recipe queries.
 ```bash
 # Clone and set up
 git clone <repo-url>
-cd Recipe-RAG
+cd recipe-rag
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
 
@@ -198,7 +198,7 @@ Setup for the self-hosted path:
 
 1. Register a self-hosted runner at repository scope with the labels
    `self-hosted, gpu, linux`. The runner user needs the `docker` group and
-   read/write access to the checkout at `/home/raj/projects/Recipe-RAG`.
+   read/write access to the checkout at `/home/raj/projects/recipe-rag`.
 2. Add a repository secret `RECIPE_RAG_API_KEYS` holding the API-key JSON the
    deployed service must accept.
 3. The image package on ghcr is public, so the host can pull it without a
