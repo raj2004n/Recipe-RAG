@@ -20,7 +20,7 @@ jobs:
   deploy:
     runs-on: [self-hosted, gpu]
     env:
-      REPO_PATH: /home/raj/projects/Recipe-RAG
+      REPO_PATH: /home/raj/projects/recipe-rag
     steps:
       - name: Sync the machine checkout to latest main
         run: |

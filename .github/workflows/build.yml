@@ -26,7 +26,7 @@ jobs:
             github.event.workflow_run.head_branch == 'main' }}
     runs-on: [self-hosted, gpu]
     env:
-      REPO_PATH: /home/raj/projects/Recipe-RAG
+      REPO_PATH: /home/raj/projects/recipe-rag
       IMAGE: ghcr.io/raj2004n/recipe-rag
     steps:
       - name: Sync the machine checkout to the tested commit
