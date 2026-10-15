@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..preprocessor import Recipe
-from .manifest import write_manifest
+from .manifest import add_to_dvc, write_manifest
 from .rendering import DesignerClient, flag_prompt, prompt_hash, user_message
 from .selection import dataset_key_of, load_pairs, load_recipes, resolve_corpus
 from .types import (
@@ -262,6 +262,11 @@ def design_prompts(
         for row in rows:
             handle.write(json.dumps(row) + "\n")
     os.replace(temp_path, out_path)
+
+    # The full run is the set the passes downstream read, so it is the one that gets a
+    # pointer. The smoke and probe files are scratch, and are left untracked.
+    if run_kind == "full":
+        add_to_dvc(out_path)
 
     summary = summarise(rows, skipped, len(pairs), pending=pending_count, resumed=resumed_count)
     write_manifest(manifest_path, manifest_document("complete", summary, {

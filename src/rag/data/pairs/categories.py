@@ -47,6 +47,7 @@ from typing import Literal
 from ollama import chat
 from pydantic import BaseModel, Field, ValidationError
 
+from .manifest import add_to_dvc
 from .rendering import strip_markdown_fence
 
 logger = logging.getLogger(__name__)
@@ -359,6 +360,11 @@ def label_categories(
         for row in rows:
             handle.write(json.dumps(row) + "\n")
 
+    # The full run is the label set the passes downstream read, so it is the one that gets
+    # a pointer. The smoke and probe files are scratch, and are left untracked.
+    if not smoke and not targeted:
+        add_to_dvc(out_path)
+
     summary = summarise(rows)
     manifest = {
         "created_at": created_at,
@@ -527,6 +533,9 @@ def apply_category_calls(
     temporary = sidecar_path.with_name(sidecar_path.name + ".tmp")
     temporary.write_text("".join(raw))
     temporary.replace(sidecar_path)
+
+    # The settled calls have changed the sidecar, so its pointer has to move with them.
+    add_to_dvc(sidecar_path)
 
     manifest = json.loads(manifest_path.read_text())
     manifest["updated_at"] = decided_at

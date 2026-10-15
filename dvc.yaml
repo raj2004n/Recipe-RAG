@@ -17,37 +17,82 @@ stages:
   set_strategy:
     cmd: python -m scripts.build_rag --run set_strategy
     deps:
-    - configs/base_config.yaml
-    - configs/paths_config.yaml
+    - scripts/build_rag.py
+    - src/rag/core/config.py
+    - src/rag/core/snapshot/
+    - src/rag/core/datasets/
+    - src/rag/core/checksum.py
+    params:
+    - configs/base_config.yaml:
+      - rag.strategy
+    - configs/paths_config.yaml:
+      - configs
+      - data.cleaned_recipes
+    outs:
+    - build/staging/metadata.json
 
   chunk:
     cmd: python -m scripts.build_rag --run chunk
     deps:
+    - scripts/build_rag.py
     - data/processed/cleaned_recipes.json
-    - configs/base_config.yaml
+    - build/staging/metadata.json
+    - src/rag/builder/
+    - src/rag/retrieval/
+    - src/rag/data/preprocessor.py
+    - src/rag/data/recipe_format.py
+    - src/rag/core/
+    params:
+    - configs/paths_config.yaml:
+      - configs
+    outs:
+    - build/staging/chunks/
 
   transform:
     cmd: python -m scripts.build_rag --run transform
     deps:
-    - configs/base_config.yaml
+    - scripts/build_rag.py
+    - build/staging/chunks/
+    - src/rag/builder/
+    - src/rag/retrieval/
+    - src/rag/core/
+    params:
+    - configs/base_config.yaml:
+      - encoder.model_id
+      - encoder.batch_size
+      - encoder.normalize_embeddings
+    - configs/paths_config.yaml:
+      - configs
+    outs:
+    - build/staging/transformed_chunks/
 
   index:
     cmd: python -m scripts.build_rag --run index
     deps:
-    - configs/base_config.yaml
+    - scripts/build_rag.py
+    - build/staging/transformed_chunks/
+    - src/rag/builder/
+    - src/rag/retrieval/
+    - src/rag/core/
+    params:
+    - configs/base_config.yaml:
+      - indexer.type
+      - indexer.dimension
+    - configs/paths_config.yaml:
+      - configs
+    outs:
+    - build/staging/index/
 
   finalise_build:
     cmd: python -m scripts.build_rag --run finalise_build
+    always_changed: true
     deps:
+    - scripts/build_rag.py
+    - build/staging/chunks/
+    - build/staging/transformed_chunks/
+    - build/staging/index/
     - configs/base_config.yaml
     - configs/paths_config.yaml
     - configs/prompts_config.yaml
-    - src/rag/core/snapshot/
-
-  generate_eval_dataset:
-    cmd: python -m scripts.generate_eval_dataset
-    deps:
-    - scripts/generate_eval_dataset.py
-    - data/processed/cleaned_recipes.json
-    outs:
-    - data/eval/llm_generated.jsonl
+    - src/rag/builder/
+    - src/rag/core/

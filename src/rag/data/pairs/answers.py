@@ -47,7 +47,7 @@ from ollama import chat
 
 from ..preprocessor import Recipe
 from ..source_block import user_message
-from .manifest import write_manifest
+from .manifest import add_to_dvc, write_manifest
 from .selection import dataset_key_of, load_recipes, resolve_corpus
 
 logger = logging.getLogger(__name__)
@@ -445,6 +445,11 @@ def answer_prompts(
         for row in rows:
             handle.write(json.dumps(row) + "\n")
     os.replace(temp_path, out_path)
+
+    # The full run is the answer set the distillation reads, so it is the one that gets
+    # a pointer. The smoke file is scratch, and is left untracked.
+    if run_kind == "full":
+        add_to_dvc(out_path)
 
     summary = summarise(rows, skipped, len(prompts), pending=pending_count, resumed=resumed_count)
     write_manifest(manifest_path, manifest_document("complete", summary, {

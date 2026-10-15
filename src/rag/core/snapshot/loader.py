@@ -132,16 +132,5 @@ def load_snapshot_by_target(target: str = "latest_build") -> Snapshot:
             f"No snapshot folder mapped to target {target!r} in registry"
         )
 
-    folder_path = paths.building.parent / folder
+    folder_path = paths.snapshots_root / folder
     return load_snapshot(folder_path)
-
-
-def load_build_in_progress_snapshot() -> Snapshot:
-    """Load the snapshot mapped to the `'build_in_progress'` target.
-
-    That target names the folder the active build is writing into. It is set
-    when a build claims its folder and released when the build seals or is
-    abandoned, so a load through this path only succeeds while a build is
-    running.
-    """
-    return load_snapshot_by_target("build_in_progress")

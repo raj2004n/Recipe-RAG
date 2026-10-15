@@ -1,20 +1,22 @@
 """Tests for the snapshot lifecycle roundtrip.
 
-Verifies that a snapshot sealed by lifecycle.finalise_snapshot can be loaded
-back by loader.load_snapshot and that the metadata, configs, and chunk-set
-mapping survive the trip.
+Verifies that a build's staging tree, once finalise_snapshot has copied it into
+a versioned folder, can be loaded back by loader.load_snapshot and that the
+metadata, configs, and chunk-set mapping survive the trip.
 
-The test builds the snapshot's directory structure directly under tmp_path
-rather than running the full Builder, so it exercises only the seal/load
-contract that the inference side depends on.
+The test builds the tree directly under tmp_path rather than running the full
+Builder, so it exercises only the seal/load contract that the inference side
+depends on.
 """
 
-import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from src.rag.core.snapshot import lifecycle, loader
+from src.rag.core.snapshot import paths as paths_module
+from src.rag.core.snapshot.paths import SnapshotPaths
 from src.rag.retrieval.dense.indexer import IndexedChunkSet
 from src.rag.retrieval.sparse.bm25indexer import BM25IndexedChunkSet
 
@@ -27,27 +29,15 @@ def _write_yaml(path: Path, payload: dict) -> None:
         yaml.safe_dump(payload, f)
 
 
-def _seed_snapshot(snapshot_dir: Path, strategy: str, dataset_key: str = "test-dataset") -> Path:
-    """Lay down the minimum files a sealed snapshot needs and finalise it.
+def _seed_configs(source_dir: Path, strategy: str) -> None:
+    """Write the configs the seal copies into the versioned folder.
 
-    Returns the snapshot folder path.
+    A build writes its configs into the staging tree, so a test that wants a
+    loadable snapshot lays them down there before finalising.
     """
-    snapshot_dir.mkdir(parents=True, exist_ok=True)
-
-    metadata = snapshot_dir / "metadata.json"
-    metadata.write_text(json.dumps({"strategy": strategy, "dataset_key": dataset_key}))
-
-    # chunks/ and index/ directories are required to exist (lifecycle
-    # makes the snapshot read-only on finalise). They can be empty for
-    # this test because the index loaders are mocked below.
-    (snapshot_dir / "chunks").mkdir()
-    (snapshot_dir / "index").mkdir()
-
-    configs_dir = snapshot_dir / "configs"
+    configs_dir = source_dir / "configs"
     _write_yaml(configs_dir / "base_config.yaml", {"rag": {"strategy": strategy}})
     _write_yaml(configs_dir / "prompts_config.yaml", {"personas": {}})
-
-    return snapshot_dir
 
 
 def _patch_loaders(monkeypatch, *, dense: bool, hybrid: bool) -> None:
@@ -92,45 +82,62 @@ def _patch_loaders(monkeypatch, *, dense: bool, hybrid: bool) -> None:
         ]
 
 
+def _patch_snapshots_root(monkeypatch, root: Path) -> None:
+    """Send the sealed folders a test seals into tmp_path.
+
+    `SnapshotPaths.snapshots_root` reads this module-level root, so patching it
+    keeps a test's seals out of the repository's own `snapshots/`.
+    """
+    monkeypatch.setattr(paths_module, "_SNAPSHOTS_ROOT", root)
+
+
 def _patch_registry_path(monkeypatch, registry_file: Path) -> None:
     """Redirect SnapshotPaths.from_paths_config so the loader finds our
     test registry instead of `snapshots/registry.json` in CWD.
     """
-    from src.rag.core.snapshot.paths import Path as _Path
-    from src.rag.core.snapshot.paths import SnapshotPaths as _SnapshotPaths
+    real_from_paths_config = SnapshotPaths.from_paths_config
 
     def fake_from_paths_config(paths_cfg, versioned_name=None):
-        return _SnapshotPaths(
-            building=_Path("snapshots/building"),
-            chunks=_Path("snapshots/building/chunks"),
-            transformed_chunks=_Path("snapshots/building/transformed_chunks"),
-            index=_Path("snapshots/building/index"),
-            configs=_Path("snapshots/building/configs"),
-            metadata=_Path("snapshots/building/metadata.json"),
-            registry_file=registry_file,
-            config_files=(),
-        )
+        resolved = real_from_paths_config(paths_cfg, versioned_name)
+        return replace(resolved, registry_file=registry_file)
 
-    monkeypatch.setattr(_SnapshotPaths, "from_paths_config", fake_from_paths_config)
+    monkeypatch.setattr(SnapshotPaths, "from_paths_config", fake_from_paths_config)
+
+
+def _staging_paths(staging_dir: Path, registry_file: Path) -> SnapshotPaths:
+    """The staging tree's paths, in the shape a build stage resolves them."""
+    return SnapshotPaths(
+        building=staging_dir,
+        chunks=staging_dir / "chunks",
+        transformed_chunks=staging_dir / "transformed_chunks",
+        index=staging_dir / "index",
+        configs=staging_dir / "configs",
+        metadata=staging_dir / "metadata.json",
+        registry_file=registry_file,
+        config_files=(),
+    )
 
 
 def test_dense_snapshot_roundtrip(tmp_path: Path, monkeypatch):
-    snapshots_dir = tmp_path / "snapshots"
-    registry_file = snapshots_dir / "registry.json"
+    staging = tmp_path / "build" / "staging"
+    snapshots_root = tmp_path / "snapshots"
+    registry_file = snapshots_root / "registry.json"
+    _patch_snapshots_root(monkeypatch, snapshots_root)
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=True, hybrid=False)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense", dataset_key="test-dataset")
-    snapshot = snapshots_dir / folder_name
-    _seed_snapshot(snapshot, "dense")
-
-    lifecycle.finalise_snapshot(
-        paths=_paths_for(snapshot),
-        registry_file=registry_file,
-        versioned_name=folder_name,
+    lifecycle.start_new_build(
+        staging_dir=staging, strategy="dense", dataset_key="test-dataset"
     )
+    _seed_configs(staging, "dense")
 
-    loaded = loader.load_snapshot(snapshot)
+    name = lifecycle.finalise_snapshot(_staging_paths(staging, registry_file), registry_file)
+    sealed = snapshots_root / name
+    assert sealed.is_dir()
+    # The seal copies, so the outputs DVC declared for the build stay in place.
+    assert staging.is_dir()
+
+    loaded = loader.load_snapshot(sealed)
     assert loaded.retrieval_strategy == "dense"
     assert len(loaded.indexed_chunk_sets) == 1
     assert loaded.indexed_chunk_sets[0].name == "whole_recipe"
@@ -139,59 +146,71 @@ def test_dense_snapshot_roundtrip(tmp_path: Path, monkeypatch):
 
 
 def test_hybrid_snapshot_roundtrip(tmp_path: Path, monkeypatch):
-    snapshots_dir = tmp_path / "snapshots"
-    registry_file = snapshots_dir / "registry.json"
+    staging = tmp_path / "build" / "staging"
+    snapshots_root = tmp_path / "snapshots"
+    registry_file = snapshots_root / "registry.json"
+    _patch_snapshots_root(monkeypatch, snapshots_root)
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=False, hybrid=True)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "hybrid", dataset_key="test-dataset")
-    snapshot = snapshots_dir / folder_name
-    _seed_snapshot(snapshot, "hybrid")
-
-    lifecycle.finalise_snapshot(
-        paths=_paths_for(snapshot),
-        registry_file=registry_file,
-        versioned_name=folder_name,
+    lifecycle.start_new_build(
+        staging_dir=staging, strategy="hybrid", dataset_key="test-dataset"
     )
+    _seed_configs(staging, "hybrid")
 
-    loaded = loader.load_snapshot(snapshot)
+    name = lifecycle.finalise_snapshot(_staging_paths(staging, registry_file), registry_file)
+    sealed = snapshots_root / name
+
+    loaded = loader.load_snapshot(sealed)
     assert loaded.retrieval_strategy == "hybrid"
     assert {cs.name for cs in loaded.indexed_chunk_sets} == {"dense"}
     assert {cs.name for cs in loaded.bm25_indexed_chunk_sets} == {"sparse"}
 
 
-def test_load_refuses_non_complete_snapshot(tmp_path: Path, monkeypatch):
-    """Registry hygiene: loader must refuse anything whose status is not
-    'complete'. This is what prevents a half-built snapshot from being
-    served to users."""
-    snapshots_dir = tmp_path / "snapshots"
-    registry_file = snapshots_dir / "registry.json"
+def test_every_seal_claims_its_own_folder(tmp_path: Path, monkeypatch):
+    """A build that changes nothing still seals a folder of its own.
+
+    Sealing copies the staging tree into a name claimed at that moment, so
+    finalising the same bytes twice leaves two folders, each readable on its
+    own. Reusing a name would mean the second build's contents decided what the
+    first build's folder served.
+    """
+    staging = tmp_path / "build" / "staging"
+    snapshots_root = tmp_path / "snapshots"
+    registry_file = snapshots_root / "registry.json"
+    _patch_snapshots_root(monkeypatch, snapshots_root)
     _patch_registry_path(monkeypatch, registry_file)
     _patch_loaders(monkeypatch, dense=True, hybrid=False)
 
-    folder_name = lifecycle.start_new_build(snapshots_dir, registry_file, "dense", dataset_key="test-dataset")
-    snapshot = snapshots_dir / folder_name
-    _seed_snapshot(snapshot, "dense")
-    # No finalise_snapshot - the registry still has status='building'.
-
-    with pytest.raises(RuntimeError, match="status is 'building'"):
-        loader.load_snapshot(snapshot)
-
-
-def _paths_for(folder: Path):
-    """Build a SnapshotPaths manually so we don't need the global paths
-    config to resolve during a test."""
-    from src.rag.core.snapshot.paths import SnapshotPaths
-
-    return SnapshotPaths(
-        building=folder,
-        chunks=folder / "chunks",
-        transformed_chunks=folder / "transformed_chunks",
-        index=folder / "index",
-        configs=folder / "configs",
-        metadata=folder / "metadata.json",
-        registry_file=folder.parent / "registry.json",
-        config_files=(),
+    lifecycle.start_new_build(
+        staging_dir=staging, strategy="dense", dataset_key="test-dataset"
     )
+    _seed_configs(staging, "dense")
+
+    first = lifecycle.finalise_snapshot(_staging_paths(staging, registry_file), registry_file)
+    name = lifecycle.finalise_snapshot(_staging_paths(staging, registry_file), registry_file)
+
+    assert name != first
+    for folder in (first, name):
+        assert loader.load_snapshot(snapshots_root / folder).retrieval_strategy == "dense"
 
 
+def test_load_refuses_an_unsealed_staging_tree(tmp_path: Path, monkeypatch):
+    """Registry hygiene: the loader must refuse anything the registry has not
+    marked 'complete'. A staging tree in flight carries no status at all, which
+    is what keeps a half-built build from being served to users."""
+    staging = tmp_path / "build" / "staging"
+    snapshots_root = tmp_path / "snapshots"
+    registry_file = snapshots_root / "registry.json"
+    _patch_snapshots_root(monkeypatch, snapshots_root)
+    _patch_registry_path(monkeypatch, registry_file)
+    _patch_loaders(monkeypatch, dense=True, hybrid=False)
+
+    lifecycle.start_new_build(
+        staging_dir=staging, strategy="dense", dataset_key="test-dataset"
+    )
+    _seed_configs(staging, "dense")
+    # No finalise_snapshot, so the registry carries no status for this tree.
+
+    with pytest.raises(RuntimeError, match="registry status is None"):
+        loader.load_snapshot(staging)

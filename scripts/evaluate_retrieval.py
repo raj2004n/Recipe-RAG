@@ -1,8 +1,7 @@
 """Evaluate retrieval for a snapshot against the eval datasets, tracked in MLflow.
 
 Loads a sealed snapshot, builds the pipeline for its strategy, and scores
-retrieval against the golden and archived eval slices. The two slices are
-evaluated and reported separately, never blended. Each run logs the snapshot
+retrieval over the slices `_EVAL_SLICES` names. Each run logs the snapshot
 identity, the retrieval config, the per-slice and per-query-type metrics, and
 the eval files plus per-query results as artifacts.
 """
@@ -35,11 +34,10 @@ logger = logging.getLogger(__name__)
 
 _MLFLOW_EXPERIMENT = "rag-retrieval-eval"
 
-# Slice name -> eval file. Golden and archived are reported separately and
-# never blended.
+# Slice name -> eval file. A slice is scored and reported on its own, never
+# blended into another.
 _EVAL_SLICES = {
     "golden": DATA_PATHS["eval_golden_prompts"],
-    "archived": DATA_PATHS["eval_archived_prompts"],
 }
 
 

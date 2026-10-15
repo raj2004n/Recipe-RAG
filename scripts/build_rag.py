@@ -7,7 +7,13 @@ import argparse
 import subprocess
 from pathlib import Path
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS, get_snapshot_paths
+from src.rag.core.config import (
+    BASE_CONFIG,
+    BASE_CONFIG_FILE,
+    PATHS_CONFIG_FILE,
+    get_snapshot_paths,
+    stage_config,
+)
 from src.rag.core.logging import configure_logging
 from src.rag.core.mlflow_tracking import build_run_params
 from src.rag.core.snapshot import lifecycle, registry
@@ -48,8 +54,8 @@ def parse_args():
                         help="The RAG pipeline step to run.")
     parser.add_argument("--recipes-path", type=str, default=None,
                         help="Path to a recipes dataset to register for this build. "
-                             "Defaults to DATA_PATHS['cleaned_recipes']. The file's "
-                             "checksum is captured at set_strategy so a mid-build "
+                             "Defaults to data.cleaned_recipes in configs/paths_config.yaml. "
+                             "The file's checksum is captured at set_strategy so a mid-build "
                              "preprocessing swap cannot desync the snapshot.")
     parser.add_argument("--dataset-name", type=str, default=None,
                         help="Override the auto-derived dataset key. Use to pin a key "
@@ -57,26 +63,8 @@ def parse_args():
     return parser.parse_args()
 
 
-_SNAPSHOTS_DIR = Path("snapshots")
-
-
 def _registry_file() -> Path:
-    return _SNAPSHOTS_DIR / "registry.json"
-
-
-def _build_in_progress_name() -> str:
-    """Return the versioned folder name registered as the active build.
-
-    Raises RuntimeError if set_strategy has not been run, or if the build it
-    started has since sealed and released the target.
-    """
-    name = registry.get_folder_for_target(_registry_file(), "build_in_progress")
-    if not name:
-        raise RuntimeError(
-            "No build in progress in the registry. Run "
-            "'python -m scripts.build_rag --run set_strategy' first."
-        )
-    return name
+    return get_snapshot_paths().registry_file
 
 
 def _sealed_name() -> str:
@@ -87,22 +75,20 @@ def _sealed_name() -> str:
     return name
 
 
-def _active_dataset_key(name: str) -> str:
-    """Read the dataset key captured at set_strategy from the named build."""
-    metadata_path = _SNAPSHOTS_DIR / name / "metadata.json"
-    metadata = json.loads(metadata_path.read_text())
-    return metadata["dataset_key"]
+def _dataset_key(metadata_path: Path) -> str:
+    """Read the dataset key pinned into a build's metadata at set_strategy."""
+    return json.loads(Path(metadata_path).read_text())["dataset_key"]
 
 
 def _resolve_recipes_path() -> Path:
-    """Resolve the dataset key captured at set_strategy to a local path.
+    """Resolve the dataset key pinned at set_strategy to a local path.
 
     Fail-closed: a missing key, missing file, or checksum drift raises. The
-    lock that protected the file during the build has been released by now
-    (finalise_snapshot closes it), but the resolver still verifies the file
-    is the same one we registered.
+    lock that protected the file during the stage has been released by the time
+    a later stage reads it, but the resolver still verifies the file is the same
+    one the build registered.
     """
-    key = _active_dataset_key(_build_in_progress_name())
+    key = _dataset_key(get_snapshot_paths().metadata)
     resolver = LocalDatasetResolver(
         registry_path=_registry_file(),
         registry_get_dataset=registry.get_dataset,
@@ -162,14 +148,21 @@ def _snapshot_metrics(paths) -> dict[str, float]:
 
 
 def set_strategy(recipes_path: Path | None = None, dataset_name: str | None = None) -> None:
-    """Start a new build: register the dataset, claim a versioned folder, write metadata.
+    """Start a new build: register the dataset, open the staging tree, pin the key.
 
     The dataset is registered first (so the registry is the source of truth
-    for what datasets exist), then `start_new_build` pins the key into the
-    snapshot metadata. Capturing the key at this point - not at finalise -
-    is what protects the build from a mid-flight preprocessing swap.
+    for what datasets exist), then `start_new_build` opens the staging tree and
+    pins the key into the staged metadata. Capturing the key at this point - not
+    at finalise - is what protects the build from a mid-flight preprocessing
+    swap. No versioned folder is claimed here; the name is claimed when the
+    build seals.
     """
-    recipes = Path(recipes_path) if recipes_path is not None else Path(DATA_PATHS["cleaned_recipes"])
+    config = stage_config("set_strategy")
+    recipes = (
+        Path(recipes_path)
+        if recipes_path is not None
+        else Path(config.get(PATHS_CONFIG_FILE, "data.cleaned_recipes"))
+    )
     dataset_key = register_dataset(
         registry_file=_registry_file(),
         path=recipes,
@@ -177,56 +170,49 @@ def set_strategy(recipes_path: Path | None = None, dataset_name: str | None = No
     )
     logger.info("registered dataset %s -> %s", dataset_key, recipes)
 
-    name = lifecycle.start_new_build(
-        snapshots_dir=_SNAPSHOTS_DIR,
-        registry_file=_registry_file(),
-        strategy=BASE_CONFIG["rag"]["strategy"],
-        dataset_key=dataset_key,
-    )
-    logger.info("started new build %s", name)
+    paths = get_snapshot_paths()
+    with lifecycle.staging_lock(paths.building):
+        lifecycle.start_new_build(
+            staging_dir=paths.building,
+            strategy=config.get(BASE_CONFIG_FILE, "rag.strategy"),
+            dataset_key=dataset_key,
+        )
+    logger.info("opened the staging tree at %s", paths.building)
 
 
 def chunk() -> None:
-    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
+    paths = get_snapshot_paths()
     recipes_path = _resolve_recipes_path()
     builder = BaseBuilder.from_paths(paths)
-    with lifecycle.recipe_file_lock(recipes_path):
-        builder.chunk(paths, recipes_path)
+    with lifecycle.staging_lock(paths.building):
+        with lifecycle.recipe_file_lock(recipes_path):
+            builder.chunk(paths, recipes_path)
 
 
 def transform() -> None:
-    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
+    paths = get_snapshot_paths()
     builder = BaseBuilder.from_paths(paths)
-    builder.transform(paths)
+    with lifecycle.staging_lock(paths.building):
+        builder.transform(paths)
 
 
 def index_stage() -> None:
-    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
+    paths = get_snapshot_paths()
     builder = BaseBuilder.from_paths(paths)
-    builder.index(paths)
+    with lifecycle.staging_lock(paths.building):
+        builder.index(paths)
 
 
 def finalise_build() -> None:
-    paths = get_snapshot_paths(versioned_name=_build_in_progress_name())
+    """Copy the staging tree into a freshly named sealed snapshot folder."""
+    paths = get_snapshot_paths()
     builder = BaseBuilder.from_paths(paths)
-    builder.seal_snapshot(
-        paths=paths,
-        registry_file=_registry_file(),
-        versioned_name=paths.building.name,
-    )
-    # Register the completed snapshot with DVC so its contents are
-    # content-hashed and tracked for reproducibility. Skip silently if dvc
-    # is not installed or the working tree is not a DVC repo. Pass an
-    # absolute path so dvc does not interpret a relative path under cwd.
-    try:
-        subprocess.run(
-            ["dvc", "add", str(paths.building.resolve())],
-            check=True,
+    with lifecycle.staging_lock(paths.building):
+        name = builder.seal_snapshot(
+            paths=paths,
+            registry_file=_registry_file(),
         )
-    except FileNotFoundError:
-        logger.warning("dvc not on PATH; skipping dvc add for %s", paths.building)
-    except subprocess.CalledProcessError as e:
-        logger.warning("dvc add failed for %s: %s", paths.building, e)
+    logger.info("sealed snapshot %s", name)
 
 
 def build_rag(recipes_path: Path | None = None, dataset_name: str | None = None):
@@ -254,11 +240,11 @@ def build_rag(recipes_path: Path | None = None, dataset_name: str | None = None)
         # of leaving a sealed snapshot behind by a run marked FAILED.
         try:
             # Every stage has run by now, so the build this run produced is the
-            # newest sealed one: the stages' own target was released when
-            # finalise_build sealed the folder.
+            # newest sealed one: finalise_build pointed `latest_build` at the
+            # folder it copied the staging tree into.
             sealed = _sealed_name()
             paths = get_snapshot_paths(versioned_name=sealed)
-            dataset_key = _active_dataset_key(sealed)
+            dataset_key = _dataset_key(paths.metadata)
             dataset = registry.get_dataset(_registry_file(), dataset_key) or {}
 
             # The dataset key and its checksum are read after the stages have

@@ -1,5 +1,2 @@
 [core]
-    remote = localstorage
     autostage = true
-['remote "localstorage"']
-    url = /home/raj/dvc_storage

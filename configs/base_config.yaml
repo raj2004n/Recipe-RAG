@@ -41,13 +41,6 @@ generator:
   return_tensors: pt
   adapter_path: artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02
 
-evaluation dataset generator:
-  model_id: gemma3:4b
-  request_timeout: 120
-  max_retries: 4
-  backoff_base: 2
-  max_workers: 4
-
 # Drafts the user-question prompts half of the eval-data golden subset. Eight
 # rows per query type produce the 72-row hand-verified dataset. max_workers=2
 # because the model is a cloud provider with a per-minute token cap.

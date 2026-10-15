@@ -11,6 +11,33 @@ stages:
       hash: md5
       md5: 88450aab8f79de16e18e1b0c70dfc31d
       size: 1776
+    - path: scripts/build_rag.py
+      hash: md5
+      md5: dba17dc9d0aad4665a4f9190eb7127d0
+      size: 12072
+    - path: src/rag/core/checksum.py
+      hash: md5
+      md5: 67bc347b341c2ef525ba9114292e38e7
+      size: 796
+    - path: src/rag/core/config.py
+      hash: md5
+      md5: 3e04808319eb706e64d6c58903105b61
+      size: 1449
+    - path: src/rag/core/datasets/
+      hash: md5
+      md5: f3f6196d9b3238da7612207f8e282be1.dir
+      size: 15738
+      nfiles: 6
+    - path: src/rag/core/snapshot/
+      hash: md5
+      md5: f634accb14e7ee9054a0a52509459d43.dir
+      size: 92952
+      nfiles: 14
+    outs:
+    - path: build/staging/metadata.json
+      hash: md5
+      md5: c8a2375b0f5da89b8915dad22eb7a046
+      size: 80
   collect:
     cmd: python -m scripts.collect_data
     deps:
@@ -39,29 +66,13 @@ stages:
       hash: md5
       md5: 8eab36d61aad1983ec16cdcbd871b78f
       size: 19627371
-  generate_eval_dataset:
-    cmd: python -m scripts.generate_eval_dataset
-    deps:
-    - path: data/processed/cleaned_recipes.json
-      hash: md5
-      md5: 8eab36d61aad1983ec16cdcbd871b78f
-      size: 19627371
-    - path: scripts/generate_eval_dataset.py
-      hash: md5
-      md5: 8211340a7f05f1b075dcd85ece41dd8d
-      size: 640
-    outs:
-    - path: data/evaluation/evaluation_dataset.json
-      hash: md5
-      md5: bb8ca9b5a4a9064c40f0910b1da3f701
-      size: 518646
-    - path: data/evaluation/evaluation_queries.json
-      hash: md5
-      md5: bb8ca9b5a4a9064c40f0910b1da3f701
-      size: 518646
   chunk:
     cmd: python -m scripts.build_rag --run chunk
     deps:
+    - path: build/staging/metadata.json
+      hash: md5
+      md5: c8a2375b0f5da89b8915dad22eb7a046
+      size: 80
     - path: configs/base_config.yaml
       hash: md5
       md5: 4699da22d44dc7ebd7af440a470cc396
@@ -70,23 +81,131 @@ stages:
       hash: md5
       md5: 8eab36d61aad1983ec16cdcbd871b78f
       size: 19627371
+    - path: scripts/build_rag.py
+      hash: md5
+      md5: dba17dc9d0aad4665a4f9190eb7127d0
+      size: 12072
+    - path: src/rag/builder/
+      hash: md5
+      md5: 01d9599cf96fcfbef338c066d90b0bcb.dir
+      size: 36128
+      nfiles: 9
+    - path: src/rag/core/
+      hash: md5
+      md5: 8d8dc7aa1dc3ae172a1be219eab1905a.dir
+      size: 133886
+      nfiles: 34
+    - path: src/rag/data/preprocessor.py
+      hash: md5
+      md5: dcfbb3c503a7c260a15873e59304510d
+      size: 11170
+    - path: src/rag/data/recipe_format.py
+      hash: md5
+      md5: 93a0e0baa92aaed0321e506996c4cd35
+      size: 2040
+    - path: src/rag/retrieval/
+      hash: md5
+      md5: f2aceab906c37ac4ca331e25cd37abcb.dir
+      size: 87045
+      nfiles: 29
+    outs:
+    - path: build/staging/chunks/
+      hash: md5
+      md5: 0530d0bf27e79fda8051649e323a4905.dir
+      size: 12702759
+      nfiles: 1
   transform:
     cmd: python -m scripts.build_rag --run transform
     deps:
+    - path: build/staging/chunks/
+      hash: md5
+      md5: 0530d0bf27e79fda8051649e323a4905.dir
+      size: 12702759
+      nfiles: 1
     - path: configs/base_config.yaml
       hash: md5
       md5: 4699da22d44dc7ebd7af440a470cc396
       size: 2541
+    - path: scripts/build_rag.py
+      hash: md5
+      md5: dba17dc9d0aad4665a4f9190eb7127d0
+      size: 12072
+    - path: src/rag/builder/
+      hash: md5
+      md5: 01d9599cf96fcfbef338c066d90b0bcb.dir
+      size: 36128
+      nfiles: 9
+    - path: src/rag/core/
+      hash: md5
+      md5: 8d8dc7aa1dc3ae172a1be219eab1905a.dir
+      size: 133886
+      nfiles: 34
+    - path: src/rag/retrieval/
+      hash: md5
+      md5: f2aceab906c37ac4ca331e25cd37abcb.dir
+      size: 87045
+      nfiles: 29
+    outs:
+    - path: build/staging/transformed_chunks/
+      hash: md5
+      md5: 3a7e31055db411a07ead94e8fdb82952.dir
+      size: 139721222
+      nfiles: 2
   index:
     cmd: python -m scripts.build_rag --run index
     deps:
+    - path: build/staging/transformed_chunks/
+      hash: md5
+      md5: 3a7e31055db411a07ead94e8fdb82952.dir
+      size: 139721222
+      nfiles: 2
     - path: configs/base_config.yaml
       hash: md5
       md5: 4699da22d44dc7ebd7af440a470cc396
       size: 2541
+    - path: scripts/build_rag.py
+      hash: md5
+      md5: dba17dc9d0aad4665a4f9190eb7127d0
+      size: 12072
+    - path: src/rag/builder/
+      hash: md5
+      md5: 01d9599cf96fcfbef338c066d90b0bcb.dir
+      size: 36128
+      nfiles: 9
+    - path: src/rag/core/
+      hash: md5
+      md5: 8d8dc7aa1dc3ae172a1be219eab1905a.dir
+      size: 133886
+      nfiles: 34
+    - path: src/rag/retrieval/
+      hash: md5
+      md5: f2aceab906c37ac4ca331e25cd37abcb.dir
+      size: 87045
+      nfiles: 29
+    outs:
+    - path: build/staging/index/
+      hash: md5
+      md5: 4a5e03753ac9ff4c34f4491b4e52bc26.dir
+      size: 27148761
+      nfiles: 3
   finalise_build:
     cmd: python -m scripts.build_rag --run finalise_build
     deps:
+    - path: build/staging/chunks/
+      hash: md5
+      md5: 0530d0bf27e79fda8051649e323a4905.dir
+      size: 12702759
+      nfiles: 1
+    - path: build/staging/index/
+      hash: md5
+      md5: 4a5e03753ac9ff4c34f4491b4e52bc26.dir
+      size: 27148761
+      nfiles: 3
+    - path: build/staging/transformed_chunks/
+      hash: md5
+      md5: 3a7e31055db411a07ead94e8fdb82952.dir
+      size: 139721222
+      nfiles: 2
     - path: configs/base_config.yaml
       hash: md5
       md5: 4699da22d44dc7ebd7af440a470cc396
@@ -99,8 +218,17 @@ stages:
       hash: md5
       md5: 4b7cfd04f384b3e1c3ff20dd9b7fd50c
       size: 913
-    - path: src/rag/core/snapshot/
+    - path: scripts/build_rag.py
       hash: md5
-      md5: d9feb002f6b376bf276fe44af47850f6.dir
-      size: 78909
-      nfiles: 14
+      md5: dba17dc9d0aad4665a4f9190eb7127d0
+      size: 12072
+    - path: src/rag/builder/
+      hash: md5
+      md5: 01d9599cf96fcfbef338c066d90b0bcb.dir
+      size: 36128
+      nfiles: 9
+    - path: src/rag/core/
+      hash: md5
+      md5: 8d8dc7aa1dc3ae172a1be219eab1905a.dir
+      size: 133886
+      nfiles: 34
