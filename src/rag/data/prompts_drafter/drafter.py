@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from ...retrieval.dense.encoder import Encoder
 from ..drafter_common import load_recipes
+from ..pairs import add_to_dvc
 from .rendering import call_model, prompt_template_tag
 from .selection import Selection, selections_for_type
 from .types import QUERY_TYPES, TYPES_WITH_ONE_PRIMARY
@@ -137,8 +138,10 @@ def draft_prompts(
     the newly drafted ones. The merged file is written to a sibling temp
     path and then atomically renamed over ``output_path`` so a crashed run
     leaves the existing file in place rather than moving it aside and never
-    replacing it. The failed sidecar is archived before truncation because
-    its only job is to record known-bad selections for resume.
+    replacing it. Once the replacement is in place the run records its own DVC
+    pointer, since the file is whole at that point and the rows in it are what
+    the pointer stands for. The failed sidecar is archived before truncation
+    because its only job is to record known-bad selections for resume.
     """
     recipes = load_recipes(recipes_path)
     if not recipes:
@@ -197,6 +200,7 @@ def draft_prompts(
         for row in rows:
             f.write(json.dumps(row) + "\n")
     os.replace(tmp_path, output_path)
+    add_to_dvc(output_path)
 
     failed_path = _failed_path(output_path)
     if new_failed:
