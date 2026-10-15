@@ -48,7 +48,7 @@ from transformers import AutoModelForCausalLM
 
 from ..core.checksum import file_checksum
 from ..core.config import PROMPTS_CONFIG
-from ..data.pairs import write_manifest
+from ..data.pairs import add_to_dvc, write_manifest
 from ..data.preprocessor import Recipe
 from ..data.source_block import labelled_blocks
 from ..data.student_prompt import student_prompt, student_system
@@ -303,11 +303,17 @@ def lr_factor(step: int, total_steps: int, warmup_steps: int) -> float:
 
 
 def save_checkpoint(run_dir: Path, model, document: dict) -> Path:
-    """Write one epoch's adapter, the LoRA config peft keeps beside it, and the rows it was fit on."""
+    """Write one epoch's adapter, the LoRA config peft keeps beside it, and the rows it was fit on.
+
+    The directory is what the `.dvc` pointer beside it stands for, so this is also
+    where the run records it.
+    """
     checkpoint_dir = run_dir / f"epoch_{document['epoch']:02d}"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(checkpoint_dir)
     write_manifest(checkpoint_dir / "checkpoint.json", document)
+    # The directory is whole, record included, so the run that wrote the epoch moves its pointer.
+    add_to_dvc(checkpoint_dir)
     return checkpoint_dir
 
 

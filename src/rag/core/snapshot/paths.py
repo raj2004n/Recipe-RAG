@@ -9,26 +9,28 @@ from pathlib import Path
 
 
 _SNAPSHOTS_ROOT = Path("snapshots")
+_STAGING_ROOT = Path("build/staging")
 
 
 @dataclass(frozen=True)
 class SnapshotPaths:
-    """Resolved paths for a single in-progress or sealed snapshot.
+    """Resolved paths for the staging tree or for a sealed snapshot.
 
-    The `building` field is the snapshot's root folder. Under the new flow
-    this is a versioned folder (`snapshots/{strategy}_{YYYYMMDD_HHMM}_{index}/`)
-    created at the start of a build and never renamed. The `latest` symlink
-    or directory is no longer a real path - the registry is the source of
-    truth for "which folder is latest".
+    A build fills one fixed staging tree at `build/staging/` across its stages,
+    and `finalise_build` copies that tree into a versioned folder
+    (`snapshots/{strategy}_{YYYYMMDD_HHMM}_{index}/`). Resolving with a
+    versioned name gives the sealed folder; resolving with no name gives the
+    staging tree. `snapshots/` holds sealed, deployable folders only, and the
+    registry is the source of truth for which one is newest.
 
     Attributes:
-        building: the snapshot's root directory.
+        building: the root directory of the staging tree or sealed snapshot.
         chunks: where chunk sets are persisted during build.
         transformed_chunks: where encoded/tokenised chunk sets are persisted.
         index: where dense / BM25 indices are persisted during build.
         configs: where copied config files live inside the snapshot.
-        metadata: path to metadata.json inside the snapshot.
-        registry_file: registry.json alongside snapshots/.
+        metadata: path to metadata.json.
+        registry_file: registry.json alongside the sealed folders.
         config_files: source paths of every config file to copy into the
             snapshot, in the order they are copied.
     """
@@ -41,6 +43,16 @@ class SnapshotPaths:
     registry_file: Path
     config_files: tuple[str, ...]
 
+    @property
+    def snapshots_root(self) -> Path:
+        """The directory holding the sealed snapshot folders and the registry."""
+        return _SNAPSHOTS_ROOT
+
+    @property
+    def is_staging(self) -> bool:
+        """True when these paths point at the staging tree rather than a sealed folder."""
+        return self.building == _STAGING_ROOT
+
     @classmethod
     def from_paths_config(
         cls,
@@ -50,40 +62,23 @@ class SnapshotPaths:
         """Resolve snapshot paths from `PATHS_CONFIG`.
 
         Args:
-            paths_cfg: the `PATHS_CONFIG` dict, with optional `building` and
-                `configs` blocks.
+            paths_cfg: the `PATHS_CONFIG` dict, whose `configs` block lists the
+                files to copy into a sealed snapshot.
             versioned_name: the versioned folder name (e.g.
-                `dense_20260821_1430_0`) when resolving paths for an active
-                or sealed build. When given, `building` is
-                `snapshots/<versioned_name>/`. When `None`, falls back to
-                the legacy `snapshots/building/` for backward compatibility
-                with code paths that have not yet migrated.
+                `dense_20260821_1430_0`) when resolving paths for a sealed
+                build. When `None`, resolves the staging tree at
+                `build/staging/`, which every build stage writes into.
         """
-        building_cfg = paths_cfg.get("building", {})
         configs = paths_cfg.get("configs", {})
-
-        if versioned_name is not None:
-            building_root = _SNAPSHOTS_ROOT / versioned_name
-            chunks_dir = building_root / "chunks"
-            transformed_chunks_dir = building_root / "transformed_chunks"
-            index_dir = building_root / "index"
-            configs_dir = building_root / "configs"
-            metadata_dir = building_root
-        else:
-            building_root = _SNAPSHOTS_ROOT / "building"
-            chunks_dir = Path(building_cfg.get("chunks", "snapshots/building/chunks"))
-            transformed_chunks_dir = Path(building_cfg.get("transformed_chunks", "snapshots/building/transformed_chunks"))
-            index_dir = Path(building_cfg.get("index", "snapshots/building/index"))
-            configs_dir = Path(building_cfg.get("configs", "snapshots/building/configs"))
-            metadata_dir = Path(building_cfg.get("metadata", "snapshots/building"))
+        root = _SNAPSHOTS_ROOT / versioned_name if versioned_name is not None else _STAGING_ROOT
 
         return cls(
-            building=building_root,
-            chunks=chunks_dir,
-            transformed_chunks=transformed_chunks_dir,
-            index=index_dir,
-            configs=configs_dir,
-            metadata=metadata_dir / "metadata.json",
+            building=root,
+            chunks=root / "chunks",
+            transformed_chunks=root / "transformed_chunks",
+            index=root / "index",
+            configs=root / "configs",
+            metadata=root / "metadata.json",
             registry_file=_SNAPSHOTS_ROOT / "registry.json",
             config_files=tuple(configs.values()),
         )

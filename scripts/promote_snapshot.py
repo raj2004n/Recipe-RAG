@@ -44,7 +44,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Promotion gate for snapshots")
     parser.add_argument(
         "--snapshot", type=str, default="latest_build",
-        help="Snapshot target ('latest_build' or 'build_in_progress') or folder name to gate.",
+        help="Snapshot target ('latest_build') or folder name to gate.",
     )
     parser.add_argument(
         "--config", type=str, default=None,
@@ -241,7 +241,7 @@ def main():
         verdict="pass" if passed else "fail",
         checks=[check.as_dict() for check in checks],
     )
-    print(f"Promoted {folder!r}: targets.baseline now points at it, recorded in the registry.")
+    print(f"Promoted {folder!r}: targets.serve now points at it, recorded in the registry.")
     if not passed:
         print(
             "The record carries the verdict and the failing checks, so the "

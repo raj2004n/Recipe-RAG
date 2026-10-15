@@ -13,7 +13,7 @@ from typing import TypedDict, Optional, NotRequired
 
 class RegistryData(TypedDict, total=False):
     targets: dict[str, str]  # target_name -> folder_name (e.g. "latest_build" -> "dense_2026_0")
-    status: dict[str, str]   # folder_name -> status ("building" | "complete" | "abandoned")
+    status: dict[str, str]   # folder_name -> status; "complete" once a build has sealed
     promoted: dict[str, "PromotionRecord"]  # folder_name -> record of its promotion
 
 
@@ -47,12 +47,16 @@ class PromotionRecord(TypedDict):
     verdict: NotRequired[str]
 
 
-# The target keys as they were named before the names described their readers.
+# The target keys as they were named before the names described their readers,
+# and the key that named a build in progress before the staging tree replaced
+# it. Reading a registry that still carries `current` drops the key, and the
+# next write persists the removal.
 _TARGET_RENAMES = {
-    "current": "build_in_progress",
     "latest": "latest_build",
     "baseline": "serve",
 }
+
+_RETIRED_TARGETS = frozenset({"current"})
 
 
 def _migrate_legacy(data: dict) -> dict:
@@ -74,7 +78,7 @@ def _migrate_legacy(data: dict) -> dict:
         folder = data["current"]
         status = data.get("status", "complete")
         return {
-            "targets": {"current": folder, "latest": folder} if folder else {"current": folder},
+            "targets": {"latest": folder} if folder else {},
             "status": {folder: status} if folder else {},
             "datasets": {},
             "promoted": {},
@@ -86,16 +90,19 @@ def _migrate_legacy(data: dict) -> dict:
 def _migrate_target_names(targets: dict) -> dict:
     """Rename the target keys a registry may still carry under their old names.
 
-    The targets are named for what reads them: `build_in_progress` for the
-    folder the active build writes into, `latest_build` for the newest sealed
-    folder, and `serve` for the folder a human promoted. Registries written
-    before those names hold `current`, `latest` and `baseline` instead, so
-    reading maps them across and the next write persists the new spelling. A
-    key already carrying its new name wins over a renamed one, so a registry
-    holding both resolves the same way on every read.
+    The targets are named for what reads them: `latest_build` for the newest
+    sealed folder and `serve` for the folder a human promoted. Registries
+    written before those names hold `latest` and `baseline` instead, so reading
+    maps them across and the next write persists the new spelling. A key already
+    carrying its new name wins over a renamed one, so a registry holding both
+    resolves the same way on every read. `current` named the folder a build in
+    progress wrote into, which the staging tree replaced, so it is dropped
+    rather than carried forward under a name nothing reads.
     """
     renamed: dict[str, str] = {}
     for key, folder in targets.items():
+        if key in _RETIRED_TARGETS:
+            continue
         if key in _TARGET_RENAMES:
             renamed.setdefault(_TARGET_RENAMES[key], folder)
         else:
@@ -128,11 +135,8 @@ def claim_snapshot_name(snapshots_dir: Path, strategy: str) -> str:
 def _read_registry(registry_path: Path) -> RegistryData:
     """Read the registry file, migrating legacy shapes to the current one.
 
-    Two invariants are applied on the way out, both of them idempotent so a
-    read never changes what a later read sees. The target keys are renamed to
-    the names that describe their readers, and `build_in_progress` is dropped
-    when the folder it names is not `building`, because a build that has sealed
-    or been abandoned is not in progress. Registries written before either rule
+    Both the conversion and the target renaming are idempotent, so a read never
+    changes what a later read sees. Registries written before either rule
     existed still carry the keys they violate, so applying them here is also
     what lets the next write persist the corrected shape.
     """
@@ -150,14 +154,10 @@ def _read_registry(registry_path: Path) -> RegistryData:
 
     migrated = _migrate_legacy(raw)
     targets = _migrate_target_names(dict(migrated.get("targets", {})))
-    status = dict(migrated.get("status", {}))
-    running = targets.get("build_in_progress")
-    if running and status.get(running) != "building":
-        del targets["build_in_progress"]
 
     return {
         "targets": targets,
-        "status": status,
+        "status": dict(migrated.get("status", {})),
         "datasets": dict(migrated.get("datasets", {})),
         "promoted": dict(migrated.get("promoted", {})),
     }
@@ -178,22 +178,6 @@ def update_target(registry_path: Path, target: str, folder: str) -> None:
     """
     data = _read_registry(registry_path)
     data["targets"][target] = folder
-    _write_registry(registry_path, data)
-
-
-def clear_target(registry_path: Path, target: str, folder: str | None = None) -> None:
-    """Drop a target from the registry.
-
-    Passing `folder` guards the drop: the target is cleared only while it still
-    names that folder, so a caller releasing its own claim cannot take away a
-    newer one that has since been written.
-    """
-    data = _read_registry(registry_path)
-    if target not in data["targets"]:
-        return
-    if folder is not None and data["targets"][target] != folder:
-        return
-    del data["targets"][target]
     _write_registry(registry_path, data)
 
 
@@ -294,52 +278,3 @@ def remove_dataset(registry_path: Path, key: str) -> bool:
     del data["datasets"][key]
     _write_registry(registry_path, data)
     return True
-
-
-def sweep_stale_building_builds(
-    snapshots_dir: Path,
-    registry_path: Path,
-    max_age_hours: int = 24,
-    required_subdirs: tuple[str, ...] = ("chunks", "index"),
-) -> list[str]:
-    """Mark stale 'building'-status folders as 'abandoned' in the registry.
-
-    A build is considered stale if its `status` is `"building"` AND one of:
-        - the build folder is missing the required subdirs (e.g. `chunks/`),
-        - the build folder's `metadata.json` mtime is older than `max_age_hours`.
-
-    Abandoning the folder also releases `build_in_progress` when that target
-    still names it, so the target only ever points at a build that is running.
-
-    Returns the list of folder names that were flipped to `"abandoned"`.
-    """
-    data = _read_registry(registry_path)
-    now = time.time()
-    cutoff = now - max_age_hours * 3600
-    swept: list[str] = []
-
-    for folder, status in list(data["status"].items()):
-        if status != "building":
-            continue
-
-        folder_path = snapshots_dir / folder
-        if not folder_path.is_dir():
-            data["status"][folder] = "abandoned"
-            swept.append(folder)
-            continue
-
-        missing_subdir = any(not (folder_path / sub).is_dir() for sub in required_subdirs)
-        metadata = folder_path / "metadata.json"
-        stale_mtime = metadata.exists() and metadata.stat().st_mtime < cutoff
-
-        if missing_subdir or stale_mtime:
-            data["status"][folder] = "abandoned"
-            swept.append(folder)
-
-    if swept:
-        for folder in swept:
-            if data["targets"].get("build_in_progress") == folder:
-                del data["targets"]["build_in_progress"]
-        _write_registry(registry_path, data)
-
-    return swept

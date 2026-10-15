@@ -42,8 +42,7 @@ def add_common_args(parser: argparse.ArgumentParser, *, with_probe: bool = True)
     """The snapshot, limit, and MLflow args every eval script shares."""
     parser.add_argument(
         "--snapshot", type=str, default=_DEFAULT_SNAPSHOT,
-        help="Snapshot target ('latest_build' or 'build_in_progress') or "
-             "folder name to evaluate.",
+        help="Snapshot target ('latest_build') or folder name to evaluate.",
     )
     parser.add_argument(
         "--limit", type=int, default=None,
@@ -65,7 +64,7 @@ def add_common_args(parser: argparse.ArgumentParser, *, with_probe: bool = True)
 
 def resolve_snapshot_folder(target: str) -> str:
     """Resolve a target name or folder name to a snapshot folder name."""
-    if target in ("latest_build", "build_in_progress"):
+    if target == _DEFAULT_SNAPSHOT:
         paths = SnapshotPaths.from_paths_config({})
         folder = registry.get_folder_for_target(paths.registry_file, target)
         if not folder:
@@ -79,7 +78,7 @@ def resolve_snapshot_folder(target: str) -> str:
 def load_snapshot(folder: str):
     """Load the sealed snapshot in the given folder, validating its status."""
     paths = SnapshotPaths.from_paths_config({})
-    return loader.load_snapshot(paths.building.parent / folder)
+    return loader.load_snapshot(paths.snapshots_root / folder)
 
 
 def resolve_recipes_path(snapshot) -> Path:

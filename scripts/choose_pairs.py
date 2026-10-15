@@ -18,8 +18,7 @@ def main() -> None:
     configure_logging()
     parser = argparse.ArgumentParser(description=chooser.__doc__)
     parser.add_argument("--snapshot", default="latest_build",
-                        help="Snapshot target ('latest_build' or 'build_in_progress') "
-                             "or folder name.")
+                        help="Snapshot target ('latest_build') or folder name.")
     parser.add_argument("--limit", type=int, default=None,
                         help="Cap the number of primaries; a limited run writes the smoke pair.")
     parser.add_argument("--primaries-file", type=Path, default=None,

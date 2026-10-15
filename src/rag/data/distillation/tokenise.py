@@ -26,7 +26,7 @@ from ...training.student import (
     assert_template_matches,
     render_student_prompt,
 )
-from ..pairs import write_manifest
+from ..pairs import add_to_dvc, write_manifest
 from ..pairs.selection import (
     dataset_key_of,
     load_pairs,
@@ -194,6 +194,9 @@ def tokenise_rows(
         "rows": records,
     }, temp_path)
     os.replace(temp_path, out_path)
+
+    # The rows are whole, so the pointer moves before the manifest records the pass.
+    add_to_dvc(out_path)
 
     write_manifest(manifest_path, {
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

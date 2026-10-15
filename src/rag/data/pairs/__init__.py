@@ -11,14 +11,14 @@ those sits the labelling pass, which reads the pair set's titles and marks each
 recipe savoury or sweet, and the reviewed calls that settle the titles the pass
 abstained on.
 
-Only the manifest write is re-exported. The pool, the chooser, the design pass,
-the answer pass and the labelling pass are each reached through their own module,
-so a caller that wants the manifest helper and nothing else does not pay for what
-a pass loads on the way in. The selection loaders are reached through
-``.selection`` by the passes that need them, the same way the drafter packages
-are entered.
+Only the manifest write and the pointer write are re-exported. The pool, the
+chooser, the design pass, the answer pass and the labelling pass are each reached
+through their own module, so a caller that wants the manifest helper and nothing
+else does not pay for what a pass loads on the way in. The selection loaders are
+reached through ``.selection`` by the passes that need them, the same way the
+drafter packages are entered.
 """
 
-from .manifest import write_manifest
+from .manifest import add_to_dvc, write_manifest
 
-__all__ = ["write_manifest"]
+__all__ = ["write_manifest", "add_to_dvc"]

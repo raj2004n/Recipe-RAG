@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ...core.checksum import file_checksum
-from ..pairs import write_manifest
+from ..pairs import add_to_dvc, write_manifest
 from .manifest import write_jsonl
 from .selection import load_answers, load_categories
 from .types import (
@@ -217,6 +217,10 @@ def draw_split(
         }
         for position, row in enumerate(rows)
     ])
+
+    # The rows are whole, so the pointer moves before the record calls the pass complete.
+    add_to_dvc(out_path)
+
     write_manifest(manifest_path, {**document, "state": "complete"})
 
     logger.info("wrote %d rows to %s", len(rows), out_path)

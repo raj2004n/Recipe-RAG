@@ -62,39 +62,33 @@ class BaseBuilder(ABC):
     def set_strategy_from_config(
         cls,
         base_config: dict,
-        snapshots_dir,
-        registry_file,
-    ) -> str:
-        """Resolve strategy from `base_config` and start a new versioned build.
-
-        Returns the versioned folder name (e.g. `dense_20260821_1430_0`).
+        staging_dir,
+    ) -> None:
+        """Resolve strategy from `base_config` and open the staging tree for a build.
         """
         strategy_name = base_config["rag"]["strategy"]
         return cls._set_strategy(
             strategy_name=strategy_name,
-            snapshots_dir=snapshots_dir,
-            registry_file=registry_file,
+            staging_dir=staging_dir,
         )
 
     @classmethod
     def _set_strategy(
         cls,
         strategy_name: str,
-        snapshots_dir,
-        registry_file,
-    ) -> str:
-        """Start a new build with the given strategy.
+        staging_dir,
+    ) -> None:
+        """Open the staging tree for a build with the given strategy.
 
-        Delegates to `lifecycle.start_new_build`, which creates the versioned
-        folder, writes `metadata.json`, and registers the build as
-        `current` / `building` in the registry.
+        Validates the strategy and delegates to `lifecycle.start_new_build`,
+        which empties the staging tree, writes `metadata.json`, and claims the
+        tree as in progress.
         """
         if strategy_name not in {"dense", "hybrid"}:
             raise ValueError(f"Unknown strategy: {strategy_name}")
 
         return lifecycle.start_new_build(
-            snapshots_dir=snapshots_dir,
-            registry_file=registry_file,
+            staging_dir=staging_dir,
             strategy=strategy_name,
         )
 
@@ -133,10 +127,10 @@ class BaseBuilder(ABC):
         """Build FAISS and/or BM25 indices over the transformed chunks."""
 
     @abstractmethod
-    def seal_snapshot(self, paths: SnapshotPaths, registry_file, versioned_name: str):
-        """Seal the in-progress snapshot so Pipeline can load it.
+    def seal_snapshot(self, paths: SnapshotPaths, registry_file) -> str:
+        """Seal the staged build into a new versioned snapshot a Pipeline can load.
 
-        Copies configs into the snapshot, stamps `created_at`, marks the
-        build complete in the registry, and points the `latest` target at
-        this build.
+        Claims a versioned folder, copies the staging tree into it, copies the
+        configs, stamps `created_at`, marks the build complete in the registry,
+        and points `latest_build` at it. Returns the versioned folder name.
         """

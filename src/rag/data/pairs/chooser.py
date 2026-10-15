@@ -39,6 +39,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from ...evaluation.harness import load_snapshot, resolve_snapshot_folder
 from ..recipe_format import recipe_to_string
+from .manifest import add_to_dvc
 from .rendering import strip_markdown_fence
 from .selection import resolve_snapshot_corpus
 
@@ -419,6 +420,11 @@ def choose_pairs(
     with out_path.open("w") as handle:
         for row in rows:
             handle.write(json.dumps(row) + "\n")
+
+    # The full run is the pair set the passes downstream read, so it is the one that gets
+    # a pointer. The smoke and probe files are scratch, and are left untracked.
+    if not smoke and not targeted:
+        add_to_dvc(out_path)
 
     cost = (totals["prompt_tokens"] / 1_000_000) * PRICE_PER_M_INPUT + \
            (totals["output_tokens"] / 1_000_000) * PRICE_PER_M_OUTPUT
