@@ -48,11 +48,6 @@ class SnapshotPaths:
         """The directory holding the sealed snapshot folders and the registry."""
         return _SNAPSHOTS_ROOT
 
-    @property
-    def is_staging(self) -> bool:
-        """True when these paths point at the staging tree rather than a sealed folder."""
-        return self.building == _STAGING_ROOT
-
     @classmethod
     def from_paths_config(
         cls,
