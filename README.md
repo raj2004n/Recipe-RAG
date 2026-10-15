@@ -189,10 +189,11 @@ Three GitHub Actions workflows drive the pipeline:
 The build and deploy jobs run in the machine's checkout rather than a fresh
 clone, because the sealed snapshot, the dataset, the registry, and the staged
 weights all live only on this machine. The image's payload is split: git
-carries code, configs, and requirements, while a local DVC remote at
-`/home/raj/dvc_storage` carries the snapshot contents and the model weights are
-staged by `scripts/stage_weights.sh` from the HF cache. GitHub-hosted runners
-therefore cannot build the serve image at all.
+carries code, configs, and requirements, while the DVC cache in this checkout
+carries the snapshot contents and the model weights are staged by
+`scripts/stage_weights.sh` from the HF cache. The cache is the only store there
+is, so losing this disk means re-crawling and re-embedding from scratch.
+GitHub-hosted runners therefore cannot build the serve image at all.
 
 Setup for the self-hosted path:
 
