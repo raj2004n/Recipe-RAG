@@ -16,7 +16,6 @@ PATHS_CONFIG: dict = _PATHS_CONFIG
 ENCODER_CONFIG: dict = BASE_CONFIG["encoder"]
 INDEXER_CONFIG: dict = BASE_CONFIG["indexer"]
 RAG_STRATEGY: str = BASE_CONFIG["rag"]["strategy"]
-EVAL_DATASET_CONFIG: dict = BASE_CONFIG["evaluation dataset generator"]
 
 # PATHS_CONFIG sub-pieces
 DATA_PATHS: dict = PATHS_CONFIG["data"]
