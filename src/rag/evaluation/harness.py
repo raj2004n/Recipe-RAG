@@ -96,9 +96,9 @@ def load_rows(path: str, limit: int | None, *, verified: bool = False) -> list[d
     """The jsonl rows for a slice, optionally only the verified ones.
 
     The generation and end-to-end evals score verified golden rows, which carry
-    a reference answer; the retrieval eval scores every row in a slice, verified
-    or archived, none of which carry the verified flag. verified=True therefore
-    keeps only rows whose answer_verified field is set.
+    a reference answer; the retrieval eval scores every row in a slice, and those
+    rows do not carry the verified flag. verified=True therefore keeps only rows
+    whose answer_verified field is set.
     """
     rows = []
     with open(path) as f:

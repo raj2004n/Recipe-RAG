@@ -6,9 +6,6 @@ data:
   eval_corpus_recipes: data/processed/cleaned_recipes.json
   # The hand-verified eval set. Lives at data/eval/golden_prompts.jsonl.
   eval_golden_prompts: data/eval/golden_prompts.jsonl
-  # Second eval slice: the larger LLM-drafted set, reported separately from
-  # golden (never blended). Lives at data/eval/archived_prompts.jsonl.
-  eval_archived_prompts: data/eval/archived_prompts.jsonl
   # Hand-verified user-question prompts that feed into the golden dataset.
   # Lives next to golden_prompts.jsonl so the review step can read both without extra config.
   eval_prompts: data/eval/prompts.jsonl
