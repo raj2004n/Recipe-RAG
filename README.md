@@ -1,234 +1,127 @@
 # Recipe-RAG
+## Let him cook.
+-- will insert picture here --
+## What it is
 
-A recipe question-answering system built around a versioned retrieval pipeline.
+I like cooking, but after a full day of work, I don't like thinking. So I made this retrieval-augmented-generation (RAG) system to do this for me! I give it a prompt, it retrieves the relevant recipes, and a small local LLM writes a recipe. The ``How it Works`` section covers the project in detail and explains why each decision was made.
 
-It crawls recipes from [recipetin eats](https://www.recipetineats.com), cleans them into a
-normalised form, and serves a query interface that pulls relevant chunks out of the
-corpus and writes a short answer in the voice of the original site. Two retrieval
-strategies - dense and hybrid - are implemented and selectable per build.
-
-## What this is
-
-The interesting part isn't the recipe corpus; it's the pipeline underneath it. Each
-build produces a **sealed snapshot** - an immutable, content-hashed folder containing
-the chunk sets, the FAISS and BM25 indices, the model config, and a copy of the configs
-that produced it. A central registry tracks which snapshot is `current` and which is
-`latest`. Nothing in the snapshot folder ever changes after it's sealed; new builds
-write new folders, and the registry is the single source of truth for what's live.
-
-Two retrieval strategies ride on top of this:
-
-- **Dense** embeds whole recipes with sentence-transformers and indexes them with a
-  flat inner-product FAISS index. Simple, fast, predictable.
-- **Hybrid** runs BM25 over an ingredients+instructions chunk set, fuses it with a
-  dense retriever over a separate info chunk set using reciprocal rank fusion,
-  reranks the merged list with a cross-encoder, and resolves back to whole recipes
-  before prompting the generator.
-
-Both feed the same generator. The build side picks the strategy; the inference side
-just loads `latest` and answers.
-
-## Why these choices
-
-A snapshot subsystem rather than ad-hoc files: every build is reproducible from the
-registry alone. If a new build ships bad output, the previous one is a registry
-edit away.
-
-A registry rather than a `snapshots/latest/` symlink: symlinks don't survive being
-copied across machines or DVC remotes. The registry is a tiny JSON file that any
-process can read.
-
-Hybrid with a cross-encoder reranker: dense alone misses exact-ingredient matches
-("I have chicken thighs and soy sauce"); BM25 alone misses semantic matches
-("something comforting for a cold evening"). The cross-encoder is what lets the
-hybrid path beat either single retriever on realistic recipe queries.
 
 ## Quickstart
 
+You need Python 3.12 and a CUDA GPU to serve. Ollama is only needed for the eval and drafting
+passes, and Docker only for the image path at the end.
+
 ```bash
-# Clone and set up
 git clone <repo-url>
 cd recipe-rag
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements/dev.txt
+```
 
-# Pull data and build the index end-to-end
+The torch wheels are cu124 builds that PyPI does not carry, and `faiss-gpu`'s metadata asks for a
+newer CUDA runtime than those wheels provide even though the pair runs fine together. The
+Dockerfile and CI both resolve faiss separately with `--no-deps`, and a local venv needs the same:
+
+```bash
+export PIP_INDEX_URL=https://download.pytorch.org/whl/cu124
+export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+grep -v '^faiss-gpu' requirements/base.txt > /tmp/base.no-faiss.txt
+grep -v '^-r base.txt' requirements/serve.txt > /tmp/serve.extras.txt
+grep -vE '^(-r serve\.txt|-r base\.txt)' requirements/dev.txt > /tmp/dev.extras.txt
+python -m pip install -r /tmp/base.no-faiss.txt -r /tmp/serve.extras.txt -r /tmp/dev.extras.txt
+python -m pip install --no-deps faiss-gpu==1.14.3
+```
+
+`requirements/dev.txt` is the set for local work. The served image installs only
+`requirements/serve.txt`, which layers on `base.txt`.
+
+
+## How it Works
+
+```
+recipetineats.com
+    │  crawl, then clean into one validated corpus
+    ▼
+the corpus  (1,494 recipes)
+    │  build: chunk → transform → index → seal
+    ▼
+a sealed snapshot  (immutable, versioned, pinned to the corpus)
+    │  loaded once, at boot
+    ▼
+retrieve → fuse → rerank → prompt → answer
+```
+
+--Will write soon...--
+
+### Build a snapshot
+
+```bash
 dvc repro
-
-# Or step-by-step if you want to watch each stage
-python -m scripts.build_rag --run set_strategy
-python -m scripts.build_rag --run chunk
-python -m scripts.build_rag --run transform
-python -m scripts.build_rag --run index
-python -m scripts.build_rag --run finalise_build
-
-# Serve queries over HTTP
-export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
-uvicorn src.rag.serve.app:create_app --factory
-# then: curl -H 'X-API-Key: dev-public-key' -H 'content-type: application/json' \
-#   -d '{"query":"quick chicken dinner"}' http://localhost:8000/query
-# or open http://localhost:8000/ for the browser interface
 ```
 
-You'll need a local Ollama instance running `gemma3:4b` for the eval-dataset
-generator; the inference-time generator is loaded in-process.
+That crawls the site, preprocesses the crawl, runs the four build stages, and seals the result.
+It is the whole pipeline in one command, and DVC skips any stage whose declared outputs are
+unchanged. To watch the stages individually, or to iterate on one of them:
 
-### The browser interface
-
-`GET /` serves a single page, and its stylesheets and script come from
-`src/rag/serve/static/`, so the page makes no network requests to anything: the
-DaisyUI stylesheets are vendored under `static/vendor/` at a pinned version and
-the layout is hand-written in `static/app.css`. There is no CDN and no build
-step, which is what lets the image keep its offline claim while serving a UI.
-
-The page cannot hold an API key, so it never sends one. Its three routes,
-`POST /ui/query`, `GET /ui/health` and `GET /ui/info`, are keyless and each
-forwards to the keyed route it names, adding the key server-side. The forward
-goes through an in-process ASGI transport rather than a socket, so `POST /query`
-stays the only entrance to the generator and the UI inherits its validation and
-its error envelope unchanged.
-
-`RAMSAY_UI_KEY` names which configured key those forwarders act as. Leave it
-unset and the first `public` key in `RECIPE_RAG_API_KEYS` is used. Setting it to
-a key that is not in the map stops the service at startup, the same way a
-malformed key map does.
-
-Because the page needs no key, anything that can reach the port can spend GPU
-time. `scripts/ship_baseline.py` therefore publishes the container on loopback
-(`-p 127.0.0.1:8000:8000`), so the keyless route is reachable from this machine
-and not from the network. Binding the port to a wider interface means removing
-that, and it is the one thing standing between the UI and the rest of the LAN.
-
-## Architecture
-
-```
-sources (Scrapy spider)
-    │  raw jsonl
-    ▼
-preprocess → cleaned Recipe objects
-    │
-    ▼
-[chunk → transform → index → seal_snapshot]   ← the 4-stage build pipeline
-    │
-    ▼
-sealed snapshot under snapshots/<name>/
-    │
-    ▼
-[DensePipeline | HybridPipeline]   ← loaded from snapshots/registry.json
-    │
-    ▼
-answer
+```bash
+python -m scripts.build_rag --run set_strategy   # register the dataset, fix the strategy
+python -m scripts.build_rag --run chunk          # chunk sets for the chosen strategy
+python -m scripts.build_rag --run transform      # encode the dense sets, tokenise the sparse ones
+python -m scripts.build_rag --run index          # build the FAISS and BM25 indices
+python -m scripts.build_rag --run finalise_build # seal the staging tree into a versioned folder
 ```
 
-The build side is orchestrator-only - chunk-set assembly happens here. The
-inference side is naive about chunk-set filtering - it loads whatever the
-registry points at. The cross-encoder reranker is a per-query inference
-concern; it doesn't live in the build.
+`python -m scripts.build_rag --run build` wraps the same stages in a single MLflow run, and
+`--run test_build` runs all five without MLflow.
 
-MLflow tracks the parameters and artifacts of every build run locally. The
-snapshot registry is the deployment-side contract; the build is the audit
-trail.
-
-## What's interesting if you're hiring
-
-- A real **snapshot subsystem with a registry**, not a `models/v3.pt` file.
-- **Two retrieval strategies** that share a generator, with a build-time
-  decision about which chunk sets to produce.
-- **Eval-gated promotion**: a held-out eval pass is what decides whether a
-  new snapshot gets the `latest` label. The build alone doesn't ship.
-- **Sealed, content-hashed snapshots**: every build is reproducible from the
-  registry alone.
-- A **4-stage build pipeline** orchestrated through DVC, with MLflow tracking
-  every run.
-
-## Shipping the baseline to this machine
-
-Promotion pins a snapshot as the deployment baseline in the registry, and the
-serve image with that baseline baked in runs on this machine. To pull the
-promoted baseline and start it:
+### Serve it
 
 ```bash
 export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
+uvicorn src.rag.serve.app:create_app --factory
+```
+
+```bash
+curl -H 'X-API-Key: dev-public-key' -H 'content-type: application/json' \
+  -d '{"query":"quick chicken dinner"}' http://localhost:8000/query
+```
+
+Open `http://localhost:8000/` for the browser interface. The page carries no key of its own and
+forwards through keyless routes, so anything that can reach the port can spend GPU time; the
+deployed container therefore publishes on loopback only.
+
+### Tests and evaluation
+
+```bash
+pytest -q
+python -m scripts.evaluate_retrieval --snapshot latest_build
+python -m scripts.evaluate_generation --snapshot latest_build
+python -m scripts.evaluate_end_to_end --snapshot latest_build
+```
+
+Both eval scripts log to the same local store; `--no-mlflow` prints results instead and
+`--limit N` caps the rows for a smoke run. The generation eval builds each golden row's context
+from its ground-truth recipe ids through the real prompt path, so it never exercises retrieval.
+The end-to-end run is the one the promotion gate reads.
+
+### Ship it
+
+The image carries the app, one sealed snapshot, the dataset that snapshot pins, the LoRA
+adapter, and the model weights pre-baked as an HF cache, so it boots with no network and no HF
+token. Weight staging has to happen before a local build, and needs the weights in the local HF
+cache:
+
+```bash
+bash scripts/stage_weights.sh
+docker build --build-arg SNAPSHOT=<folder> -t recipe-rag:<sha> .
+```
+
+On this machine the same thing is one command, which pulls the image the registry's `serve`
+target names and replaces the running container:
+
+```bash
+export RECIPE_RAG_API_KEYS='...'
 python -m scripts.ship_baseline
 ```
 
-The script resolves the promoted baseline from the registry, pulls the image
-tagged `<baseline folder>` from ghcr, starts a `docker run --gpus all`
-container publishing port 8000 on `127.0.0.1` only, and waits for `/health` to
-report ok before returning. Re-running it replaces the container, so shipping a new
-baseline is the same command. It fails closed: no baseline target in the
-registry, a baseline that is not sealed or not promoted, an image that cannot
-be pulled, missing `RECIPE_RAG_API_KEYS`, or a service that never reports
-healthy each stop the ship and exit non-zero.
-
-If the image is not in ghcr yet, run the build workflow to push it first, or
-point the script at a locally built image with
-`python -m scripts.ship_baseline --image-repo recipe-rag`.
-
-The script calls plain `docker`. If your user is not in the `docker` group,
-either run each docker call via `sudo` or add yourself to the group once with
-`sudo usermod -aG docker $USER` and log back in (docker group membership is
-root-equivalent access to the host).
-
-## CI / CD
-
-Three GitHub Actions workflows drive the pipeline:
-
-- `ci.yml` runs ruff and the full test suite on GitHub-hosted runners for
-  every push to main and every pull request. The tests use fixtures, so they
-  pass on a clean runner with no snapshot, dataset, or model weights present.
-- `build.yml` runs on a self-hosted runner on this machine and fires only after
-  `ci.yml` passes on a push to main. It stages the model weights, resolves the
-  promoted baseline from the registry, builds the serve image with
-  `ARG SNAPSHOT=<baseline>`, and pushes it to `ghcr.io/raj2004n/recipe-rag` as
-  `<git sha>`, `latest`, and `<baseline folder>`.
-- `deploy.yml` is a manual `workflow_dispatch`. It pulls
-  `recipe-rag:<baseline folder>` and runs it on this machine, replacing any
-  running container.
-
-The build and deploy jobs run in the machine's checkout rather than a fresh
-clone, because the sealed snapshot, the dataset, the registry, and the staged
-weights all live only on this machine. The image's payload is split: git
-carries code, configs, and requirements, while the DVC cache in this checkout
-carries the snapshot contents and the model weights are staged by
-`scripts/stage_weights.sh` from the HF cache. The cache is the only store there
-is, so losing this disk means re-crawling and re-embedding from scratch.
-GitHub-hosted runners therefore cannot build the serve image at all.
-
-Setup for the self-hosted path:
-
-1. Register a self-hosted runner at repository scope with the labels
-   `self-hosted, gpu, linux`. The runner user needs the `docker` group and
-   read/write access to the checkout at `/home/raj/projects/recipe-rag`.
-2. Add a repository secret `RECIPE_RAG_API_KEYS` holding the API-key JSON the
-   deployed service must accept.
-3. The image package on ghcr is public, so the host can pull it without a
-   token after the workflow's short-lived checkout token expires.
-
-## Status
-
-Deployed and live on this machine. The build, retrieval, and generation loops
-all run; snapshots seal and load cleanly; and the CI / CD pipeline ships the
-promoted baseline here:
-
-- `ci` runs ruff and the test suite on GitHub-hosted runners for every push to
-  main and every pull request.
-- `build` runs on a self-hosted runner on this machine after `ci` passes on a
-  push to main. It stages the model weights, bakes the promoted baseline
-  snapshot into the serve image, pushes it to `ghcr.io/raj2004n/recipe-rag`,
-  and logs out of ghcr so no stale registry credential outlives the job.
-- `deploy` is a manual `workflow_dispatch`. It pulls the baseline-tagged image
-  from ghcr and runs it here, replacing any running container.
-
-The deployed service is verified end to end on this machine: the container runs
-the promoted baseline from ghcr, `/health` reports the snapshot loaded, `/info`
-shows the retrieval strategy and models, and `POST /query` answers with the
-generator. `GET /` serves a keyless browser page over the same routes, and the
-two-role (`admin` / `public`) API key auth applies to every endpoint the page
-does not forward through.
-
-## Author
-
-Raj Negi
-
-[contact]
+`--image-repo recipe-rag` uses a local image instead of pulling, `--no-pull` skips the pull, and
+`--port` moves the host port off 8000.
