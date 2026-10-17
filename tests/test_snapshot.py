@@ -1,24 +1,12 @@
-"""Tests for the snapshot lifecycle roundtrip.
-
-Verifies that a build's staging tree, once finalise_snapshot has copied it into
-a versioned folder, can be loaded back by loader.load_snapshot and that the
-metadata, configs, and chunk-set mapping survive the trip.
-
-The test builds the tree directly under tmp_path rather than running the full
-Builder, so it exercises only the seal/load contract that the inference side
-depends on.
-"""
-
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from src.rag.core.snapshot import lifecycle, loader
-from src.rag.core.snapshot import paths as paths_module
-from src.rag.core.snapshot.paths import SnapshotPaths
-from src.rag.retrieval.dense.indexer import IndexedChunkSet
-from src.rag.retrieval.sparse.bm25indexer import BM25IndexedChunkSet
+from src.snapshot import lifecycle, loader
+from src.snapshot import paths as paths_module
+from src.snapshot.paths import SnapshotPaths
+from src.snapshot.types import BM25IndexedChunkSet, IndexedChunkSet
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

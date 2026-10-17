@@ -1,15 +1,3 @@
-"""Tests for the promotion gate verdict and the registry promotion record.
-
-The gate logic is exercised against a small synthetic criteria config so the
-tests pin the behavior (per-type floors, the judge-disagreement rule, fail
-closed on missing metrics) without coupling to whatever the bars are calibrated
-to; the repo's real config gets a structural validation check only.
-
-The approval branches get their own section at the end: what a snapshot that
-failed the bars needs before the gate will promote it, and what the registry
-records when it does.
-"""
-
 import builtins
 import json
 import sys
@@ -18,8 +6,8 @@ import types
 import pytest
 
 from scripts import promote_snapshot
-from src.rag.core.snapshot import registry
-from src.rag.evaluation.promotion import (
+from src.snapshot import registry
+from src.evaluation.promotion import (
     Check,
     PromotionConfigError,
     apply_bars,

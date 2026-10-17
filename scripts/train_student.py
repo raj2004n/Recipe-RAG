@@ -1,21 +1,14 @@
-"""Distil the teacher's recipe answers into the student generator.
-
-The argparse surface, the default paths and the exit code live here; the
-training loop itself lives in src/rag/training/student.py. The knobs are the
-tokenised rows to read, the directory a run writes its adapters into, the
-epochs and rows it covers, the seed, and the MLflow switch.
-"""
-
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.training import train_student
-from src.rag.training.student import ARTIFACTS_DIR, EPOCHS, SEED
+from src.core.logging import configure_logging
+from src.pairs import train_student
+from src.pairs.student import ARTIFACTS_DIR, EPOCHS, SEED
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Distil the teacher's recipe answers into the student generator.")
     parser.add_argument("--rows", default=None,
                         help="train on these tokenised rows; defaults to the newest file written")
     parser.add_argument("--out-dir", default=str(ARTIFACTS_DIR),

@@ -1,8 +1,6 @@
-"""Tests for the pipeline-agnostic RetrievalEvaluator."""
-
 import pytest
 
-from src.rag.evaluation.retriever_evaluator import RetrievalEvaluator
+from src.evaluation.retriever_evaluator import RetrievalEvaluator
 
 
 def _fixed_retrieve(ranked):

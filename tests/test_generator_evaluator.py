@@ -1,19 +1,17 @@
-"""Tests for the golden-context generator evaluator and its judge client."""
-
 import json
 from types import SimpleNamespace
 
 import pytest
 
-import src.rag.evaluation.generator_evaluator as gen_eval
-from src.rag.evaluation.generator_evaluator import (
+import src.evaluation.generator_evaluator as gen_eval
+from src.evaluation.generator_evaluator import (
     CoreVerdict,
     ExpectednessVerdict,
     GeneratorEvaluator,
     JudgeClient,
     structural_checks,
 )
-from src.rag.evaluation.judge_prompts import judge_messages, judge_prompt_hash
+from src.evaluation.judge_prompts import judge_messages, judge_prompt_hash
 
 
 WELL_FORMED = (

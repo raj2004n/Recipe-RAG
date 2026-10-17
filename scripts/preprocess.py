@@ -1,5 +1,5 @@
-from src.rag.core.config import DATA_PATHS
-from src.rag.data.preprocessor import preprocess
+from src.core.config import DATA_PATHS
+from src.corpus.preprocessor import preprocess
 
 def run():
     preprocess(

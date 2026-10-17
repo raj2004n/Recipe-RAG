@@ -31,5 +31,5 @@
     "prose-question",
     "long-answer"
   ],
-  "note": "Raw answers from the served model, recorded once and not edited. The parser in src/rag/serve/parser.py is tested against these."
+  "note": "Raw answers from the served model, recorded once and not edited. The parser in src/serve/parser.py is tested against these."
 }

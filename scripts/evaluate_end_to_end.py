@@ -1,19 +1,3 @@
-"""Evaluate the full pipeline end to end on the golden dataset, tracked in MLflow.
-
-Loads a sealed snapshot and builds the pipeline, prompt path, and greedy
-generator for its strategy, then answers every golden row through the real
-serving path: the pipeline's own retrieval feeds the context the generator
-sees, rather than the row's golden recipe_ids as in the generation eval. Each
-answer is scored with the same deterministic structural checks and
-double-called LLM judge. Per row the record keeps which recipes were actually
-retrieved, so a bad answer is traceable to a retrieval miss.
-
-Every run logs the snapshot and generator identity, the served top-k, the
-judge model and sampling options plus the judge prompt hash, the
-per-dimension and per-query-type means including the retrieval diagnostics,
-and the per-row results as artifacts.
-"""
-
 import argparse
 import json
 import logging
@@ -23,10 +7,10 @@ from pathlib import Path
 
 import mlflow
 
-from src.rag.core.config import DATA_PATHS
-from src.rag.core.logging import configure_logging
-from src.rag.evaluation.end_to_end_evaluator import EndToEndEvaluator
-from src.rag.evaluation.harness import (
+from src.core.config import DATA_PATHS
+from src.core.logging import configure_logging
+from src.evaluation.end_to_end_evaluator import EndToEndEvaluator
+from src.runtime.harness import (
     add_common_args,
     begin_mlflow_run,
     build_generator,
@@ -43,7 +27,7 @@ from src.rag.evaluation.harness import (
     resolve_snapshot_folder,
     tokenizer_for,
 )
-from src.rag.evaluation.judge_prompts import judge_prompt_hash
+from src.evaluation.judge_prompts import judge_prompt_hash
 
 
 logger = logging.getLogger(__name__)

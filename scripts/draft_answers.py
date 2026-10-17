@@ -1,21 +1,11 @@
-"""CLI wrapper around answers_drafter.draft_answers.
-
-Reads the model and concurrency knobs from
-``configs/base_config.yaml`` (``answers_drafter`` section) and the
-prompts / recipes / output paths from ``configs/paths_config.yaml``.
-Supports ``--per-type-count`` so a long draft can be run as a small
-smoke test before committing to the full 88 rows; ``--per-type-count 1``
-produces 11 rows total (one per query type).
-"""
-
 import argparse
 import random
 from pathlib import Path
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS
-from src.rag.data.answers_drafter import draft_answers
-from src.rag.data.answers_drafter.selection import load_prompts
-from src.rag.data.answers_drafter.types import QUERY_TYPES
+from src.core.config import BASE_CONFIG, DATA_PATHS
+from src.pairs.answers_drafter import draft_answers
+from src.pairs.answers_drafter.selection import load_prompts
+from src.pairs.answers_drafter.types import QUERY_TYPES
 
 
 _DRAFTER_CONFIG_KEY = "answers_drafter"
@@ -86,7 +76,16 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="""CLI wrapper around answers_drafter.draft_answers.
+
+Reads the model and concurrency knobs from
+``configs/base_config.yaml`` (``answers_drafter`` section) and the
+prompts / recipes / output paths from ``configs/paths_config.yaml``.
+Supports ``--per-type-count`` so a long draft can be run as a small
+smoke test before committing to the full 88 rows; ``--per-type-count 1``
+produces 11 rows total (one per query type).
+""")
     parser.add_argument(
         "--per-type-count",
         type=int,

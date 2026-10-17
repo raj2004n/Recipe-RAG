@@ -1,10 +1,8 @@
-"""Tests for the end-to-end evaluator and its retrieval diagnostics."""
-
 import pytest
 
-from src.rag.evaluation.end_to_end_evaluator import EndToEndEvaluator
-from src.rag.evaluation.generator_evaluator import CoreVerdict, ExpectednessVerdict
-from src.rag.evaluation.scoring import JUDGED_DIMENSIONS
+from src.evaluation.end_to_end_evaluator import EndToEndEvaluator
+from src.evaluation.generator_evaluator import CoreVerdict, ExpectednessVerdict
+from src.evaluation.scoring import JUDGED_DIMENSIONS
 
 
 WELL_FORMED = (

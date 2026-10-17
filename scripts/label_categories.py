@@ -1,16 +1,8 @@
-"""Label every recipe in the pair set as savoury or sweet, from its title.
-
-The call loop and the sidecar it writes live in src/rag/data/pairs/categories.py,
-alongside the reviewed calls that land in the same file. The knobs are the pair
-set to read, the model that makes the call, the smoke and probe switches, where
-the labels land, the worker count and the resume flag.
-"""
-
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs.categories import (
+from src.core.logging import configure_logging
+from src.pairs.categories import (
     INPUT_JSONL,
     MAX_WORKERS,
     MODEL_ID,
@@ -19,7 +11,8 @@ from src.rag.data.pairs.categories import (
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Label every recipe in the pair set as savoury or sweet, from its title.")
     parser.add_argument("--input", default=str(INPUT_JSONL),
                         help="the pair set whose recipe ids are labelled")
     parser.add_argument("--model", default=MODEL_ID, help="the model that makes the call")

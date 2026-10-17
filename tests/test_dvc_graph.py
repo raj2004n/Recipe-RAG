@@ -1,13 +1,3 @@
-"""Tests for the build graph the DVC stages declare.
-
-The build is a graph DVC can skip: every stage declares the staging output it
-writes and takes the output of the stages before it as an input, so a stage
-whose inputs and outputs are unchanged is not re-run. It also names the config
-keys it reads rather than the files that hold them, so a key no stage reads does
-not invalidate the ones that do. These tests pin both sets of declarations, and,
-in a throwaway repository, the DVC behaviour they rely on.
-"""
-
 import json
 import subprocess
 import sys
@@ -119,7 +109,7 @@ def test_the_params_blocks_name_the_keys_each_stage_declares():
     refuses a key outside them; this holds the yaml to the same rows from the other
     side, so the two cannot drift apart.
     """
-    from src.rag.core.config import STAGE_CONFIG_KEYS
+    from src.core.config import STAGE_CONFIG_KEYS
 
     stages = _stages()
     for stage, row in STAGE_CONFIG_KEYS.items():
@@ -165,7 +155,7 @@ def test_a_directory_output_skips_when_unchanged_and_reruns_when_partial(tmp_pat
 
 
 def test_the_declared_code_deps_cover_what_the_build_imports():
-    """Every src.rag module the build entry point imports is covered by a declared dep.
+    """Every src module the build entry point imports is covered by a declared dep.
 
     The per-stage dep lists are hand-maintained, so this is what keeps them
     from drifting: an import added to the build's path that no stage declares
@@ -209,7 +199,7 @@ def _named_params(stage: dict) -> dict[str, list[str]]:
 
 
 def _imported_src_rag_files() -> list[str]:
-    """Import the build entry point and list the src/rag files it loaded.
+    """Import the build entry point and list the src files it loaded.
 
     The import happens in its own process: the entry point pulls in the builder
     stack and the config singletons, and a test process should not have to hold
@@ -221,7 +211,7 @@ def _imported_src_rag_files() -> list[str]:
         print(json.dumps(sorted({
             module.__file__
             for name, module in sys.modules.items()
-            if name.startswith("src.rag") and getattr(module, "__file__", None)
+            if name.startswith("src.") and getattr(module, "__file__", None)
         })))
     """)
     result = subprocess.run(
@@ -240,7 +230,7 @@ def _covered(module_path: str, declared: set[str]) -> bool:
 
     A package's own `__init__.py` counts as covered when a module inside that
     package is declared, since importing a declared module imports its package
-    root first and the root directory itself (`src/rag/`) is deliberately too
+    root first and the root directory itself (`src/`) is deliberately too
     coarse for a stage's deps to name.
     """
     if module_path.endswith("/__init__.py"):

@@ -1,26 +1,13 @@
-"""Tests for the dataset_key thread through the snapshot lifecycle.
-
-Verifies that:
-- start_new_build writes dataset_key into the staging tree's metadata.json
-  at set_strategy (not at finalise), so the build is bound to the dataset
-  before any chunking happens.
-- finalise_snapshot preserves the key (does not overwrite it).
-- load_snapshot surfaces it on Snapshot.dataset_key.
-- omitting dataset_key is rejected: the dataclass field is required and
-  metadata without the key raises KeyError on load. No silent defaults.
-"""
-
 import json
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from src.rag.core.snapshot import lifecycle, loader
-from src.rag.core.snapshot import paths as paths_module
-from src.rag.core.snapshot.paths import SnapshotPaths
-from src.rag.retrieval.dense.indexer import IndexedChunkSet
-from src.rag.retrieval.sparse.bm25indexer import BM25IndexedChunkSet
+from src.snapshot import lifecycle, loader
+from src.snapshot import paths as paths_module
+from src.snapshot.paths import SnapshotPaths
+from src.snapshot.types import BM25IndexedChunkSet, IndexedChunkSet
 
 
 def _seed_configs(source_dir: Path, strategy: str) -> None:

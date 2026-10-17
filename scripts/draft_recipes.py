@@ -1,16 +1,8 @@
-"""Answer every pair prompt with one invented recipe, to be the student's training target.
-
-The argparse surface, the default paths and the exit code live here; the pass
-itself lives in src/rag/data/pairs/answers.py. The knobs are the prompt set to
-answer, the corpus to resolve the recipe ids in, the model, the smoke switch,
-where the answers land, the worker count and the resume flag.
-"""
-
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs.answers import (
+from src.core.logging import configure_logging
+from src.pairs.answers import (
     MAX_WORKERS,
     MODEL_ID,
     PROMPTS_JSONL,
@@ -19,7 +11,8 @@ from src.rag.data.pairs.answers import (
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Answer every pair prompt with one invented recipe, to be the student's training target.")
     parser.add_argument("--prompts", default=str(PROMPTS_JSONL),
                         help="the prompt set whose rows are answered")
     parser.add_argument("--recipes", default=None,

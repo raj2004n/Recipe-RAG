@@ -1,19 +1,6 @@
-"""Tests for the stage-scoped config view.
-
-A build stage reads its config through `stage_config(stage)`, which knows the row
-`STAGE_CONFIG_KEYS` gives that stage and refuses anything the row does not name.
-The point is that a stage which starts reading a new key fails on the run that
-introduces it, rather than changing its output while DVC still sees an unchanged
-dependency.
-
-The rows themselves are held to `dvc.yaml` by tests/test_dvc_graph.py; these tests
-cover the view's behaviour and that every declared key exists in the config it
-names.
-"""
-
 import pytest
 
-from src.rag.core.config import (
+from src.core.config import (
     BASE_CONFIG,
     BASE_CONFIG_FILE,
     ENCODER_CONFIG,

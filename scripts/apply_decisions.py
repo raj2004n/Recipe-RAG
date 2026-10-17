@@ -1,24 +1,8 @@
-"""CLI: read decisions journals, apply them to a prompts jsonl, write golden_prompts.jsonl.
-
-Decisions journals are produced by the export CLI's Lavish batch-review surface
-(`.decisions_prompts_batch_<n>.jsonl`). Each journal line has the shape:
-  {"prompt_index": int, "decision": "accept" | "fix" | "drop",
-   "corrections": {"query"?, "recipe_ids"?, "query_type"?},
-   "original": <full original row>}
-
-This CLI merges the journal(s) with the prompts jsonl to produce verified
-prompt rows. Rules:
-  - accept -> the row is copied, with prompt_verified: True.
-  - fix    -> the row is copied with corrections applied, with prompt_verified: True.
-  - drop   -> the row is omitted.
-  - rows with no decision -> omitted (treated as not-yet-reviewed).
-"""
-
 import argparse
 import json
 from pathlib import Path
 
-from src.rag.core.config import DATA_PATHS
+from src.core.config import DATA_PATHS
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -116,7 +100,22 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="""CLI: read decisions journals, apply them to a prompts jsonl, write golden_prompts.jsonl.
+
+Decisions journals are produced by the export CLI's Lavish batch-review surface
+(`.decisions_prompts_batch_<n>.jsonl`). Each journal line has the shape:
+  {"prompt_index": int, "decision": "accept" | "fix" | "drop",
+   "corrections": {"query"?, "recipe_ids"?, "query_type"?},
+   "original": <full original row>}
+
+This CLI merges the journal(s) with the prompts jsonl to produce verified
+prompt rows. Rules:
+  - accept -> the row is copied, with prompt_verified: True.
+  - fix    -> the row is copied with corrections applied, with prompt_verified: True.
+  - drop   -> the row is omitted.
+  - rows with no decision -> omitted (treated as not-yet-reviewed).
+""")
     parser.add_argument("--prompts", type=str, default=None, help="Override the prompts jsonl path.")
     parser.add_argument("--output", type=str, default=None, help="Override the output (golden_prompts.jsonl) path.")
     parser.add_argument(

@@ -1,18 +1,9 @@
-"""Tests for the advisory recipe-file lock.
-
-The lock is the runtime guard that makes a mid-build preprocessing swap
-visible: while a build holds it, a concurrent preprocess that respects it
-cannot overwrite the recipes file. We don't enforce it (the protection
-comes from pinning dataset identity at set_strategy), so these tests
-verify the lock semantics rather than the swapping behaviour directly.
-"""
-
 import threading
 from pathlib import Path
 
 import pytest
 
-from src.rag.core.snapshot import lifecycle
+from src.snapshot import lifecycle
 
 
 def _make_recipes(tmp_path: Path, name: str = "recipes.json") -> Path:

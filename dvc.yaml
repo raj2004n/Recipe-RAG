@@ -18,10 +18,10 @@ stages:
     cmd: python -m scripts.build_rag --run set_strategy
     deps:
     - scripts/build_rag.py
-    - src/rag/core/config.py
-    - src/rag/core/snapshot/
-    - src/rag/core/datasets/
-    - src/rag/core/checksum.py
+    - src/core/config.py
+    - src/snapshot/
+    - src/snapshot/datasets/
+    - src/core/checksum.py
     params:
     - configs/base_config.yaml:
       - rag.strategy
@@ -37,11 +37,12 @@ stages:
     - scripts/build_rag.py
     - data/processed/cleaned_recipes.json
     - build/staging/metadata.json
-    - src/rag/builder/
-    - src/rag/retrieval/
-    - src/rag/data/preprocessor.py
-    - src/rag/data/recipe_format.py
-    - src/rag/core/
+    - src/build/
+    - src/runtime/
+    - src/domain/
+    - src/corpus/preprocessor.py
+    - src/core/
+    - src/snapshot/
     params:
     - configs/paths_config.yaml:
       - configs
@@ -53,9 +54,11 @@ stages:
     deps:
     - scripts/build_rag.py
     - build/staging/chunks/
-    - src/rag/builder/
-    - src/rag/retrieval/
-    - src/rag/core/
+    - src/build/
+    - src/runtime/
+    - src/domain/
+    - src/core/
+    - src/snapshot/
     params:
     - configs/base_config.yaml:
       - encoder.model_id
@@ -71,9 +74,11 @@ stages:
     deps:
     - scripts/build_rag.py
     - build/staging/transformed_chunks/
-    - src/rag/builder/
-    - src/rag/retrieval/
-    - src/rag/core/
+    - src/build/
+    - src/runtime/
+    - src/domain/
+    - src/core/
+    - src/snapshot/
     params:
     - configs/base_config.yaml:
       - indexer.type
@@ -94,5 +99,8 @@ stages:
     - configs/base_config.yaml
     - configs/paths_config.yaml
     - configs/prompts_config.yaml
-    - src/rag/builder/
-    - src/rag/core/
+    - src/build/
+    - src/runtime/
+    - src/domain/
+    - src/core/
+    - src/snapshot/

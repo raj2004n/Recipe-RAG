@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from src.rag.data.preprocessor import Recipe
-from src.rag.data.source_block import source_block, user_message
+from src.domain.types import Recipe
+from src.domain.source_block import source_block, user_message
 
 
 def _ingredient(**fields) -> dict:

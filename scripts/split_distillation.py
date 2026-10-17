@@ -1,30 +1,21 @@
-"""Draw the distillation split, then write the tokenised rows a trainer reads.
-
-The draw and the render live in src/rag/data/distillation/, which holds the passes
-themselves, the constants they share and the manifest each one writes. This module
-is the command line over them: it parses the arguments and calls the pass the
-``--run`` flag names. The knobs are the answers, the category sidecar and the pair
-set to read, the split to render, the seed, the tokenizer's checkpoint, an
-override for the corpus, where the output lands and the stamp that dates it.
-"""
-
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.distillation.split import draw_split
-from src.rag.data.distillation.tokenise import tokenise_rows
-from src.rag.data.distillation.types import (
+from src.core.logging import configure_logging
+from src.pairs.distillation.split import draw_split
+from src.pairs.distillation.tokenise import tokenise_rows
+from src.pairs.distillation.types import (
     ANSWERS_JSONL,
     CATEGORIES_JSONL,
     PAIRS_JSONL,
     SEED,
 )
-from src.rag.training.student import STUDENT_MODEL_ID
+from src.pairs.student import STUDENT_MODEL_ID
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Draw the distillation split, then write the tokenised rows a trainer reads.")
     parser.add_argument("--run", choices=("split", "tokenise"), default="split",
                         help="draw the split, or tokenise the rows a split names")
     parser.add_argument("--answers", default=str(ANSWERS_JSONL),

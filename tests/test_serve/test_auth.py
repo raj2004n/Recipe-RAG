@@ -1,6 +1,3 @@
-"""Tests for the X-API-Key auth layer."""
-
-
 async def test_auth_rejects_missing_key(client):
     async with client as c:
         r = await c.get("/health")
@@ -32,8 +29,8 @@ async def test_auth_forbidden_on_role_mismatch(client):
     assert r.status_code == 200
 
     # Direct dependency check: a public key cannot pass require_role("admin").
-    from src.rag.serve.auth import require_role
-    from src.rag.serve.errors import ForbiddenError
+    from src.serve.auth import require_role
+    from src.serve.errors import ForbiddenError
     import pytest
 
     admin_only = require_role("admin")

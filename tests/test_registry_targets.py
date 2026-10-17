@@ -1,19 +1,11 @@
-"""Tests for the registry targets and the names they carry.
-
-The targets are named for what reads them: `latest_build` for the newest sealed
-folder and `serve` for the folder a human promoted. These tests pin what a
-registry written before those names still resolves to, what the next write
-persists, and what a build run records once it has sealed a folder.
-"""
-
 import contextlib
 import json
 import types
 from pathlib import Path
 
 from scripts import build_rag
-from src.rag.core.snapshot import lifecycle, registry
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.snapshot import lifecycle, registry
+from src.snapshot.paths import SnapshotPaths
 
 
 # --- reading a registry written before the rename -------------------------

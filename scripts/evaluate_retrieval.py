@@ -1,11 +1,3 @@
-"""Evaluate retrieval for a snapshot against the eval datasets, tracked in MLflow.
-
-Loads a sealed snapshot, builds the pipeline for its strategy, and scores
-retrieval over the slices `_EVAL_SLICES` names. Each run logs the snapshot
-identity, the retrieval config, the per-slice and per-query-type metrics, and
-the eval files plus per-query results as artifacts.
-"""
-
 import argparse
 import json
 import logging
@@ -15,9 +7,9 @@ from pathlib import Path
 
 import mlflow
 
-from src.rag.core.config import DATA_PATHS
-from src.rag.core.logging import configure_logging
-from src.rag.evaluation.harness import (
+from src.core.config import DATA_PATHS
+from src.core.logging import configure_logging
+from src.runtime.harness import (
     add_common_args,
     begin_mlflow_run,
     build_pipeline,
@@ -27,7 +19,7 @@ from src.rag.evaluation.harness import (
     resolve_recipes_path,
     resolve_snapshot_folder,
 )
-from src.rag.evaluation.retriever_evaluator import RetrievalEvaluator
+from src.evaluation.retriever_evaluator import RetrievalEvaluator
 
 
 logger = logging.getLogger(__name__)

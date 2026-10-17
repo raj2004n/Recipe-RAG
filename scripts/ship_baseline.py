@@ -1,30 +1,3 @@
-"""Ship the promoted baseline to the local Docker daemon as a running service.
-
-The baseline is promoted by the gate into the registry's serve target, but a
-promotion only records which snapshot is the deployment baseline; the runnable
-form is the serve image with that snapshot baked in. The deployment target is
-this machine, so the ship is a pull followed by a local run: it pulls the serve
-image for the baseline snapshot from ghcr (or a repository given with
---image-repo), starts a container with the GPU passed through and the service
-port published on loopback only, and waits until the service reports healthy
-before returning.
-
-The script fails closed: no serve target in the registry, a baseline whose
-status is not complete, a missing promotion record, an image that cannot be
-pulled, missing or malformed RECIPE_RAG_API_KEYS (the service refuses to start
-without it), a failed docker call, or a service that never reports healthy each
-stop the ship and exit non-zero. A baseline the gate recorded as failing is
-not one of those: it ships, because the promotion that put it there was the
-human's decision, and the checks it went ahead against are logged as a warning
-first so an override is visible in the deploy log rather than silent. A
-pre-existing recipe-rag container is replaced, so re-running the script ships a
-newer baseline with the same command.
-Docker access is expected to be available as plain `docker`; if your user is
-not in the docker group, either prefix the script's docker calls with sudo or
-add the user to the group once (root-equivalent access; effective on the next
-login).
-"""
-
 import argparse
 import json
 import logging
@@ -34,9 +7,9 @@ import sys
 import time
 import urllib.request
 
-from src.rag.core.logging import configure_logging
-from src.rag.core.snapshot import registry
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.core.logging import configure_logging
+from src.snapshot import registry
+from src.snapshot.paths import SnapshotPaths
 
 logger = logging.getLogger(__name__)
 

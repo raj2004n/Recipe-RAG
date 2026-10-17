@@ -1,20 +1,9 @@
-"""Tests for the keyless UI surface: the page, its assets, and the three
-forwarders into the keyed API.
-
-The forwarders are where a keyless request crosses into the keyed API, so
-these tests are mostly about that crossing: that the UI's own key is what
-authenticates the upstream call, that the upstream route's own validation
-and error envelope are what reach the browser, and that an unusable UI
-key stops the service at startup rather than serving a page that could
-never answer.
-"""
-
 import asyncio
 import json
 
 import pytest
 
-from src.rag.serve.auth import _resolve_ui_key
+from src.serve.auth import _resolve_ui_key
 
 from .conftest import TEST_KEYS
 
@@ -39,7 +28,7 @@ async def test_every_asset_the_page_references_is_served(client):
     no fallback, so a reference that does not resolve is an unstyled page."""
     import re
 
-    from src.rag.serve.app import STATIC_DIR
+    from src.serve.app import STATIC_DIR
 
     page = (STATIC_DIR / "index.html").read_text()
     refs = re.findall(r'(?:href|src)="(/static/[^"]+)"', page)
@@ -58,7 +47,7 @@ def test_the_page_takes_no_class_name_daisyui_already_defines():
     top of itself. Only the components the page means to use are allowed."""
     import re
 
-    from src.rag.serve.app import STATIC_DIR
+    from src.serve.app import STATIC_DIR
 
     intended = {
         "btn", "btn-primary", "btn-lg", "btn-sm", "btn-ghost", "btn-outline",
@@ -195,7 +184,7 @@ async def test_ui_health_passes_an_upstream_503_through(
     not a 500 from the forward itself."""
     import httpx
 
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     monkeypatch.setattr(app_module, "_build_pipeline", lambda s, r=None: None)
     monkeypatch.setattr(app_module, "_load_snapshot_or_exit", lambda: stub_snapshot)
@@ -215,7 +204,7 @@ async def test_ui_health_passes_an_upstream_503_through(
 async def test_forwarder_client_is_closed_on_shutdown(stub_pipeline, monkeypatch):
     """The forwarder's client belongs to the lifespan, so shutdown closes
     it along with the Pipeline."""
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     monkeypatch.setenv("RECIPE_RAG_API_KEYS", json.dumps(TEST_KEYS))
     app = app_module.create_app()
@@ -232,7 +221,7 @@ def test_lifespan_exits_2_when_the_ui_key_is_not_in_the_map(
 ):
     """RAMSAY_UI_KEY naming a key that is not configured stops the service
     before it serves, the way a malformed key map does."""
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     monkeypatch.setenv("RECIPE_RAG_API_KEYS", json.dumps(TEST_KEYS))
     monkeypatch.setenv("RAMSAY_UI_KEY", "a-key-that-is-not-configured")
