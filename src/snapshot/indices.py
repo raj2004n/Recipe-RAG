@@ -3,11 +3,9 @@ from pathlib import Path
 
 import faiss
 
-from ..domain.chunker import Chunk
-from ..build.indexer import IndexedChunkSet
-from ..build.bm25indexer import BM25IndexedChunkSet
-from ..build.tokenizer import TokenizedChunk
+from ..domain.types import Chunk, TokenizedChunk
 from .chunk_sets import load_chunk_sets
+from .types import BM25IndexedChunkSet, IndexedChunkSet
 
 
 def save_indexed_chunk_sets(indexed_chunk_sets: list[IndexedChunkSet], save_path: str):

@@ -8,7 +8,7 @@ from ...domain.chunker import (
     ingredient_chunks,
     whole_recipe_chunks,
 )
-from ...corpus.preprocessor import Recipe
+from ...domain.types import Recipe
 from ..prompts_drafter.selection import _InfoSection, _build_info_sections
 from ..prompts_drafter.types import TYPES_WITH_ONE_PRIMARY
 

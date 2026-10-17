@@ -1,6 +1,6 @@
-from src.domain.chunker import Chunk
+from src.domain.types import Chunk, TokenizedChunk, TokenizedChunkSet
 from src.build.bm25indexer import BM25Indexer
-from src.build.tokenizer import Tokenizer, TokenizedChunk, TokenizedChunkSet
+from src.build.tokenizer import Tokenizer
 
 
 def _chunk(chunk_id: int, text: str) -> Chunk:

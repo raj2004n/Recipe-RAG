@@ -1,4 +1,4 @@
-from src.corpus.preprocessor import Recipe
+from src.domain.types import Recipe
 from src.domain.chunker import ingredient_chunks, instruction_chunks
 
 

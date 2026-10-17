@@ -13,7 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..core.checksum import file_checksum
 from ..pairs import write_manifest
-from ..pairs.student import EMPTY_REASONING
+from ..pairs.student_prompt import EMPTY_REASONING
 from .generator_evaluator import structural_checks
 from ..runtime.harness import begin_mlflow_run, build_judge, judge_config
 from .scoring import judgment

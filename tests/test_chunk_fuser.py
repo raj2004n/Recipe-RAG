@@ -1,7 +1,6 @@
 import pytest
 
-from src.domain.chunker import Chunk
-from src.runtime.retriever import RetrievalResult
+from src.domain.types import Chunk, RetrievalResult
 from src.runtime.fuser import ChunkFuser
 
 

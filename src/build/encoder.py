@@ -1,32 +1,7 @@
 from sentence_transformers import SentenceTransformer
-from dataclasses import dataclass
-from ..domain.chunker import Chunk, ChunkSet
+from ..domain.types import ChunkSet, EncodedChunk, EncodedChunkSet
 import numpy as np
 
-@dataclass
-class EncodedChunk:
-    vector: list[float]
-    text: str
-    recipe_id: int
-    chunk_id: int
-    # Carried from Chunk so the indexer can rebuild a full Chunk on the
-    # other side without needing to re-look-up the source chunk.
-    chunk_type: str = ""
-
-    @classmethod
-    def from_chunk(cls, chunk: Chunk, vector: list[float]) -> "EncodedChunk":
-        return cls(
-            vector=vector,
-            text=chunk.text,
-            recipe_id=chunk.recipe_id,
-            chunk_id=chunk.chunk_id,
-            chunk_type=chunk.chunk_type,
-        )
-
-@dataclass
-class EncodedChunkSet:
-    name: str
-    encoded_chunks: list[EncodedChunk]
 
 class Encoder:
     def __init__(

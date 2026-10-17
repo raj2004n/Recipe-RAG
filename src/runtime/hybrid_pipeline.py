@@ -5,7 +5,8 @@ from ..build.indexer import Indexer
 from .retriever import Retriever
 from .bm25retriever import BM25Retriever
 from ..build.tokenizer import Tokenizer
-from .fuser import ChunkFuser, FusedChunk
+from ..domain.types import FusedChunk
+from .fuser import ChunkFuser
 from .reranker import CrossEncoderReranker
 from .prompt_builder import PromptBuilder
 from .generator import Generator

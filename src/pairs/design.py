@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 from .manifest import add_to_dvc, write_manifest
 from .rendering import DesignerClient, flag_prompt, prompt_hash, user_message
 from .selection import dataset_key_of, load_pairs, load_recipes, resolve_corpus

@@ -2,14 +2,13 @@ import random
 from dataclasses import dataclass, field
 from typing import Any
 
+from ...domain.types import Chunk, Recipe
 from ...domain.chunker import (
-    Chunk,
     instruction_chunks,
     ingredient_chunks,
     whole_recipe_chunks,
 )
 from ...build.encoder import Encoder
-from ...corpus.preprocessor import Recipe
 from .types import INFO_SECTION_CHUNK_ID_BASE
 
 

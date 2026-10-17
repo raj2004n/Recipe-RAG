@@ -2,25 +2,7 @@ import json
 from pathlib import Path
 from itertools import count
 from typing import Iterator
-from dataclasses import dataclass
-from ..corpus.preprocessor import Recipe
-
-
-@dataclass
-class Chunk:
-    # Globally unique within a snapshot. Used as the FAISS id for dense
-    # indices, so collisions across chunk sets would silently resolve a
-    # hit to the wrong chunk.
-    chunk_id: int
-    recipe_id: int
-    chunk_type: str
-    text: str
-
-
-@dataclass
-class ChunkSet:
-    name: str
-    chunks: list[Chunk]
+from .types import Chunk, ChunkSet, Recipe
 
 
 def chunk_recipes(strategy, recipes_path: Path) -> list[ChunkSet]:

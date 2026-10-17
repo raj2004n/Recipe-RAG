@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from src.corpus.preprocessor import Recipe
+from src.domain.types import Recipe
 from src.domain.source_block import source_block, user_message
 
 

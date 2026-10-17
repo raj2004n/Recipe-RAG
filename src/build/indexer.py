@@ -1,25 +1,9 @@
 import faiss
 import numpy as np
-from dataclasses import dataclass, field
-from .encoder import EncodedChunkSet
-from ..domain.chunker import Chunk
+from ..domain.types import Chunk, ChunkById, EncodedChunkSet
+from ..snapshot.types import IndexedChunkSet
 
 
-# a FAISS id (chunk_id) maps back to its Chunk, so callers can resolve a
-# hit to the underlying object without the indexer leaking ids
-ChunkById = dict[int, Chunk]
-
-
-@dataclass
-class IndexedChunkSet:
-    name: str
-    index: faiss.Index
-    chunks: ChunkById = field(default_factory=dict)
-    # chunks is populated by index_embeddings (from EncodedChunk.chunk) or by
-    # set_indexed_sets (from a snapshot's chunks.json) 
-    # required for search() to resolve hits back to Chunks
-
-    
 class Indexer:
     def __init__(
         self,

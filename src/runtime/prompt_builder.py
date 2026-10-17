@@ -1,6 +1,5 @@
 from transformers import AutoTokenizer
-from .retriever import RetrievalResult
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe, RetrievalResult
 from ..domain.source_block import labelled_blocks
 from ..pairs.student_prompt import student_prompt, student_system
 

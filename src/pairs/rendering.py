@@ -8,7 +8,7 @@ from ollama import chat
 from pydantic import BaseModel, Field, ValidationError
 
 from ..domain.chunker import ingredient_chunks, instruction_chunks
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 from .types import (
     BACKOFF_BASE,
     MAX_RETRIES,

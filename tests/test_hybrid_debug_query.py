@@ -2,8 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from src.runtime.hybrid_pipeline import HybridPipeline
-from src.domain.chunker import Chunk
-from src.runtime.fuser import FusedChunk
+from src.domain.types import Chunk, FusedChunk
 
 
 def _fake_snapshot():

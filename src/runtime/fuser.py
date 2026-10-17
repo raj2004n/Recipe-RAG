@@ -1,16 +1,6 @@
-from dataclasses import dataclass, field
 from typing import Iterable
 
-from .retriever import RetrievalResult
-
-
-@dataclass
-class FusedChunk:
-    """A chunk after fusion + dedupe; ready for the reranker."""
-
-    chunk: object  # chunker.Chunk - kept untyped to avoid circular import
-    fused_score: float
-    sources: tuple[str, ...] = field(default_factory=tuple)
+from ..domain.types import FusedChunk, RetrievalResult
 
 
 class ChunkFuser:

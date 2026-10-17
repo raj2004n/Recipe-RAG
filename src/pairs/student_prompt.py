@@ -3,6 +3,11 @@ from src.domain.source_block import request_message
 # The persona whose system line a student opens with.
 STUDENT_PERSONA = "student"
 
+# Qwen3.5's generation prompt closes an empty reasoning block before the answer begins, so the
+# answer starts straight after it. The angle brackets are escaped so the tag cannot be read as
+# markup on its way into the file.
+EMPTY_REASONING = "\x3cthink\x3e\n\n\x3c/think\x3e\n\n"
+
 
 def student_system(template: dict) -> str:
     """The student's system line, read from a prompts config's template block.

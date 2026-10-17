@@ -1,4 +1,5 @@
-from .retriever import Retriever, RetrievalResult
+from ..domain.types import RetrievalResult
+from .retriever import Retriever
 from ..build.encoder import Encoder
 from ..build.indexer import Indexer
 from .prompt_builder import PromptBuilder

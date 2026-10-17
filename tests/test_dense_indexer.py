@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.build.encoder import EncodedChunk, EncodedChunkSet
+from src.domain.types import EncodedChunk, EncodedChunkSet
 from src.build.indexer import Indexer
 
 

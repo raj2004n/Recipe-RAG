@@ -1,32 +1,8 @@
 # tokenizer.py
 
 import re
-from dataclasses import dataclass
 
-from ..domain.chunker import Chunk, ChunkSet
-
-
-@dataclass
-class TokenizedChunk:
-    chunk: Chunk
-    tokens: list[str]
-
-    @classmethod
-    def from_chunk(
-        cls,
-        chunk: Chunk,
-        tokens: list[str],
-    ) -> "TokenizedChunk":
-        return cls(
-            chunk=chunk,
-            tokens=tokens,
-        )
-
-
-@dataclass
-class TokenizedChunkSet:
-    name: str
-    tokenized_chunks: list[TokenizedChunk]
+from ..domain.types import ChunkSet, TokenizedChunk, TokenizedChunkSet
 
 
 class Tokenizer:

@@ -1,6 +1,6 @@
-from ..build.bm25indexer import BM25IndexedChunkSet
+from ..snapshot.types import BM25IndexedChunkSet
 from ..build.tokenizer import Tokenizer
-from .retriever import RetrievalResult
+from ..domain.types import RetrievalResult
 
 class BM25Retriever:
     def __init__(self, indexed_chunk_set: BM25IndexedChunkSet, tokenizer: Tokenizer):

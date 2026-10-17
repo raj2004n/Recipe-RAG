@@ -2,9 +2,14 @@ import json
 import os
 from dataclasses import asdict
 
-from ..domain.chunker import Chunk, ChunkSet
-from ..build.encoder import EncodedChunk, EncodedChunkSet
-from ..build.tokenizer import TokenizedChunk, TokenizedChunkSet
+from ..domain.types import (
+    Chunk,
+    ChunkSet,
+    EncodedChunk,
+    EncodedChunkSet,
+    TokenizedChunk,
+    TokenizedChunkSet,
+)
 
 
 def _read_json(path: str) -> any:

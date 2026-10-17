@@ -3,7 +3,7 @@ from pathlib import Path
 
 from ..core.config import BASE_CONFIG, DATA_PATHS, ENCODER_CONFIG
 from ..build.encoder import Encoder
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 
 
 _DRAFTER_CONFIG_KEY = "prompts_drafter"

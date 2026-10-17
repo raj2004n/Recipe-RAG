@@ -3,7 +3,7 @@ import torch
 
 from sentence_transformers import CrossEncoder
 
-from .fuser import FusedChunk
+from ..domain.types import FusedChunk
 
 
 class CrossEncoderReranker:

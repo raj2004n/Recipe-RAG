@@ -1,13 +1,6 @@
-from dataclasses import dataclass
-from ..domain.chunker import Chunk
+from ..domain.types import RetrievalResult
 from ..build.encoder import Encoder
 from ..build.indexer import Indexer
-
-
-@dataclass
-class RetrievalResult:
-    chunk: Chunk
-    score: float
 
 
 class Retriever:

@@ -11,12 +11,12 @@ from transformers import AutoTokenizer
 from ...core.checksum import file_checksum
 from ..student import (
     CHAT_TEMPLATE,
-    EMPTY_REASONING,
     STUDENT_MODEL_ID,
     STUDENT_SYSTEM,
     assert_template_matches,
     render_student_prompt,
 )
+from ..student_prompt import EMPTY_REASONING
 from .. import add_to_dvc, write_manifest
 from ..selection import (
     dataset_key_of,

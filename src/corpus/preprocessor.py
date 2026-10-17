@@ -5,19 +5,10 @@ import jsonlines
 from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict
 
+from ..domain.types import Recipe
 
-@dataclass
-class Recipe:
-    recipe_id: int = -1
-    url: str = ""
-    recipe_name: str = ""
-    servings: float = 0.0
-    info: list[dict[str, any]] = field(default_factory=list)
-    ingredient_groups: list[dict[str, any]] = field(default_factory=list)
-    instruction_groups: list[dict[str, any]] = field(default_factory=list)
-    notes: list[str] = field(default_factory=list)
 
 def setup_logging():
     """ Setup logging for the preprocessor.

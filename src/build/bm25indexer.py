@@ -1,21 +1,7 @@
 from rank_bm25 import BM25Okapi
-from dataclasses import dataclass, field
-from .tokenizer import TokenizedChunk, TokenizedChunkSet
-from ..domain.chunker import Chunk
+from ..domain.types import ChunkById, TokenizedChunk, TokenizedChunkSet
+from ..snapshot.types import BM25IndexedChunkSet
 
-
-# a BM25 index uses token positions (int) as ids, which map back to Chunk
-ChunkById = dict[int, Chunk]
-
-
-@dataclass
-class BM25IndexedChunkSet:
-    name: str
-    index: BM25Okapi
-    tokenized_chunks: list[TokenizedChunk] = field(default_factory=list)
-    chunks: ChunkById = field(default_factory=dict)
-    # chunks is populated by build() from tokenized_chunks[i].chunk, keyed by chunk_id
-    # required for search() to resolve hits back to Chunks
 
 class BM25Index:
     def __init__(self, bm25: BM25Okapi, documents: list[TokenizedChunk]):

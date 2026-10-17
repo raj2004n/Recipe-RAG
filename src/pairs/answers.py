@@ -11,7 +11,7 @@ from pathlib import Path
 
 from ollama import chat
 
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 from ..domain.source_block import user_message
 from .manifest import add_to_dvc, write_manifest
 from .selection import dataset_key_of, load_recipes, resolve_corpus

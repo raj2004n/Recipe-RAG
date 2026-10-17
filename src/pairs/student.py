@@ -17,9 +17,9 @@ from transformers import AutoModelForCausalLM
 from ..core.checksum import file_checksum
 from ..core.config import PROMPTS_CONFIG
 from . import add_to_dvc, write_manifest
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 from ..domain.source_block import labelled_blocks
-from .student_prompt import student_prompt, student_system
+from .student_prompt import EMPTY_REASONING, student_prompt, student_system
 from ..runtime.harness import begin_mlflow_run
 
 logger = logging.getLogger(__name__)
@@ -29,11 +29,6 @@ STUDENT_MODEL_ID = "Qwen/Qwen3.5-0.8B"
 
 # The line the student opens with, read from the live prompts config the service also reads.
 STUDENT_SYSTEM = student_system(PROMPTS_CONFIG["template"])
-
-# Qwen3.5's generation prompt closes an empty reasoning block before the answer begins, so the
-# answer starts straight after it. The angle brackets are escaped so the tag cannot be read as
-# markup on its way into the file.
-EMPTY_REASONING = "\x3cthink\x3e\n\n\x3c/think\x3e\n\n"
 
 # The two-message case in full, which is every row of this distillation: a system turn, a user
 # turn, and an assistant turn opened for the answer the student is trained to produce.

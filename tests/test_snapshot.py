@@ -6,8 +6,7 @@ import pytest
 from src.snapshot import lifecycle, loader
 from src.snapshot import paths as paths_module
 from src.snapshot.paths import SnapshotPaths
-from src.build.indexer import IndexedChunkSet
-from src.build.bm25indexer import BM25IndexedChunkSet
+from src.snapshot.types import BM25IndexedChunkSet, IndexedChunkSet
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

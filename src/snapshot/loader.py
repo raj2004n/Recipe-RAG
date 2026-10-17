@@ -6,8 +6,7 @@ import yaml
 from .paths import SnapshotPaths
 from . import registry
 
-from ..build.indexer import IndexedChunkSet
-from ..build.bm25indexer import BM25IndexedChunkSet
+from .types import BM25IndexedChunkSet, IndexedChunkSet
 from .indices import load_bm25_index_chunk_sets, load_indexed_chunk_sets
 
 

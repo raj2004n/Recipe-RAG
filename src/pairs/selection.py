@@ -4,7 +4,7 @@ from pathlib import Path
 from ..snapshot.datasets.resolver import LocalDatasetResolver
 from ..snapshot import registry
 from ..snapshot.paths import SnapshotPaths
-from ..corpus.preprocessor import Recipe
+from ..domain.types import Recipe
 
 
 def load_pairs(path: Path) -> list[dict]:
