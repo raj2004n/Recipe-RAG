@@ -1,18 +1,3 @@
-"""Evaluate the generation stage against the golden dataset, tracked in MLflow.
-
-Loads a sealed snapshot, builds the serving prompt path and the greedy
-generator from it, and answers every golden row through the golden context:
-the row's ground-truth recipe_ids resolved against the registered corpus, not
-retrieval output. Each generated answer is scored with deterministic
-structural checks and a double-called LLM judge. Retrieval is not exercised;
-end-to-end evaluation is a separate stage.
-
-Every run logs the snapshot and generator identity, the judge model and
-sampling options plus the judge prompt hash, the per-dimension and
-per-query-type means, the disagreement rates, and the per-row results as
-artifacts.
-"""
-
 import argparse
 import json
 import logging

@@ -1,15 +1,3 @@
-"""Snapshot loading.
-
-A 'Snapshot' is the read-only artefact Pipelines consume at inference time.
-Each strategy declares which index loaders to run, so adding a strategy is a
-matter of adding a row to `_STRATEGY_LOADERS`.
-
-Loading is target-based: pass a target name (`'latest_build'`, `'serve'`, or a
-build name) to `load_snapshot_by_target`. The registry is consulted to
-resolve the target to a folder, and the folder's status must be `"complete"`
-for the load to proceed.
-"""
-
 import json
 from dataclasses import dataclass
 from pathlib import Path

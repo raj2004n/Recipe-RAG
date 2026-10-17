@@ -1,6 +1,3 @@
-"""Tests for GET /info."""
-
-
 async def test_info_returns_snapshot_metadata(client, auth_header):
     async with client as c:
         r = await c.get("/info", headers=auth_header())

@@ -1,17 +1,3 @@
-"""Build the (system, user) prompt pair the generator answers from.
-
-Whole recipes and whole-recipe chunk text are two different starting points, so the pair is built two
-ways. The hybrid path renders recipes into the student's own prompt: the system line the snapshot's
-prompts config carries and a user turn carrying the recipes and the request, laid out by the renderer
-the training rows were built from. The dense path has no recipe objects to render, because a
-whole-recipe chunk carries the formatted text itself, so it fills the persona template from
-configs/prompts_config.yaml with the text it retrieved.
-
-Either way the context is held to a token budget: a recipe that would take the turn past the ceiling
-ends the list, so what a prompt carries is always a prefix of the ranked recipes.
-"""
-
-
 from transformers import AutoTokenizer
 from ..retrieval.dense.retriever import RetrievalResult
 from ..data.preprocessor import Recipe

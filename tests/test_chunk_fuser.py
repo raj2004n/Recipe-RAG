@@ -1,11 +1,3 @@
-"""Tests for the hybrid chunk fuser.
-
-The fuser's main job is to merge two retrieval lists and dedupe by
-chunk_id so the reranker never sees the same chunk twice. Score-scale
-matters less for the dedupe contract than for the ranking - so this test
-stays focused on dedupe and basic ranking behaviour.
-"""
-
 import pytest
 
 from src.rag.retrieval.chunker import Chunk

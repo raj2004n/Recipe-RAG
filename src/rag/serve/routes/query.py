@@ -1,12 +1,3 @@
-"""POST /query - accept a question, return a generated answer.
-
-Request body is `{"query": "..."}`. The `k` parameter is server-controlled
-from the snapshot's retriever config; clients cannot override it. The
-response is `{"query": "...", "answer": "..."}` - retrieval hits and
-prompts are deliberately not exposed on the public endpoint, so a
-leaked public key cannot be used to inspect the underlying chunks.
-"""
-
 from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, Request

@@ -1,13 +1,3 @@
-"""Dataset resolution.
-
-A `DatasetResolver` turns a dataset key (recorded on a snapshot's
-`metadata.json`) into a local path that the inference side can `open()`.
-
-Resolvers must fail closed: a missing file, a missing key, or a checksum
-mismatch all raise. The caller (the lifespan) treats any failure as fatal
-and exits with code 2.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

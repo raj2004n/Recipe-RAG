@@ -1,22 +1,3 @@
-"""Draw the split: which answer rows train, which are held aside, and why.
-
-The student learns from rows the teacher wrote, so the eval that judges it has to be drawn from
-rows it never trains on. A recipe that carries a primary slot carries it in exactly two rows, and a
-hold-out made of whole recipes can only ever give even counts, while the settled eval is 297
-savoury rows against 297 sweet. Rows are drawn instead, out of four pools: a recipe's category,
-crossed with whether that recipe also turns up as the partner of some other row.
-
-The eval takes its savoury half from the savoury recipes that are never a partner, which is the part
-of the corpus no other row leads back into, and its sweet half from the sweet recipes on both sides
-of that line. What is left is the training rows, and the dev slice is drawn from those, shaped like
-the rows it is drawn from. No third bucket is held aside.
-
-The draw is seeded, so a manifest describes a split that can be drawn again from the same numbers.
-The leak figures in the manifest are measured after the draw rather than assumed, because a held-out
-row can still share a dish with training through the other side of its pair, and a reader should see
-how much of the eval that is before trusting what it scores.
-"""
-
 import logging
 import random
 from collections import Counter, defaultdict

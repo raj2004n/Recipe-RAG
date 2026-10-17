@@ -1,11 +1,3 @@
-"""CLI wrapper around prompts_drafter.draft_prompts.
-
-Reads the model and concurrency knobs from configs/base_config.yaml
-(prompts_drafter section) and the corpus / output paths from
-configs/paths_config.yaml. Supports --per-type-count so a long draft can be
-run as a small smoke test before committing to the full 88 rows.
-"""
-
 import argparse
 
 from src.rag.data.drafter_common import build_encoder, draft_kwargs, resolve_paths
@@ -30,7 +22,14 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="""CLI wrapper around prompts_drafter.draft_prompts.
+
+Reads the model and concurrency knobs from configs/base_config.yaml
+(prompts_drafter section) and the corpus / output paths from
+configs/paths_config.yaml. Supports --per-type-count so a long draft can be
+run as a small smoke test before committing to the full 88 rows.
+""")
     parser.add_argument(
         "--per-type-count",
         type=int,

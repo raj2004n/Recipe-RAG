@@ -1,19 +1,3 @@
-"""End-to-end evaluation: answer golden rows through the full pipeline path.
-
-The golden-context generator evaluator feeds each row's ground-truth recipes
-straight to the prompt builder, isolating generation from retrieval. This
-evaluator closes that gap. For every golden row the injected retrieve
-callable runs the pipeline's own retrieval window and returns the recipe
-dicts that would go into the serving prompt, deduped and capped at the
-serving top-k. The prompt is built from those retrieved recipes rather than
-the golden ones, the answer is generated greedily, and the same structural
-checks and double-called LLM judge as the generation stage score it. Because
-the judge context and the novelty reference are the retrieved recipes, every
-score carries the retrieval outcome inside it, and the record keeps the
-retrieved ids next to the scores so a bad answer is traceable to a retrieval
-miss.
-"""
-
 import logging
 from collections.abc import Sequence
 

@@ -1,11 +1,3 @@
-"""Tests for the BM25 regex tokenizer.
-
-The tokenizer is the foundation of the sparse retrieval path. It must be
-deterministic (same input -> same tokens), case-insensitive (so "Chicken"
-matches "chicken" in queries), and split on word boundaries (so punctuation
-and hyphens don't glue words together).
-"""
-
 from src.rag.retrieval.sparse.tokenizer import Tokenizer
 
 

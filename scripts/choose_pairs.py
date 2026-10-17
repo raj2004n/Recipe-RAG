@@ -1,12 +1,3 @@
-"""The argparse surface for the chooser run.
-
-The call loop and the pair set it writes live in src/rag/data/pairs/chooser.py,
-which is also where the parser takes its description, so --help prints the
-pass's own account of a run rather than a second telling of it. The knobs are the
-snapshot the ids resolve in, the smoke and probe switches, where the pairs land,
-the worker count and the resume flag.
-"""
-
 import argparse
 from pathlib import Path
 
@@ -16,7 +7,31 @@ from src.rag.data.pairs import chooser
 
 def main() -> None:
     configure_logging()
-    parser = argparse.ArgumentParser(description=chooser.__doc__)
+    parser = argparse.ArgumentParser(
+        description="""Run the chooser over the candidate pool and write the pair set.
+
+One call per primary, and each call returns two picks, so every primary appears in
+two pairs with a different partner each time. The chooser is shown the primary
+recipe in full, the band of candidates its partners must come from, and the anchor
+ranks it may fall back to, and it returns two ranks with a one-sentence reason
+each. Those reasons are the audit trail for the rows, and the pair set is those
+rows: the two recipe ids, the partner's rank and cosine, the anchors it was
+measured against, the flag and the reason, keyed to the snapshot and dataset the
+ids resolve in. Each row names the other pick from the same call, so a pair can be
+read either alone or as one half of a joint decision.
+
+The band and the anchors both arrive with the repeat guard already applied, so a
+candidate the guard flagged is never offered and a flagged anchor cannot be
+returned. What the model reads is therefore the pool's own decision, not a
+second opinion about it.
+
+The calls are the only spend in this task: the pool is local, and nothing here
+generates a recipe, writes a prompt for the teacher, or touches any dataset
+other than the registered corpus the pool was built from.
+
+A run with --limit writes to the smoke paths and prints every reason, which is
+how the prompt gets read before the corpus-wide run pays for it.
+""")
     parser.add_argument("--snapshot", default="latest_build",
                         help="Snapshot target ('latest_build') or folder name.")
     parser.add_argument("--limit", type=int, default=None,

@@ -1,16 +1,3 @@
-"""Metadata for the distillation passes: the paths, the draw, and the caps.
-
-Both passes read the same files, so they share one idea of where the answers, the
-category sidecar and the pair set live, and where their own output lands. The draw
-sizes and the expected counts are the numbers the split was priced at, and they are
-checked rather than trusted, so a split that is not the one settled stops before it
-is written. The caps say how long a row may be and how many rows are held in hand at
-once.
-
-Nothing here touches a file or a model, so a caller can import it for the constants
-alone.
-"""
-
 from datetime import datetime, timezone
 from pathlib import Path
 

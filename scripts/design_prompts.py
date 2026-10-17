@@ -1,11 +1,3 @@
-"""Design one writing prompt per recipe pair, for a teacher model to answer.
-
-The argparse surface, the default paths and the exit code live here; the pass
-itself lives in src/rag/data/pairs/design.py. The knobs are the pair set to
-read, the corpus to resolve the recipe ids in, the model, the smoke and probe
-switches, and the resume flag.
-"""
-
 import argparse
 from pathlib import Path
 
@@ -15,7 +7,8 @@ from src.rag.data.pairs.types import MAX_WORKERS, MODEL_ID, PAIRS_JSONL
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Design one writing prompt per recipe pair, for a teacher model to answer.")
     parser.add_argument("--pairs", default=str(PAIRS_JSONL),
                         help="the pair set whose rows are designed from")
     parser.add_argument("--recipes", default=None,

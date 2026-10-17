@@ -1,18 +1,3 @@
-"""The prompt a student is served with, and the one it was trained on.
-
-A student is served the same two things a training row gave it: a one line system prompt, and a
-user turn carrying the retrieved recipes and the request. The user turn is rendered by the same
-function the training rows were built from, so a served turn and a trained turn are the same text
-rather than two renderings that have to be kept in step by hand. The system line is a config value
-rather than a constant, so the words the student opens with can be read from the copy a snapshot
-seals and from the live configs a training pass reads, and the tokenised rows record the value they
-were built with.
-
-The system prompt is a single line because the shape and the voice of an answer are carried by the
-training targets rather than asked for in words. Fine-tuning is what moves style into the weights,
-so instructions about style are the part of a prompt a student needs least.
-"""
-
 from src.rag.data.source_block import request_message
 
 # The persona whose system line a student opens with.

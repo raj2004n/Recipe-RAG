@@ -1,20 +1,3 @@
-"""The promotion gate verdict: does a snapshot clear the bars to become baseline.
-
-The gate is a pass/fail decision over one end-to-end MLflow run. The criteria
-live in configs/promotion.yaml so the bars are data, editable without touching
-code, and this module keeps the logic generic: a list of checks, one per bar,
-comparing a metric from the run against a threshold with a direction. The
-slice bars run against the slice aggregates, the per-query-type bars against
-every query type the run contains, and the judge-noise rule falls out of the
-disagreement `at_most` bars: a dimension's mean is trusted only while the judge
-agrees, so the mean and its disagreement must both clear their bars.
-
-Nothing here touches MLflow or the registry. Run finding and promotion
-recording live in the script layer, so the verdict is unit-testable from a
-plain metrics dict and the same checks feed the report and the auditable
-promotion record.
-"""
-
 from __future__ import annotations
 
 import dataclasses

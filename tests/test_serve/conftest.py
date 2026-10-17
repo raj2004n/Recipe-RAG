@@ -1,5 +1,3 @@
-"""Fixtures and helpers for the FastAPI service tests."""
-
 import json
 import os
 from typing import Any

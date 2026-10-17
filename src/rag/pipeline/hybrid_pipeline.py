@@ -1,11 +1,3 @@
-"""
-Hybrid Pipeline: dense + sparse retrieval, fuse, rerank, fetch whole recipe, prompt, generate.
-
-recipes / recipe_path is required for this class because unlike the DensePipeline, where the 
-chunks already contain the whole formatted recipe, the HybridPipeline handles chunks containing
-instructions, ingredients, and information.
-"""
-
 import json
 
 from ..retrieval.dense.encoder import Encoder

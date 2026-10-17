@@ -1,13 +1,3 @@
-"""Tests for the build graph the DVC stages declare.
-
-The build is a graph DVC can skip: every stage declares the staging output it
-writes and takes the output of the stages before it as an input, so a stage
-whose inputs and outputs are unchanged is not re-run. It also names the config
-keys it reads rather than the files that hold them, so a key no stage reads does
-not invalidate the ones that do. These tests pin both sets of declarations, and,
-in a throwaway repository, the DVC behaviour they rely on.
-"""
-
 import json
 import subprocess
 import sys

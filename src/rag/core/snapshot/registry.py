@@ -1,9 +1,3 @@
-"""Registry management for RAG snapshots.
-
-Handles the naming of versioned builds and the maintenance of the registry.json
-mapping that determines which snapshot is currently active.
-"""
-
 import json
 import time
 from datetime import datetime

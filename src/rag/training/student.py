@@ -1,35 +1,3 @@
-"""Distil the teacher's recipe answers into the student generator.
-
-The teacher was handed two source recipes and a request, and wrote one new dish out of them. The
-student is trained to answer the same way from the same pair: a one line system prompt, the user
-turn the teacher read, and the teacher's answer as the target. This file holds that prompt and the
-turn it renders into, which is the whole of the student's side of a training row.
-
-The system prompt and the user turn come from src/rag/data/student_prompt.py rather than being held
-here. The service renders a request's prompt through that same definition, so the row a student is
-trained on and the request it answers cannot drift apart, and the reasoning behind the one line
-system prompt is written down in that one place.
-
-The chat template is written out here rather than read from the checkpoint. The serving path
-renders prompts with the tokenizer built for the snapshot's generator model, which is gemma, and
-gemma folds the system text into the first user turn while Qwen opens a system turn of its own. The
-two shapes are not interchangeable, so the student's is spelled out. The parity assertion is what
-keeps the copy honest: a hand-written fork of a checkpoint's template is correct only while it is
-the same string that checkpoint carries.
-
-Which rows are trained on, and the tokenised rows themselves, are written by the distillation split
-script, which pins the template here through that same assertion rather than keeping a copy of its
-own. This file reads those rows back and fits a rank 16 adapter over the attention and MLP
-projections, one row to a micro-batch, sixteen of them to a step, with the learning rate climbing
-to the settled peak over the first few steps and decaying from there along a cosine.
-
-A step is shaped by the card it has to fit on. A row can run to the 4,096 token cap, and the logits
-of a whole row would be a 248,320 wide projection per token, far past what a laptop card holds, so
-the loss is taken a slice at a time and each slice is recomputed in the backward pass rather than
-kept. The backbone's own activations are recomputed the same way, which is what leaves room for a
-row of any length on a card of this size.
-"""
-
 import contextlib
 import hashlib
 import logging

@@ -1,19 +1,3 @@
-"""Shared error envelope for the FastAPI service.
-
-Every endpoint returns either the success body or a single error envelope:
-
-    {"error": {"code": "<machine_readable>", "message": "<human_readable>"}}
-
-Keeping the envelope uniform makes the public API easy to consume from
-any client (curl, frontend, recruiter demo) without per-endpoint branching
-on shape.
-
-The last-resort handler is installed as a Starlette middleware rather than
-via `@app.exception_handler(Exception)` so it catches everything, including
-non-`Exception` failures from inside `run_in_threadpool`. Middleware sits
-below the routing layer in the ASGI chain and always wraps the inner app.
-"""
-
 import logging
 
 from fastapi import FastAPI, Request

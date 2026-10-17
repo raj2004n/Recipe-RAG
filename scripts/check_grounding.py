@@ -1,11 +1,3 @@
-"""Flag prompts that ask for a way of cooking the pair gives the teacher no basis for.
-
-The argparse surface, the default paths and the exit code live here; the check
-itself lives in src/rag/evaluation/grounding.py. The knobs are the prompts to
-measure, the pair set they were designed from, the corpus override, where the
-annotated copy lands, and how much of the report is printed.
-"""
-
 import argparse
 from pathlib import Path
 
@@ -15,7 +7,8 @@ from src.rag.evaluation.grounding import DEFAULT_PROMPTS, check_grounding
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Flag prompts that ask for a way of cooking the pair gives the teacher no basis for.")
     parser.add_argument("--prompts", default=str(DEFAULT_PROMPTS),
                         help="the designed prompts to measure")
     parser.add_argument("--pairs", default=str(PAIRS_JSONL),

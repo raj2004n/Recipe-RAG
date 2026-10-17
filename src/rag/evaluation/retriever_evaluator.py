@@ -1,12 +1,3 @@
-"""Pipeline-agnostic retrieval evaluation.
-
-The evaluator scores a retriever against eval rows of (query, recipe_ids)
-ground truth. It is agnostic to the retrieval implementation: it takes a
-retrieve(query, k) -> list[int] callable that returns recipe_ids in rank
-order, so both the dense and hybrid pipelines are scored through the same
-code path.
-"""
-
 from collections.abc import Callable, Sequence
 from .metrics import recall_at_k, mrr_at_k, precision_at_k, ndcg_at_k
 

@@ -1,18 +1,3 @@
-"""Render retrieved recipes into the source block a model is handed.
-
-A training row shows a teacher model two recipes and the request they were chosen for, and asks it
-to invent one new dish out of them. This module renders the first half of that row: a recipe's
-label, its name, its servings, and the two working sections. The count is the caller's, so a served
-turn carrying three recipes is laid out by the same code as a two-recipe training turn.
-
-Ingredients and steps come from the chunker's own formatters, so the teacher reads the same text
-the sparse index is built from, and the same text the pair prompt was designed against. Everything
-inside those two sections is copied exactly as the formatter returns it, apart from blank lines,
-which are dropped. The corpus carries the usual scraping noise, a line holding nothing but a note
-among them, and a block is a faithful copy of a page rather than a tidy one. Steps are never
-renumbered: they stay in whatever shape the source wrote them.
-"""
-
 from src.rag.data.preprocessor import Recipe
 from src.rag.retrieval.chunker import ingredient_chunks, instruction_chunks
 

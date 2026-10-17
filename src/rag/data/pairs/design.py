@@ -1,26 +1,3 @@
-"""Design one writing prompt per recipe pair, for a teacher model to answer.
-
-Each row of the pair set carries two recipe ids that a chooser decided belong together. This pass
-reads both recipes and asks a model to write the single request that will be handed to a teacher
-model alongside the same pair, so the teacher invents one new recipe from it. That request is the
-whole of the steering the teacher gets, so it has to carry the idea the pair shares and name the
-thing that must be new, without naming either dish, quoting an amount, or describing a step.
-
-The output is a dated sidecar keyed by the pair, and the pair set is never written, so a new pass
-lands beside the last one rather than on top of it. Rows are appended and flushed as each call
-returns, so a pass that dies keeps everything it had finished, and the file is re-sorted by rename
-once the pass ends. The manifest is written before the first call and again at the end, and its
-state field is what tells a finished pass from a killed one. Each row names the writer, its
-sampling settings and the hash of the instructions it was given, which is what keeps an older row
-attributable once the instructions move on. A row also carries the flags a read-through would
-raise, a prompt that names a parent dish or quotes an amount among them, so the review list is a
-filter over the file rather than a second pass over it.
-
-A pass run over a handful of pairs writes to the smoke paths, printing every prompt with the
-sections behind it, which is how the instructions get read before the corpus-wide run pays for
-them.
-"""
-
 import json
 import logging
 import os

@@ -1,20 +1,3 @@
-"""Golden-context evaluation for the generation stage.
-
-The evaluator isolates the generator from retrieval: for every golden row the
-ground-truth recipe_ids are resolved against the registered corpus, the
-serving prompt is built through the real PromptBuilder path, and the greedy
-generator answers it. Each answer is then scored two ways. Deterministic
-structural checks score the format contract and novelty for free, with no LLM
-involved. An LLM judge scores the content, running twice per row at a low
-temperature so the disagreement rate measures the judge's own noise rather
-than provider nondeterminism.
-
-The judge rides the same ollama chat path the eval drafters already use
-(chat with format="json", fence stripping, pydantic validation, retries), and
-its personas are read from the live config at eval time, not from the
-snapshot.
-"""
-
 import logging
 import random
 import re

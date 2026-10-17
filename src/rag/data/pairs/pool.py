@@ -1,28 +1,3 @@
-"""Build the candidate pool the chooser reads, and calibrate its repeat guard.
-
-The pool is the build-time half of pair selection. For every recipe in the
-registered corpus it stores the top-ranked neighbours in the whole-recipe
-embedding space, so the chooser can be handed a primary's candidates without
-anything being re-encoded. Ranks 10 to 30 are the band a partner is drawn from,
-ranks 1 to 3 are the plausibility anchor the chooser sees for a primary whose
-band holds nothing workable, and ranks 4 to 9 are kept only so the band's edge
-can be re-derived later.
-
-The repeat guard is a cosine cut against the primary's own vector, and a flagged
-candidate is never offered to the chooser: it is left out of the band, and the
-fallback anchor is the closest candidate that is not flagged. The rows stay in
-the pool so the flagging can be audited after the fact.
-
-Two runs. `calibrate` measures what a cut flags across the pool and prints its
-reach, writing nothing. `build` writes the pool and its manifest at a cut passed
-on the command line, so the guard's value is chosen with its consequences in
-front of it rather than buried in the code.
-
-The corpus is read through the snapshot's registered dataset key and is never
-written to. It is the only input, and the pair set this pool feeds stays
-independent of every other dataset.
-"""
-
 import json
 import logging
 from collections import Counter

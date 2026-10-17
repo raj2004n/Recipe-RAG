@@ -1,5 +1,3 @@
-"""Orchestration: run selection, model calls, and atomic output for one full draft."""
-
 import json
 import os
 import random

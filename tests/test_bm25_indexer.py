@@ -1,11 +1,3 @@
-"""Tests for the BM25 indexer.
-
-The BM25 indexer turns a TokenizedChunkSet into a BM25IndexedChunkSet whose
-index is a rank_bm25.BM25Okapi and whose `chunks` map is the chunk_id -> Chunk
-resolution table the retriever needs to turn a hit into a RetrievalResult.
-These tests pin both contracts: the ranking behaviour and the chunk map.
-"""
-
 from src.rag.retrieval.chunker import Chunk
 from src.rag.retrieval.sparse.bm25indexer import BM25Indexer
 from src.rag.retrieval.sparse.tokenizer import Tokenizer, TokenizedChunk, TokenizedChunkSet

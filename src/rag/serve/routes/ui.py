@@ -1,26 +1,3 @@
-"""The keyless UI routes: three forwarders into the keyed API.
-
-The browser page never carries a key. These three routes are the whole
-keyless surface apart from the page and its assets, and each forwards to
-the keyed route it names (`/query`, `/health`, `/info`) with the UI's key
-injected server-side, so the auth boundary is crossed in exactly one
-place and the page cannot reach anything else.
-
-The forward goes through `httpx.ASGITransport` against this same app
-rather than calling the Pipeline directly. That keeps `/query` the single
-entrance to the generator: the UI inherits its body validation, its
-server-controlled `top_k`, and its error envelope, and the browser sees
-the same status codes and `error.code` values any other client sees.
-
-Three named routes rather than one path forwarder: a relay would serve
-whatever path the caller asked for, and the explicit allowlist is what
-makes this surface readable at a glance.
-
-`/ui/query` is the one route that adds anything to the reply: it parses the
-answer into the sections the result view draws and returns them alongside
-the answer it was parsed from.
-"""
-
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse

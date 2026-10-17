@@ -1,6 +1,3 @@
-"""Tests for POST /query."""
-
-
 async def test_query_returns_answer(client, auth_header):
     async with client as c:
         r = await c.post(

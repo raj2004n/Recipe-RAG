@@ -1,5 +1,3 @@
-"""Tests for the pipeline-agnostic RetrievalEvaluator."""
-
 import pytest
 
 from src.rag.evaluation.retriever_evaluator import RetrievalEvaluator

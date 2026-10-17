@@ -1,16 +1,3 @@
-"""Manifest writing, and the DVC pointer that stands beside it.
-
-Every pass in this cluster leaves a manifest beside its output. It goes down
-whole, by rename, so a reader never meets it half-written, and it names the
-checksum of the input it read so a later pass can tell whether it read the same
-bytes. The hash itself belongs to `core.checksum`, which the passes that need it
-import directly.
-
-These passes run outside the build graph, so no stage moves the `.dvc` pointer
-that stands in for their artefacts in git. `add_to_dvc` is what puts the artefact
-and its pointer down in the same run.
-"""
-
 import json
 import os
 import subprocess

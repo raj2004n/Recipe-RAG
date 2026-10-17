@@ -1,5 +1,3 @@
-"""Tests for the golden-context generator evaluator and its judge client."""
-
 import json
 from types import SimpleNamespace
 

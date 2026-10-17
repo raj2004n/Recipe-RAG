@@ -1,22 +1,3 @@
-"""The promotion gate: the script that decides the deployment baseline.
-
-Reads a candidate snapshot's end-to-end MLflow run, applies the bars from
-configs/promotion.yaml (slice means, per-query-type floors, judge-disagreement
-caps, and the structure and retrieval rates), prints a pass/fail report whose
-header carries the sample-size caveat, and on explicit human approval records
-the promotion in the snapshot registry: targets["serve"] plus a promoted
-record with the governing run's identity, the gate's verdict and the per-check
-outcome.
-
-The bars never promote anything by themselves; they inform a decision that
-stays with the human. A snapshot that cleared them takes a yes, and --yes says
-it without a prompt. One that failed them takes its folder name typed out
-instead, so a below-bar promotion is a deliberate act rather than a reflex or a
-flag, and the record it leaves says it went ahead against the gate. Promotion
-is a registry write, not a deployment; carrying the baseline to the GPU host is
-a separate later step.
-"""
-
 import argparse
 import os
 import sys

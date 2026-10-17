@@ -1,10 +1,3 @@
-"""Tests for chunk_recipes.
-
-Verifies the global-unique chunk_id contract that FAISS relies on. If two
-chunks share an id within a snapshot, a FAISS hit would silently resolve to
-the wrong chunk.
-"""
-
 import json
 from pathlib import Path
 

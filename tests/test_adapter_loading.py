@@ -1,14 +1,3 @@
-"""Guard the LoRA adapter so the served generator cannot lose it quietly.
-
-The generator serves a base checkpoint plus, when one is configured, an
-adapter trained on top of it. A wrong adapter path is invisible from the
-outside: it either attaches weights that were never meant to run together or
-fails inside peft with an error that names neither the config key nor the
-path. These tests stub the loads and assert that the configured path reaches
-peft, that a path which is not a directory fails at the configuration rather
-than inside the loader, and that the load names both the base and the adapter
-in the log.
-"""
 import logging
 from unittest.mock import patch
 

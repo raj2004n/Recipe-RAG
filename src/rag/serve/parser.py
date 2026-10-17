@@ -1,24 +1,3 @@
-"""Turn a generated answer into the sections the result view draws.
-
-The generation prompt asks for a recipe and says nothing about the headings
-the model should use, so the shape of an answer is the model's choice. What
-the model has actually seen is the house style of the retrieved recipes: a
-bold label over dash bullets. That is what this looks for, and it is what
-the recorded answers mostly are, with the deviations the model is free to
-introduce: a heading or a bolded name over a sentence of preamble, grouped
-ingredients under a bold sub-label, numbered steps whose lead-in is bold,
-and what the recipe makes and how long it takes as their own labelled lines.
-
-No line is dropped. A line the parser cannot place is rendered as prose
-after the notes, so a parse that goes wrong costs layout and never costs
-text. An answer with no ingredient, step or note section at all is not a
-recipe view at all and comes back whole, because a lone heading over an
-empty page reads as broken while prose reads as deliberate.
-
-Pure over a string, so it is tested directly against recorded model output
-rather than through the service.
-"""
-
 import re
 from dataclasses import dataclass, replace
 

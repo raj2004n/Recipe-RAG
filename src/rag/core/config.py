@@ -1,5 +1,3 @@
-"""Project-wide configuration singletons."""
-
 from typing import Any
 
 from .utils import load_config

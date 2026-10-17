@@ -1,14 +1,3 @@
-"""Tests for the keyless UI surface: the page, its assets, and the three
-forwarders into the keyed API.
-
-The forwarders are where a keyless request crosses into the keyed API, so
-these tests are mostly about that crossing: that the UI's own key is what
-authenticates the upstream call, that the upstream route's own validation
-and error envelope are what reach the browser, and that an unusable UI
-key stops the service at startup rather than serving a page that could
-never answer.
-"""
-
 import asyncio
 import json
 

@@ -1,16 +1,3 @@
-"""Register and look up datasets in the snapshot registry.
-
-The registry's `datasets` section maps a dataset key to its location,
-checksum, and size. A dataset key is a stable identifier the snapshot's
-metadata carries so the inference side can find the dataset that was used
-to build it. The key is derived from the file's name and the first eight
-characters of its checksum.
-
-Registering is idempotent: registering the same file (by checksum) twice
-returns the existing key. A different file at the same path gets a new key
-because its checksum differs.
-"""
-
 from __future__ import annotations
 
 import time

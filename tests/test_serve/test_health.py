@@ -1,6 +1,3 @@
-"""Tests for GET /health."""
-
-
 async def test_health_ok_when_pipeline_ready(client, auth_header):
     async with client as c:
         r = await c.get("/health", headers=auth_header())

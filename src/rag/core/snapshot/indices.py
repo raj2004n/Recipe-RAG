@@ -1,10 +1,3 @@
-"""Index IO.
-
-Save/load for dense FAISS indices and BM25 indices. Dense indices are written
-as `.faiss` files with a manifest; BM25 is rebuilt on load from the persisted
-tokenized chunks, so only a manifest is written.
-"""
-
 import json
 from pathlib import Path
 

@@ -1,11 +1,3 @@
-"""Tests for the shared file checksum.
-
-Every manifest and the dataset registry record the checksum of an input they
-read, and they all write it in the same ``sha256:<hex>`` form. The one
-implementation therefore has to agree with a plain SHA-256 of the file's bytes,
-including on files too large to read in a single block.
-"""
-
 import hashlib
 from pathlib import Path
 

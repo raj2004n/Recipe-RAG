@@ -1,13 +1,3 @@
-"""Selection: read the pair set, and resolve the corpus its recipes live in.
-
-A pass starts from a pair file and from the registered corpus those pairs were
-chosen against. This is the read-only half of that work: the pair rows, the
-dataset key they agree on, the registry entry behind that key, and the cleaned
-recipes indexed by id. No model is called here and nothing is written, so a
-pass can resolve its inputs and be sure it read the corpus the pairs came from
-rather than whatever file happens to sit at the default path.
-"""
-
 import json
 from pathlib import Path
 

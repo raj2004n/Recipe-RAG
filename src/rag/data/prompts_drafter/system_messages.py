@@ -1,12 +1,3 @@
-"""Load the eval-drafter system messages from configs/eval_system_messages.yaml.
-
-The prompts and answers drafters each have 11 per-query-type system messages.
-They live in one YAML config with two sections so all 22 messages can be
-reviewed in one place. The prompts drafter's three suggestion types embed a
-shared label as a {label} placeholder, formatted at load from
-QUERY_TYPE_SPECS so the label field stays the single source of truth.
-"""
-
 from functools import lru_cache
 from pathlib import Path
 

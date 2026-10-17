@@ -1,37 +1,3 @@
-"""Answer every pair prompt with one invented recipe, to be the student's training target.
-
-Each row of the prompt set carries two recipe ids and the request written for them. This pass hands
-that request to a teacher model with both recipes rendered above it, and keeps whatever recipe comes
-back. The answers are the training targets: the student is fitted to reproduce them, so a training
-row is the pair's request plus the teacher's reply to it and nothing else.
-
-The teacher is reached through the local ollama client, against a cloud model, which is the route the
-prompt drafter already takes. The call differs from the drafter's in two ways, both of them
-consequences of the job. The answer is prose in the shape the instructions describe rather than a
-structured object, so no JSON format is requested. And a full recipe is longer than the brief that
-asked for it, so the output budget is higher.
-
-The two recipes reach the teacher through the same source block the pipeline renders at inference
-time, so the text the student trains on is the text the service will hand it. The request goes in
-verbatim, since it is the user turn the student is being trained to answer.
-
-The output is a dated sidecar keyed by the pair, so a later pass lands beside the last one rather
-than on top of it. Rows are appended and flushed as each call returns, so a pass that dies keeps
-everything it finished, and the half-written line a killed process leaves behind is dropped rather
-than counted. A pass reads back whatever the file already holds before it starts, so re-running one
-continues where it stopped and never discards a finished row; --resume decides whether the prompts
-already answered are skipped or answered again. The file is re-sorted by rename once the pass ends,
-so a resumed run leaves one row per prompt in id order. The manifest is
-written before the first call and again at the end, and its state field is what tells a finished
-pass from a killed one. Each row names the writer, its sampling settings and the hash of the
-instructions it was given, and carries both the request's own hash and the answer's, so an answer
-can be traced back to the exact request it answers and compared against a later rerun.
-
-A run with --limit answers a handful of prompts and writes to the smoke paths, printing each answer
-with its word count and the reason the model stopped, which is how the instructions get read against
-real output before the corpus-wide run pays for them.
-"""
-
 import hashlib
 import json
 import logging

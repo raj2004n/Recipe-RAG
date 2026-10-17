@@ -1,9 +1,3 @@
-"""Snapshot path resolution.
-
-Centralises every directory the snapshot subsystem touches. Callers receive a
-'SnapshotPaths'.
-"""
-
 from dataclasses import dataclass
 from pathlib import Path
 

@@ -1,10 +1,3 @@
-"""Prompt rendering: shape each Selection into the message the model sees.
-
-This module owns the per-query-type prompt templates and the call to the
-model. It reads from ``Selection`` objects but does not build them - that
-is selection.py's job.
-"""
-
 import random
 import time
 

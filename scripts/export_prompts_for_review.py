@@ -1,17 +1,3 @@
-"""CLI: read prompts.jsonl rows + the recipe corpus, emit a Lavish review HTML.
-
-One HTML file per batch; each file shows at most BATCH_SIZE prompts (default 10)
-so a single lavish session doesn't accumulate a long decision queue. The page
-mutates a sibling `.decisions_prompts_batch_<n>.jsonl` through the existing
-``window.lavish.queuePrompt`` mechanism.
-
-Per the eval-data schema for the prompts stage, the row fields are
-``query``, ``recipe_ids``, ``query_type``, ``context_chunks``, ``prompt_template``,
-and ``prompt_verified``. The reviewer can mark each row accept / fix / drop.
-Decisions land in the journal; the apply CLI reads the journal and emits
-verified prompt rows for the answer-drafting step.
-"""
-
 import argparse
 import json
 from html import escape
@@ -262,7 +248,20 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="""CLI: read prompts.jsonl rows + the recipe corpus, emit a Lavish review HTML.
+
+One HTML file per batch; each file shows at most BATCH_SIZE prompts (default 10)
+so a single lavish session doesn't accumulate a long decision queue. The page
+mutates a sibling `.decisions_prompts_batch_<n>.jsonl` through the existing
+``window.lavish.queuePrompt`` mechanism.
+
+Per the eval-data schema for the prompts stage, the row fields are
+``query``, ``recipe_ids``, ``query_type``, ``context_chunks``, ``prompt_template``,
+and ``prompt_verified``. The reviewer can mark each row accept / fix / drop.
+Decisions land in the journal; the apply CLI reads the journal and emits
+verified prompt rows for the answer-drafting step.
+""")
     parser.add_argument("--prompts", type=str, default=None, help="Override the prompts jsonl path.")
     parser.add_argument("--batch-index", type=int, default=None, help="Force a specific batch index; defaults to the next unused one.")
     parser.add_argument("--start", type=int, default=None, help="Override the row offset. Defaults to (batch_index-1)*BATCH_SIZE so each batch gets its own slice.")

@@ -1,9 +1,3 @@
-"""Guard the bf16 threading so the deploy-fit decision cannot silently regress.
-
-Both the generator and the cross-encoder must request bfloat16 weights at load
-time; that is what lets the combined working set fit the target card. These
-tests stub the actual model loads and only assert the dtype reaches them.
-"""
 import torch
 from unittest.mock import patch
 

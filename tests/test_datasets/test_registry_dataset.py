@@ -1,10 +1,3 @@
-"""Tests for dataset registration in the snapshot registry.
-
-The registry is the source of truth for which datasets exist. A build that
-references an unregistered dataset should be refused; registering the same
-file twice is idempotent and returns the original key.
-"""
-
 import json
 from pathlib import Path
 

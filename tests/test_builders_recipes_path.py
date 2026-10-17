@@ -1,15 +1,3 @@
-"""Tests for the recipes_path threading through DenseBuilder and HybridBuilder.
-
-Both builders used to read DATA_PATHS["cleaned_recipes"] directly, which
-made it impossible to build against anything but the configured default.
-Commit 2 lifts that: each builder takes the path as an argument and logs
-its dataset identity at stage start.
-
-These tests stub out the chunker so we don't need a real recipes file -
-the contract under test is the signature and the logging, not the
-chunking behaviour.
-"""
-
 import json
 import logging
 from pathlib import Path

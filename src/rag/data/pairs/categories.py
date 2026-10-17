@@ -1,38 +1,3 @@
-"""Label every recipe in the pair set as savoury or sweet, from its title.
-
-The pair set carries recipe ids and names and nothing else, so a title is the
-only evidence a pair row holds about what the recipe actually is. This pass asks
-a model to read one title at a time and answer against a written rule: sweet
-when the thing being served is sweet, savoury when the dish is savoury even if
-the title carries a sweet word, and unresolved when the title genuinely allows
-both. The rule lives in the system prompt in full rather than being implied by
-examples, because a boundary that exists only in the author's head cannot be
-re-applied when the set or the model changes.
-
-What makes a row usable is the evidence clause and the confidence beside it. A
-label a reader disagrees with can be argued with, and a title that cannot settle
-the question is marked rather than guessed at, so the unresolved rows stay in
-the output instead of being quietly pressed into whichever side looks likelier.
-The manifest therefore reports the real split of the set, not the split after
-the awkward cases were absorbed.
-
-Labels land in a sidecar keyed by recipe id, and the pair file is never written,
-so a new pass is compared against the last one rather than replacing it in
-place. Each row also carries the model, sampling settings and prompt hash that
-produced it, which is what lets an older row stay attributable once the rule or
-the model moves on.
-
-A run with --limit labels a slice and writes to the smoke paths, printing every
-answer with its evidence, which is how the prompt gets read before the full pass
-pays for it.
-
-The sidecar is also where a review lands. A title the pass abstained on can be
-settled by hand afterwards, and apply_category_calls writes those settled calls
-into the sidecar while leaving the model's own answer in the row beside the new
-one, so the two kinds of call stay distinguishable and the labelling run's own
-numbers stay as the record of that run.
-"""
-
 import hashlib
 import json
 import logging

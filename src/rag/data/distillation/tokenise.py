@@ -1,12 +1,3 @@
-"""Tokenise the rows a split names into the file a trainer reads.
-
-Tokenising pins the student's prompt through the parity assertions in
-src/rag/training/student.py, renders each row as the service would hand it in, and appends the
-teacher's answer. The prompt is masked and the answer carries the loss, the empty reasoning block
-included, so a student served without that opening still writes a complete assistant turn. Rows are
-written unpadded, since padding belongs to the batch a trainer builds.
-"""
-
 import hashlib
 import logging
 import os

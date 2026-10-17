@@ -1,13 +1,3 @@
-"""Rendering: the instructions, the recipe blocks, and the design call.
-
-The system prompt is the whole of the steering the designer model gets, so it
-lives here in full rather than behind a config read. A pair is rendered as the
-two recipes the chunker emits, name and two working sections each, so a prompt
-is designed from the same text the sparse index is built out of. The reply is
-one prompt and the axis it moved on, and the flags beside it are what a
-read-through would raise rather than a second pass over the file.
-"""
-
 import hashlib
 import logging
 import random

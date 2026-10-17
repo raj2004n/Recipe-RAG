@@ -1,12 +1,3 @@
-"""Selection: turn verified prompt rows into AnswerSelections the model sees.
-
-An ``AnswerSelection`` mirrors the prompts drafter's ``Selection`` but is
-built from a row already on disk rather than sampled from scratch. The
-primary chunk text is read from ``context_chunks.primary``; siblings are
-loaded from the cleaned-recipe corpus using the same chunker the builder
-uses, with their type matching the primary's type.
-"""
-
 import json
 from dataclasses import dataclass, field
 from pathlib import Path

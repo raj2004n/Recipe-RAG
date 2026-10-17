@@ -1,20 +1,3 @@
-"""Snapshot lifecycle.
-
-A build fills one fixed staging tree at `build/staging/` across its stages,
-and `finalise_build` copies that tree into a versioned folder
-(`{strategy}_{YYYYMMDD_HHMM}_{index}`) under `snapshots/`. Copying rather than
-renaming keeps the declared staging outputs in place, so DVC can skip the
-stages whose inputs and outputs are unchanged, and it leaves the versioned
-name unclaimed until a build has actually produced something. The registry
-(`registry.json`) is the single source of truth for the newest sealed build.
-
-A build pins its dataset identity at `set_strategy` (path + checksum, plus the
-registry key) so a concurrent preprocess cannot silently desync the indexed
-model from the metadata. The advisory lock in `recipe_file_lock` exists to
-make any such swap visible in the log; the real protection is that the
-identity is captured at the start of the build.
-"""
-
 import contextlib
 import fcntl
 import json

@@ -1,10 +1,3 @@
-"""Query-type metadata for the eval-prompt drafter.
-
-The drafter has eleven query types and a small number of properties that
-vary per type. This module is the single source of truth for that metadata;
-the selection, rendering, and orchestration submodules all read from it.
-"""
-
 from dataclasses import dataclass
 
 

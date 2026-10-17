@@ -1,9 +1,3 @@
-""" 
-This script is currently dead (not up to date with the latest changes) 
-and will be updated later. Ignore for now.
-"""
-
-
 from src.rag.core.profiler import profile_model_memory, profile_dataset_tokenization
 from src.rag.core.snapshot.loader import load_snapshot_by_target
 import mlflow

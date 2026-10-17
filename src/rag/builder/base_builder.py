@@ -1,23 +1,3 @@
-"""
-This is the builder base (superclass).
-
-A builder takes the cleaned recipes as input and produces a snapshot that a
-Pipeline can load for inference. This approach lets each strategy decide
-which ChunkSets to feed and how to index them, without the retriever
-components having to know about chunk-set filtering.
-
-4 steps:
-    chunk         - split documents into ChunkSets
-    transform     - encode/tokenise ChunkSets into index ready form
-    index         - build FAISS / BM25 indices over the transformed chunks
-    seal_snapshot - stamp created_at, copy configs, mark the build complete
-
-Subclasses (DenseBuilder, HybridBuilder) decide which ChunkSets to feed and
-what to encode vs tokenise. The active build folder is passed in as a
-SnapshotPaths instance; the builder does not read BUILDING_PATHS or any
-module-level path singleton.
-"""
-
 from abc import ABC, abstractmethod
 import json
 import logging

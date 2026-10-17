@@ -1,14 +1,3 @@
-"""Tests for the snapshot lifecycle roundtrip.
-
-Verifies that a build's staging tree, once finalise_snapshot has copied it into
-a versioned folder, can be loaded back by loader.load_snapshot and that the
-metadata, configs, and chunk-set mapping survive the trip.
-
-The test builds the tree directly under tmp_path rather than running the full
-Builder, so it exercises only the seal/load contract that the inference side
-depends on.
-"""
-
 from dataclasses import replace
 from pathlib import Path
 

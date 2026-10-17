@@ -1,11 +1,3 @@
-"""Tests for the lifespan's fail-closed posture on missing dataset (Risk 2).
-
-The lifespan must exit 2 when the dataset registered for the snapshot is
-no longer at its registered path (file deleted, volume not mounted, cloud
-object versioned out). This is what stops the service from running in a
-silently-degraded state where /health is green but /query cannot answer.
-"""
-
 import pytest
 
 from src.rag.core.snapshot import registry as registry_module

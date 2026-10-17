@@ -1,21 +1,3 @@
-"""Prompt rendering: per-query-type system + user messages for the answer drafter.
-
-Each of the 11 query types gets its own system message. The user message is
-shared across types where possible; it just lays out the chunks the model
-sees and the user's query. The model returns a single JSON object
-``{"answer": "<the drafted answer>"}`` on one line, parsed by the
-``_AnswerRecord`` Pydantic model.
-
-The grounded types are seeded from the ``GENERATION`` persona in
-``configs/prompts_config.yaml`` but pivot away from "create a NEW recipe"
-to a recommender / teacher / fact-checker role appropriate to each
-retrieval shape. The four invention types keep the "create a NEW recipe"
-direction and carry the JSON line inside their system message, so the user
-message does not append it again. Messages live in
-``configs/eval_system_messages.yaml`` and are easy to edit and re-test in
-the smoke-test drafter run.
-"""
-
 import random
 import time
 

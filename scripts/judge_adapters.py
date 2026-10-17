@@ -1,11 +1,3 @@
-"""Rank student adapters by having the judge read what they write.
-
-The argparse surface, the default paths and the exit code live here; the sweep
-itself lives in src/rag/evaluation/adapter_judge.py. The knobs are the split to
-read, the adapters to compare, the directory a run lands in, the probe switch
-and the threads the judge calls run on.
-"""
-
 import argparse
 from pathlib import Path
 
@@ -19,7 +11,8 @@ from src.rag.evaluation.adapter_judge import (
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Rank student adapters by having the judge read what they write.")
     parser.add_argument("--split", default="dev",
                         help="which tokenised rows to read (default: dev)")
     parser.add_argument("--systems", default=DEFAULT_SYSTEMS,

@@ -1,14 +1,3 @@
-"""Orchestration: turn verified prompt rows into drafted-answer rows.
-
-This module reads a verified-prompt file (one row per (query_type,
-primary_id)), attaches the sibling chunks the answer model needs, calls the
-model in parallel, and writes the result to a golden-answers jsonl file.
-Resume semantics: any (query_type, primary_id) pair already present
-(answer_verified or not) is skipped, so a re-run is idempotent. Rejected
-rows live in a sidecar; flipping a row back to pending is a manual
-action in the verify step.
-"""
-
 import json
 import os
 import shutil

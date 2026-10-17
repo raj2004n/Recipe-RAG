@@ -1,23 +1,3 @@
-"""Rank student adapters by having the judge read what they write.
-
-A trained adapter's loss says how well it predicts the teacher's words, not whether the recipes it
-writes are any good. This script answers the second question for a handful of candidate adapters by
-making them write, on the same held-out rows, from the same prompt, and having the judge read every
-answer with the two personas the rest of the evaluation already uses.
-
-The prompt is taken straight from the tokenised rows the trainer read, as the ids the row was built
-with, so nothing is re-rendered and no tokenisation drift can creep in between training and judging.
-Each adapter writes greedily from its own copy of the base checkpoint, the answers are then read in
-parallel, and the run ends with a table ranking the adapters by their mean core score alongside the
-paired count of rows one adapter won over the other. A margin under ``TIE_MARGIN`` is reported as a
-tie rather than resolved, because picking a winner on a difference the judge cannot see is worse
-than saying the two are level.
-
-``--probe`` is the cheap way in: it writes nothing, generates for a handful of rows on one adapter,
-and reports the measured seconds a row and peak memory so the full sweep can be projected from real
-numbers instead of an estimate.
-"""
-
 import json
 import logging
 import statistics

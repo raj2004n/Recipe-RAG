@@ -1,10 +1,3 @@
-"""Tests for HybridPipeline.debug_query.
-
-debug_query is the retrieval-only window the evaluator scores against. It
-must return the deduped recipes the generator would see, in rank order, and
-stop before generation.
-"""
-
 from types import SimpleNamespace
 from unittest.mock import patch
 

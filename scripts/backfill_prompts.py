@@ -1,18 +1,3 @@
-"""Draft additional user-question prompts and append them to ``prompts.jsonl``.
-
-The drafter in ``scripts.draft_prompts`` builds a fresh
-``prompts.jsonl`` from scratch, archiving any existing file aside before
-writing. This script is the other half of the workflow: when a few extra
-rows are needed for one or two query types, it drafts them with the same
-selection and model-call helpers as the main drafter and appends them to
-the existing file, leaving the rows already on disk untouched.
-
-The collision contract is the same as the main drafter's resume rule:
-any ``(query_type, _primary_id)`` pair already present on disk is
-skipped, so re-running the script with the same seed is a no-op once the
-requested rows have landed.
-"""
-
 import argparse
 import json
 import random
@@ -152,7 +137,21 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="""Draft additional user-question prompts and append them to ``prompts.jsonl``.
+
+The drafter in ``scripts.draft_prompts`` builds a fresh
+``prompts.jsonl`` from scratch, archiving any existing file aside before
+writing. This script is the other half of the workflow: when a few extra
+rows are needed for one or two query types, it drafts them with the same
+selection and model-call helpers as the main drafter and appends them to
+the existing file, leaving the rows already on disk untouched.
+
+The collision contract is the same as the main drafter's resume rule:
+any ``(query_type, _primary_id)`` pair already present on disk is
+skipped, so re-running the script with the same seed is a no-op once the
+requested rows have landed.
+""")
     parser.add_argument(
         "--types",
         type=str,

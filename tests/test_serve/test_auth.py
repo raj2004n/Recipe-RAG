@@ -1,6 +1,3 @@
-"""Tests for the X-API-Key auth layer."""
-
-
 async def test_auth_rejects_missing_key(client):
     async with client as c:
         r = await c.get("/health")

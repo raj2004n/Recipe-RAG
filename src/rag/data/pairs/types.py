@@ -1,13 +1,3 @@
-"""Metadata for the pair tooling: paths, model settings, and the flag rules.
-
-The pair passes share one working directory and one idea of what a designed
-row has to look like. The paths say where each pass reads and where it lands,
-the model settings are the sampling the calls were measured at, and the word
-band and the patterns are the read-through rules a written prompt is measured
-against. Nothing here touches a file or a model, so a caller can import it for
-the constants alone.
-"""
-
 import re
 from datetime import datetime, timezone
 from pathlib import Path

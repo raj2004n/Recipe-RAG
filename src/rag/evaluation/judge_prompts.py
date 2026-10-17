@@ -1,17 +1,3 @@
-"""Load the generation-judge personas from configs/eval_system_messages.yaml.
-
-The judge has two personas so the reference answer reaches the judge only
-when it is being scored: the core judge sees the query, the reference
-recipes, and the generated recipe, while the expectedness judge additionally
-sees the reference answer. The messages are read from the live config at eval
-time rather than carried by the snapshot, so judge prompts can evolve without
-a new build; every eval run logs the prompt hash so a score is always
-traceable to the exact prompts that produced it.
-
-Each message is a full standalone string (persona, task, and JSON line baked
-in); the user-message templates and the sampling options stay in code.
-"""
-
 from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path

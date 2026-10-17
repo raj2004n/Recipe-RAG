@@ -1,8 +1,3 @@
-"""
-Format whole recipes into a single text block for prompts / reranking.
-"""
-
-
 def recipe_to_string(recipe: dict) -> str:
     """Flatten a recipe dict into a clean, searchable text block.
 

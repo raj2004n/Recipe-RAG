@@ -1,5 +1,3 @@
-"""MLflow conventions."""
-
 from .config import BASE_CONFIG
 
 

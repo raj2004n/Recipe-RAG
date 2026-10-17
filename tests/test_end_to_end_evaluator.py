@@ -1,5 +1,3 @@
-"""Tests for the end-to-end evaluator and its retrieval diagnostics."""
-
 import pytest
 
 from src.rag.evaluation.end_to_end_evaluator import EndToEndEvaluator

@@ -1,11 +1,3 @@
-"""Tests for the dense retrieval path.
-
-Drives Indexer.index_embeddings with synthetic unit vectors so we can
-verify FAISS top-k behaviour without loading a real sentence-transformers
-model. The retriever is a thin wrapper around Indexer.search_one, so
-exercising the indexer is what really matters here.
-"""
-
 import numpy as np
 
 from src.rag.retrieval.dense.encoder import EncodedChunk, EncodedChunkSet

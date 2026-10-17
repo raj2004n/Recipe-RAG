@@ -1,11 +1,3 @@
-"""Evaluate retrieval for a snapshot against the eval datasets, tracked in MLflow.
-
-Loads a sealed snapshot, builds the pipeline for its strategy, and scores
-retrieval over the slices `_EVAL_SLICES` names. Each run logs the snapshot
-identity, the retrieval config, the per-slice and per-query-type metrics, and
-the eval files plus per-query results as artifacts.
-"""
-
 import argparse
 import json
 import logging

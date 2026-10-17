@@ -1,9 +1,3 @@
-"""Chunk-set IO.
-
-Save/load for `ChunkSet`, `EncodedChunkSet`, and `TokenizedChunkSet`. Each
-artefact is persisted as a single JSON file inside the directory passed in.
-"""
-
 import json
 import os
 from dataclasses import asdict

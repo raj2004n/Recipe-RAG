@@ -1,28 +1,3 @@
-"""Flag prompts that ask for a way of cooking the pair gives the teacher no basis for.
-
-A teacher reads a pair and a prompt, and invents one recipe from them. It can only build on what
-the pair shows it, so a request that names a technique neither recipe uses is asking for something
-the pair cannot teach: the answer comes from the model's own prior rather than from the corpus, and
-nothing in the answer can be checked against the pair afterwards. The prompts that do this are the
-rows a fine-tuning set cannot use, which is why they are worth finding before the teacher runs.
-
-Each recipe's instructions carry the techniques it demonstrates. This reads both sides of a pair,
-collects the techniques the pair shows, and compares them with the techniques the prompt names.
-A technique a parent demonstrates is grounded. One that belongs to the same family as something a
-parent demonstrates is recorded but not flagged, because a simmer against a boil is a step the pair
-already shows the way to. One in no family the pair touches is the flag.
-
-The comparison is a reading of words, so it is exact about vocabulary and blind to paraphrase: a
-prompt can name a technique in words neither parent happens to use for the same work, and a parent
-can demonstrate a technique without naming it. It is a filter for a review list, not a verdict, so
-a pass reports the rate at which it fires and leaves the row in the file.
-
-A pass writes an annotated copy of the file beside the original and never touches the file it read,
-so a set that has already been designed can be measured without being designed again. The summary
-is what says whether the flag is worth acting on: a flag that fires on most of the set is telling
-the reader about the corpus rather than about the prompts.
-"""
-
 import json
 import logging
 import os

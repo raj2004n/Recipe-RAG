@@ -1,15 +1,3 @@
-"""Tests for the dataset_key thread through the snapshot lifecycle.
-
-Verifies that:
-- start_new_build writes dataset_key into the staging tree's metadata.json
-  at set_strategy (not at finalise), so the build is bound to the dataset
-  before any chunking happens.
-- finalise_snapshot preserves the key (does not overwrite it).
-- load_snapshot surfaces it on Snapshot.dataset_key.
-- omitting dataset_key is rejected: the dataclass field is required and
-  metadata without the key raises KeyError on load. No silent defaults.
-"""
-
 import json
 from dataclasses import replace
 from pathlib import Path

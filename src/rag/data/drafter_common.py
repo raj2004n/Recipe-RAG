@@ -1,13 +1,3 @@
-"""Shared plumbing for the eval-data draft scripts.
-
-Both ``scripts/draft_prompts.py`` (full fresh draft) and
-``scripts/backfill_prompts.py`` (targeted append) need the same encoder
-constructor, the same drafter-config kwargs, the same corpus/output path
-resolution, and the same read of the cleaned corpus into ``Recipe`` objects.
-This module is the single source of truth for those bits so the two scripts
-can stay focused on their orchestration differences.
-"""
-
 import json
 from pathlib import Path
 

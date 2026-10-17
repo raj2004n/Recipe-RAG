@@ -1,16 +1,3 @@
-"""Selection: read the answers, the sidecar and the split a pass works from.
-
-A pass starts from what an earlier one wrote. The answers file's line order is the
-row address everything downstream is keyed by, the category sidecar sorts each
-primary into a pool, and the split names which rows train, which are held aside and
-which of those went to the dev slice. A split is read back against the counts it was
-drawn to, and the tokenising pass checks it against the checksum of the answers file
-it was drawn from, so a rewritten answers file is a stop rather than a set of rows
-pointing at pairs that have moved.
-
-Nothing here is written and no model is called.
-"""
-
 import json
 import logging
 from collections import Counter

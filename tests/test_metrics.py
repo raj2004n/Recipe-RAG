@@ -1,11 +1,3 @@
-"""Tests for the retrieval metrics.
-
-The four metrics share the same inputs (a ranked list of retrieved recipe_ids
-and a ground-truth set) and the same edge-case contract: k must be positive
-and the ground truth must be non-empty. The worked example mirrors the
-scoring-logic document.
-"""
-
 import pytest
 
 from src.rag.evaluation.metrics import (

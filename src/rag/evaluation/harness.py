@@ -1,14 +1,3 @@
-"""Shared snapshot, pipeline, and judge plumbing for the evaluation scripts.
-
-Every evaluation run follows the same shape: resolve a sealed snapshot, build
-the components for its strategy, load the rows, run an evaluator, then log to
-MLflow. The helpers here are the single definition of that resolution and
-construction, so the scripts stay thin and never drift on how a snapshot
-target, a corpus path, a pipeline, or the judge client is built. The pair
-builders and the student training run draw on the same plumbing, which is what
-keeps them reading a snapshot exactly the way an evaluation does.
-"""
-
 import argparse
 import json
 import logging

@@ -1,18 +1,3 @@
-"""Fuse dense and sparse retrieval results into a single ranked list.
-
-The fuser handles two jobs at once:
-  1. Merge two `list[RetrievalResult]` (different score scales) into one.
-  2. Dedupe by `chunk.chunk_id` so the reranker never sees the same chunk twice.
-
-Supported strategies:
-  - "rrf":          Reciprocal Rank Fusion. score = w / (k + rank).
-                    Score-scale agnostic; one knob (`rrf_k`).
-  - "weighted_sum": Min-max normalise each source's scores to [0, 1], then
-                    score = w_d * norm_d + w_s * norm_s. Two knobs
-                    (weight_dense, weight_sparse). Brittle if one side's
-                    distribution shifts.
-"""
-
 from dataclasses import dataclass, field
 from typing import Iterable
 

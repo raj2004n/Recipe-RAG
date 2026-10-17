@@ -1,10 +1,3 @@
-"""Tests for the LocalDatasetResolver.
-
-The resolver reads the dataset entry from the registry, verifies the file
-exists, and verifies its checksum still matches. Failures are surfaced as
-exceptions so the FastAPI lifespan can fail closed.
-"""
-
 import json
 from pathlib import Path
 

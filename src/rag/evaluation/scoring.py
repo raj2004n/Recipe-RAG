@@ -1,15 +1,3 @@
-"""Shared judgment aggregation for the generation and end-to-end evaluators.
-
-Both scoring stages judge generated answers with the same four dimensions of
-the LLM judge and aggregate over a slice and per query type. The helpers here
-are the single definition of what a dimension mean, a disagreement rate, and
-a slice aggregate are, so the two MLflow experiment families never drift on
-the shape of their scores. The per-row judgment builder turns the repeated
-judge calls for one answer into the per-dimension scores and disagreement
-used by both evaluators, and the budget helper mirrors the prompt builder's
-token loop so the judge always sees the context the generator saw.
-"""
-
 from collections.abc import Sequence
 
 JUDGED_DIMENSIONS = (

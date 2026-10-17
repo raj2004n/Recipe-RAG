@@ -1,13 +1,3 @@
-"""Tests for the parser that turns a generated answer into the sections the
-result view draws.
-
-Half of these are unit tests over hand-written strings, one per rule the
-parser applies. The other half run over eight answers recorded from the
-served model, because every rule here is a guess about what a 1B model
-writes, and the recording is the only thing that says whether the guesses
-hold.
-"""
-
 import json
 import re
 from pathlib import Path

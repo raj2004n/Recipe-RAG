@@ -1,12 +1,3 @@
-"""Selection: turn the recipe corpus into a list of typed selections.
-
-A ``Selection`` is the drafter's intermediate representation between "pick a
-chunk from the corpus" and "ask the model to write a user query against
-it". This module owns the picking side: chunk-pool construction, nearest-
-neighbour search, and the per-query-type branches that pick primary and
-sibling chunks.
-"""
-
 import random
 from dataclasses import dataclass, field
 from typing import Any

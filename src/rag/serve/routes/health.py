@@ -1,15 +1,3 @@
-"""GET /health - readiness probe for the deploy workflow.
-
-Returns 200 with `{"status": "ok", ...}` when a Pipeline is loaded onto
-`app.state.pipeline`. Returns 503 with `{"status": "no_snapshot", ...}`
-otherwise - the deploy smoke-test treats 5xx as a deploy failure.
-
-This endpoint does not touch the Pipeline. A loaded Pipeline does not
-mean a query will succeed (a generator hang is a different failure mode,
-flagged in the plan's known risks). What it tells the caller is: the
-snapshot subsystem is healthy and the service has a model to query.
-"""
-
 from fastapi import APIRouter, Depends, Request
 
 from ..auth import require_role
