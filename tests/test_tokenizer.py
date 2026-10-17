@@ -1,4 +1,4 @@
-from src.rag.retrieval.sparse.tokenizer import Tokenizer
+from src.build.tokenizer import Tokenizer
 
 
 def test_tokenizer_is_deterministic():

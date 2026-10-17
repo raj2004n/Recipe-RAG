@@ -1,0 +1,197 @@
+import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Any
+
+import httpx
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from . import auth as auth_module
+from .errors import install_error_handlers
+from .routes import health as health_route
+from .routes import info as info_route
+from .routes import query as query_route
+from .routes import ui as ui_route
+
+logger = logging.getLogger(__name__)
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _exit_2_on_failure(message: str, exc: Exception) -> None:
+    """Log + raise SystemExit(2). Used when the lifespan cannot reach a
+    state where the service is safe to start."""
+    logger.error("%s: %s", message, exc)
+    raise SystemExit(2)
+
+
+def _load_snapshot_or_exit():
+    """Resolve the promoted snapshot, exit 2 if there isn't one."""
+    from ..snapshot import loader
+
+    try:
+        return loader.load_snapshot_by_target("serve")
+    except FileNotFoundError as exc:
+        _exit_2_on_failure("No promoted snapshot to serve", exc)
+    except RuntimeError as exc:
+        # load_snapshot_by_target raises RuntimeError when the registry
+        # status is not "complete".
+        _exit_2_on_failure("Promoted snapshot is not complete", exc)
+    except Exception as exc:
+        _exit_2_on_failure("Failed to load the promoted snapshot", exc)
+
+
+def _resolve_recipes_path_or_exit(snapshot) -> Path | None:
+    """For hybrid snapshots, resolve the dataset key to a local path.
+
+    Returns None for dense snapshots (no recipes_path required). Exits 2
+    on any failure: missing key, missing file, or checksum mismatch.
+    """
+    if snapshot.retrieval_strategy == "dense":
+        return None
+
+    from ..snapshot.datasets.resolver import LocalDatasetResolver
+    from ..snapshot.paths import SnapshotPaths
+    from ..snapshot import registry as registry_module
+
+    paths = SnapshotPaths.from_paths_config({})
+    resolver = LocalDatasetResolver(
+        registry_path=paths.registry_file,
+        registry_get_dataset=registry_module.get_dataset,
+    )
+    try:
+        resolved = resolver.resolve(snapshot.dataset_key)
+    except Exception as exc:
+        _exit_2_on_failure(
+            f"Failed to resolve dataset {snapshot.dataset_key!r}",
+            exc,
+        )
+    return Path(resolved.path)
+
+
+def _build_pipeline(snapshot, recipes_path: Path | None) -> Any:
+    """Construct the right Pipeline for the snapshot's strategy.
+
+    Hooked so tests can monkeypatch `_build_pipeline` without spinning up
+    real encoders. Production passes through to the concrete builders.
+    """
+    if snapshot.retrieval_strategy == "dense":
+        from ..runtime.dense_pipeline import DensePipeline
+        return DensePipeline(snapshot)
+    if snapshot.retrieval_strategy == "hybrid":
+        from ..runtime.hybrid_pipeline import HybridPipeline
+        return HybridPipeline(snapshot, recipes_path=str(recipes_path))
+    raise ValueError(
+        f"Unknown retrieval strategy: {snapshot.retrieval_strategy!r}"
+    )
+
+
+def _eager_load_models(pipeline: Any) -> None:
+    """Warm the cross-encoder reranker so the first user request does not
+    pay the cold-start tax. The generator stays lazy - its forward pass
+    needs VRAM headroom that some GPU classes (notably 6 GiB) cannot
+    satisfy with the cross-encoder already resident. Failures here are
+    fatal: the service refuses to start without a warm reranker, since
+    hybrid's main quality lift comes from reranking."""
+    reranker = getattr(pipeline, "reranker", None)
+    if reranker is None:
+        return
+    try:
+        reranker._ensure_model()
+    except Exception as exc:
+        _exit_2_on_failure("Failed to warm cross-encoder reranker", exc)
+
+
+def create_app() -> FastAPI:
+    """Build the FastAPI app with lifespan-warm Pipeline and the route tables."""
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        logger.info("lifespan: starting Recipe-RAG service")
+
+        # 1. API keys - fail closed at startup if missing or malformed.
+        try:
+            keys = auth_module._load_api_keys()
+        except Exception as exc:
+            _exit_2_on_failure("RECIPE_RAG_API_KEYS not configured", exc)
+
+        # 1b. The key the UI forwarders act as, from the same map. This is
+        #     the only key the page can use, and it never reaches the
+        #     browser - the server injects it on the way upstream.
+        try:
+            app.state.ui_key = auth_module._resolve_ui_key(keys)
+        except Exception as exc:
+            _exit_2_on_failure("The UI forward key is not usable", exc)
+
+        # 2. Load the promoted snapshot.
+        snapshot = _load_snapshot_or_exit()
+        app.state.snapshot = snapshot
+        logger.info(
+            "lifespan: loaded snapshot strategy=%s dataset_key=%s",
+            snapshot.retrieval_strategy,
+            snapshot.dataset_key,
+        )
+
+        # 3. Resolve recipes path for hybrid (None for dense).
+        recipes_path = _resolve_recipes_path_or_exit(snapshot)
+        if recipes_path is not None:
+            logger.info("lifespan: resolved recipes path to %s", recipes_path)
+
+        # 4. Construct + warm the Pipeline.
+        pipeline = _build_pipeline(snapshot, recipes_path)
+        _eager_load_models(pipeline)
+        app.state.pipeline = pipeline
+        logger.info("lifespan: pipeline ready")
+
+        # 5. The forwarder's client. It talks to this same app through an
+        #    in-process ASGI transport, so /query stays the single entrance
+        #    to the generator and no socket is opened.
+        app.state.ui_client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://ui-forward",
+        )
+
+        try:
+            yield
+        finally:
+            logger.info("lifespan: shutting down")
+            client = getattr(app.state, "ui_client", None)
+            if client is not None:
+                await client.aclose()
+            close = getattr(pipeline, "close", None)
+            if callable(close):
+                close()
+
+    app = FastAPI(
+        title="Recipe-RAG",
+        version="0.1.0",
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+    )
+
+    install_error_handlers(app)
+    app.include_router(health_route.router)
+    app.include_router(info_route.router)
+    app.include_router(query_route.router)
+    app.include_router(ui_route.router)
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        """The browser page. Keyless, like the assets and the UI routes."""
+        return FileResponse(STATIC_DIR / "index.html")
+
+    app.mount(
+        "/static",
+        StaticFiles(directory=STATIC_DIR),
+        name="static",
+    )
+    return app
+
+
+# Exposed for tests that want a real app instance without going through
+# create_app (e.g. lifespan-resolves-dataset tests that drive lifespan
+# manually).
+__all__ = ["create_app", "_build_pipeline", "_resolve_recipes_path_or_exit"]

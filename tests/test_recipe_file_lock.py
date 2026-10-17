@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.core.snapshot import lifecycle
+from src.snapshot import lifecycle
 
 
 def _make_recipes(tmp_path: Path, name: str = "recipes.json") -> Path:

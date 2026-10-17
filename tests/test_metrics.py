@@ -1,6 +1,6 @@
 import pytest
 
-from src.rag.evaluation.metrics import (
+from src.evaluation.metrics import (
     recall_at_k,
     mrr_at_k,
     precision_at_k,

@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from src.rag.data.pairs.categories import (
+from src.pairs.categories import (
     SIDECAR_JSONL,
     SIDECAR_MANIFEST,
     apply_category_calls,

@@ -2,10 +2,10 @@ import argparse
 import random
 from pathlib import Path
 
-from src.rag.core.config import BASE_CONFIG, DATA_PATHS
-from src.rag.data.answers_drafter import draft_answers
-from src.rag.data.answers_drafter.selection import load_prompts
-from src.rag.data.answers_drafter.types import QUERY_TYPES
+from src.core.config import BASE_CONFIG, DATA_PATHS
+from src.pairs.answers_drafter import draft_answers
+from src.pairs.answers_drafter.selection import load_prompts
+from src.pairs.answers_drafter.types import QUERY_TYPES
 
 
 _DRAFTER_CONFIG_KEY = "answers_drafter"

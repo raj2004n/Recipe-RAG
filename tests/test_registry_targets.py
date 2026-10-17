@@ -4,8 +4,8 @@ import types
 from pathlib import Path
 
 from scripts import build_rag
-from src.rag.core.snapshot import lifecycle, registry
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.snapshot import lifecycle, registry
+from src.snapshot.paths import SnapshotPaths
 
 
 # --- reading a registry written before the rename -------------------------

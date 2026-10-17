@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.rag.generation.generator import Generator
+from src.runtime.generator import Generator
 
 
 def _generator(adapter_path, tokenizer=None):
@@ -18,8 +18,8 @@ def _generator(adapter_path, tokenizer=None):
     )
 
 
-@patch("src.rag.generation.generator.PeftModel.from_pretrained")
-@patch("src.rag.generation.generator.AutoModelForCausalLM.from_pretrained")
+@patch("src.runtime.generator.PeftModel.from_pretrained")
+@patch("src.runtime.generator.AutoModelForCausalLM.from_pretrained")
 def test_adapter_path_reaches_peft(mock_from_pretrained, mock_peft, tmp_path):
     """The configured adapter directory must be the one peft loads."""
     adapter_dir = tmp_path / "epoch_02"
@@ -33,8 +33,8 @@ def test_adapter_path_reaches_peft(mock_from_pretrained, mock_peft, tmp_path):
     assert args[1] == str(adapter_dir)
 
 
-@patch("src.rag.generation.generator.PeftModel.from_pretrained")
-@patch("src.rag.generation.generator.AutoModelForCausalLM.from_pretrained")
+@patch("src.runtime.generator.PeftModel.from_pretrained")
+@patch("src.runtime.generator.AutoModelForCausalLM.from_pretrained")
 def test_missing_adapter_path_raises_before_peft(
     mock_from_pretrained, mock_peft, tmp_path
 ):
@@ -47,8 +47,8 @@ def test_missing_adapter_path_raises_before_peft(
     mock_peft.assert_not_called()
 
 
-@patch("src.rag.generation.generator.PeftModel.from_pretrained")
-@patch("src.rag.generation.generator.AutoModelForCausalLM.from_pretrained")
+@patch("src.runtime.generator.PeftModel.from_pretrained")
+@patch("src.runtime.generator.AutoModelForCausalLM.from_pretrained")
 def test_no_adapter_leaves_the_base_model_alone(
     mock_from_pretrained, mock_peft
 ):
@@ -58,8 +58,8 @@ def test_no_adapter_leaves_the_base_model_alone(
     mock_peft.assert_not_called()
 
 
-@patch("src.rag.generation.generator.PeftModel.from_pretrained")
-@patch("src.rag.generation.generator.AutoModelForCausalLM.from_pretrained")
+@patch("src.runtime.generator.PeftModel.from_pretrained")
+@patch("src.runtime.generator.AutoModelForCausalLM.from_pretrained")
 def test_load_logs_base_and_adapter(
     mock_from_pretrained, mock_peft, tmp_path, caplog
 ):
@@ -67,7 +67,7 @@ def test_load_logs_base_and_adapter(
     adapter_dir = tmp_path / "epoch_02"
     adapter_dir.mkdir()
 
-    with caplog.at_level(logging.INFO, logger="src.rag.generation.generator"):
+    with caplog.at_level(logging.INFO, logger="src.runtime.generator"):
         _generator(str(adapter_dir))
 
     assert "test/model" in caplog.text

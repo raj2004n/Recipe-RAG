@@ -1,7 +1,7 @@
 import pytest
 
-from src.rag.core.snapshot import registry as registry_module
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.snapshot import registry as registry_module
+from src.snapshot.paths import SnapshotPaths
 
 
 def _seed_registry_with_dataset(tmp_path, *, dataset_path, checksum):
@@ -54,8 +54,8 @@ def test_lifespan_exits_2_when_dataset_missing(tmp_path, monkeypatch):
 
     # Patch load_snapshot_by_target to return a fake snapshot referencing
     # the missing dataset.
-    from src.rag.core.snapshot import loader
-    from src.rag.serve import app as app_module
+    from src.snapshot import loader
+    from src.serve import app as app_module
 
     class _Stub:
         retrieval_strategy = "hybrid"
@@ -107,8 +107,8 @@ def test_lifespan_exits_2_on_checksum_drift(tmp_path, monkeypatch):
 
     monkeypatch.setattr(SnapshotPaths, "from_paths_config", fake_from_paths_config)
 
-    from src.rag.core.snapshot import loader
-    from src.rag.serve import app as app_module
+    from src.snapshot import loader
+    from src.serve import app as app_module
 
     class _Stub:
         retrieval_strategy = "hybrid"
@@ -141,7 +141,7 @@ def test_lifespan_exits_2_when_api_keys_missing(tmp_path, monkeypatch):
 
     # Use the existing stub pipeline so the snapshot subsystem is not
     # exercised - we only care that the auth check trips first.
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     class _StubPipeline:
         def __init__(self, snapshot, **kw): pass
@@ -185,8 +185,8 @@ def test_lifespan_serves_the_promoted_snapshot(tmp_path, monkeypatch):
     image bakes the same target, which is what keeps the snapshot the image
     carries and the snapshot the app loads from diverging.
     """
-    from src.rag.core.snapshot import loader
-    from src.rag.serve import app as app_module
+    from src.snapshot import loader
+    from src.serve import app as app_module
 
     class _StubSnapshot:
         retrieval_strategy = "dense"

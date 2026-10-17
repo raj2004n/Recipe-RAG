@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs.categories import (
+from src.core.logging import configure_logging
+from src.pairs.categories import (
     INPUT_JSONL,
     MAX_WORKERS,
     MODEL_ID,

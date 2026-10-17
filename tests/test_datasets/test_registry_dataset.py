@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.core.datasets import registry_dataset
-from src.rag.core.snapshot import registry
+from src.snapshot.datasets import registry_dataset
+from src.snapshot import registry
 
 
 def _read_registry(registry_file: Path) -> dict:

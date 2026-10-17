@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.serve.parser import (
+from src.serve.parser import (
     META_LABELS,
     NON_INGREDIENT_LABELS,
     SECTION_OPENERS,

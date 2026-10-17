@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.evaluation.adapter_judge import (
+from src.core.logging import configure_logging
+from src.evaluation.adapter_judge import (
     ARTIFACTS_DIR,
     DEFAULT_SYSTEMS,
     PROBE_ROWS,

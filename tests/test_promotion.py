@@ -6,8 +6,8 @@ import types
 import pytest
 
 from scripts import promote_snapshot
-from src.rag.core.snapshot import registry
-from src.rag.evaluation.promotion import (
+from src.snapshot import registry
+from src.evaluation.promotion import (
     Check,
     PromotionConfigError,
     apply_bars,

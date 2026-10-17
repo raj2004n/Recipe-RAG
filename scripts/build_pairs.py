@@ -1,7 +1,7 @@
 import argparse
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs import pool
+from src.core.logging import configure_logging
+from src.pairs import pool
 
 
 def main() -> None:

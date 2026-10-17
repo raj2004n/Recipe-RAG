@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs import chooser
+from src.core.logging import configure_logging
+from src.pairs import chooser
 
 
 def main() -> None:

@@ -86,4 +86,4 @@ COPY artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02 \
      ./artifacts/student/qwen3.5-0.8b_lora_r16_20260919_1757/epoch_02
 
 EXPOSE 8000
-CMD ["uvicorn", "src.rag.serve.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.serve.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

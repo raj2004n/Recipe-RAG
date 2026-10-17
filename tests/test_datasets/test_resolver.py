@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.core.datasets.resolver import (
+from src.snapshot.datasets.resolver import (
     LocalDatasetResolver,
     MissingDatasetError,
     ChecksumMismatchError,
 )
-from src.rag.core.snapshot import registry
+from src.snapshot import registry
 
 
 def _seed_registry(registry_file: Path, key: str, path: Path, checksum: str | None) -> None:

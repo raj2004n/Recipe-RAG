@@ -90,7 +90,7 @@ def stub_pipeline(stub_snapshot, monkeypatch):
     `_load_snapshot_or_exit` and `_resolve_recipes_path_or_exit` so we
     do not touch the real registry / resolver.
     """
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     def fake_build_pipeline(snapshot, recipes_path=None):
         return StubPipeline(snapshot)
@@ -111,7 +111,7 @@ async def client(stub_pipeline, monkeypatch):
     RECIPE_RAG_API_KEYS is set so the lifespan's auth check passes.
     """
     monkeypatch.setenv("RECIPE_RAG_API_KEYS", repr(TEST_KEYS).replace("'", '"'))
-    from src.rag.serve.app import create_app
+    from src.serve.app import create_app
 
     app = create_app()
     async with app.router.lifespan_context(app):

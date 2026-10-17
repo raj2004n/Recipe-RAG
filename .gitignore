@@ -8,6 +8,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+!src/build/
 eggs/
 *.egg
 .env
@@ -127,7 +128,7 @@ data/eval/.quality_report.json
 mlruns/
 mlartifacts/
 
-# Student adapters and their run manifests, written by src/rag/training/student.py.
+# Student adapters and their run manifests, written by src/pairs/student.py.
 # The weights stay out of git and the DVC pointer stays in, so the directory itself
 # is not excluded: git will not descend into an excluded directory, which would hide
 # the pointer beneath it. The directories are re-included so git walks down, then the

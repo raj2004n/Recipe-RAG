@@ -5,11 +5,11 @@ from pathlib import Path
 
 import mlflow
 
-from src.rag.core.logging import configure_logging
-from src.rag.core.snapshot import registry
-from src.rag.core.snapshot.paths import SnapshotPaths
-from src.rag.evaluation.harness import MLFLOW_TRACKING_URI, resolve_snapshot_folder
-from src.rag.evaluation.promotion import (
+from src.core.logging import configure_logging
+from src.snapshot import registry
+from src.snapshot.paths import SnapshotPaths
+from src.runtime.harness import MLFLOW_TRACKING_URI, resolve_snapshot_folder
+from src.evaluation.promotion import (
     PromotionConfigError,
     evaluate,
     load_promotion_config,

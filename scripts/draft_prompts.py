@@ -1,7 +1,7 @@
 import argparse
 
-from src.rag.data.drafter_common import build_encoder, draft_kwargs, resolve_paths
-from src.rag.data.prompts_drafter import draft_prompts
+from src.pairs.drafter_common import build_encoder, draft_kwargs, resolve_paths
+from src.pairs.prompts_drafter import draft_prompts
 
 
 def run(args: argparse.Namespace) -> int:

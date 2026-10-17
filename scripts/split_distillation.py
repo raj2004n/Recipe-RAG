@@ -1,16 +1,16 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.distillation.split import draw_split
-from src.rag.data.distillation.tokenise import tokenise_rows
-from src.rag.data.distillation.types import (
+from src.core.logging import configure_logging
+from src.pairs.distillation.split import draw_split
+from src.pairs.distillation.tokenise import tokenise_rows
+from src.pairs.distillation.types import (
     ANSWERS_JSONL,
     CATEGORIES_JSONL,
     PAIRS_JSONL,
     SEED,
 )
-from src.rag.training.student import STUDENT_MODEL_ID
+from src.pairs.student import STUDENT_MODEL_ID
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

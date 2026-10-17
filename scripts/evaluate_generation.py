@@ -7,9 +7,9 @@ from pathlib import Path
 
 import mlflow
 
-from src.rag.core.config import DATA_PATHS
-from src.rag.core.logging import configure_logging
-from src.rag.evaluation.harness import (
+from src.core.config import DATA_PATHS
+from src.core.logging import configure_logging
+from src.runtime.harness import (
     add_common_args,
     begin_mlflow_run,
     build_generator,
@@ -25,8 +25,8 @@ from src.rag.evaluation.harness import (
     resolve_snapshot_folder,
     tokenizer_for,
 )
-from src.rag.evaluation.generator_evaluator import GeneratorEvaluator
-from src.rag.evaluation.judge_prompts import judge_prompt_hash
+from src.evaluation.generator_evaluator import GeneratorEvaluator
+from src.evaluation.judge_prompts import judge_prompt_hash
 
 
 logger = logging.getLogger(__name__)

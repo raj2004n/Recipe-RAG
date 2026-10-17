@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs.answers import (
+from src.core.logging import configure_logging
+from src.pairs.answers import (
     MAX_WORKERS,
     MODEL_ID,
     PROMPTS_JSONL,

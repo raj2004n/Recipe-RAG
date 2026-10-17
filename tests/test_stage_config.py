@@ -1,6 +1,6 @@
 import pytest
 
-from src.rag.core.config import (
+from src.core.config import (
     BASE_CONFIG,
     BASE_CONFIG_FILE,
     ENCODER_CONFIG,

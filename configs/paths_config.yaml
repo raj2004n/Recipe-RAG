@@ -14,7 +14,7 @@ data:
   # for the same reason.
   eval_answers: data/eval/golden_answers.jsonl
   # Per-type system messages for the eval drafters (dev-tool only, not copied
-  # into snapshots). Loaded by src/rag/data/prompts_drafter/system_messages.py.
+  # into snapshots). Loaded by src/pairs/prompts_drafter/system_messages.py.
   eval_system_messages: configs/eval_system_messages.yaml
 
 datasets:

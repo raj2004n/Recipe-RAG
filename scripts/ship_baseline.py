@@ -7,9 +7,9 @@ import sys
 import time
 import urllib.request
 
-from src.rag.core.logging import configure_logging
-from src.rag.core.snapshot import registry
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.core.logging import configure_logging
+from src.snapshot import registry
+from src.snapshot.paths import SnapshotPaths
 
 logger = logging.getLogger(__name__)
 

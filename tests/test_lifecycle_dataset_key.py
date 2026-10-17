@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.core.snapshot import lifecycle, loader
-from src.rag.core.snapshot import paths as paths_module
-from src.rag.core.snapshot.paths import SnapshotPaths
-from src.rag.retrieval.dense.indexer import IndexedChunkSet
-from src.rag.retrieval.sparse.bm25indexer import BM25IndexedChunkSet
+from src.snapshot import lifecycle, loader
+from src.snapshot import paths as paths_module
+from src.snapshot.paths import SnapshotPaths
+from src.build.indexer import IndexedChunkSet
+from src.build.bm25indexer import BM25IndexedChunkSet
 
 
 def _seed_configs(source_dir: Path, strategy: str) -> None:

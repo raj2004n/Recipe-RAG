@@ -2,7 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
-from src.rag.core.config import DATA_PATHS
+from src.core.config import DATA_PATHS
 
 
 def _read_jsonl(path: Path) -> list[dict]:

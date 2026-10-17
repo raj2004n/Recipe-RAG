@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.data.pairs.types import PAIRS_JSONL
-from src.rag.evaluation.grounding import DEFAULT_PROMPTS, check_grounding
+from src.core.logging import configure_logging
+from src.pairs.types import PAIRS_JSONL
+from src.evaluation.grounding import DEFAULT_PROMPTS, check_grounding
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

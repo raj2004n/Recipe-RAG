@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from src.rag.pipeline.hybrid_pipeline import HybridPipeline
-from src.rag.retrieval.chunker import Chunk
-from src.rag.retrieval.hybrid.fuser import FusedChunk
+from src.runtime.hybrid_pipeline import HybridPipeline
+from src.domain.chunker import Chunk
+from src.runtime.fuser import FusedChunk
 
 
 def _fake_snapshot():
@@ -43,12 +43,12 @@ def _fused(chunk: Chunk) -> FusedChunk:
     return FusedChunk(chunk=chunk, fused_score=1.0, sources=("dense",))
 
 
-@patch("src.rag.pipeline.hybrid_pipeline.AutoTokenizer")
-@patch("src.rag.pipeline.hybrid_pipeline.PromptBuilder")
-@patch("src.rag.pipeline.hybrid_pipeline.CrossEncoderReranker")
-@patch("src.rag.pipeline.hybrid_pipeline.BM25Retriever")
-@patch("src.rag.pipeline.hybrid_pipeline.Indexer")
-@patch("src.rag.pipeline.hybrid_pipeline.Encoder")
+@patch("src.runtime.hybrid_pipeline.AutoTokenizer")
+@patch("src.runtime.hybrid_pipeline.PromptBuilder")
+@patch("src.runtime.hybrid_pipeline.CrossEncoderReranker")
+@patch("src.runtime.hybrid_pipeline.BM25Retriever")
+@patch("src.runtime.hybrid_pipeline.Indexer")
+@patch("src.runtime.hybrid_pipeline.Encoder")
 def test_debug_query_returns_deduped_recipes_in_rank_order(*_mocks):
     recipes = [
         {"recipe_id": 1, "recipe_name": "one"},
@@ -77,12 +77,12 @@ def test_debug_query_returns_deduped_recipes_in_rank_order(*_mocks):
     assert pipeline.generator is None
 
 
-@patch("src.rag.pipeline.hybrid_pipeline.AutoTokenizer")
-@patch("src.rag.pipeline.hybrid_pipeline.PromptBuilder")
-@patch("src.rag.pipeline.hybrid_pipeline.CrossEncoderReranker")
-@patch("src.rag.pipeline.hybrid_pipeline.BM25Retriever")
-@patch("src.rag.pipeline.hybrid_pipeline.Indexer")
-@patch("src.rag.pipeline.hybrid_pipeline.Encoder")
+@patch("src.runtime.hybrid_pipeline.AutoTokenizer")
+@patch("src.runtime.hybrid_pipeline.PromptBuilder")
+@patch("src.runtime.hybrid_pipeline.CrossEncoderReranker")
+@patch("src.runtime.hybrid_pipeline.BM25Retriever")
+@patch("src.runtime.hybrid_pipeline.Indexer")
+@patch("src.runtime.hybrid_pipeline.Encoder")
 def test_debug_query_respects_k(*_mocks):
     recipes = [
         {"recipe_id": 1, "recipe_name": "one"},

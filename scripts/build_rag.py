@@ -7,19 +7,19 @@ import argparse
 import subprocess
 from pathlib import Path
 
-from src.rag.core.config import (
+from src.core.config import (
     BASE_CONFIG,
     BASE_CONFIG_FILE,
     PATHS_CONFIG_FILE,
     get_snapshot_paths,
     stage_config,
 )
-from src.rag.core.logging import configure_logging
-from src.rag.core.mlflow_tracking import build_run_params
-from src.rag.core.snapshot import lifecycle, registry
-from src.rag.core.datasets.registry_dataset import register_dataset
-from src.rag.core.datasets.resolver import LocalDatasetResolver
-from src.rag.builder.base_builder import BaseBuilder
+from src.core.logging import configure_logging
+from src.core.mlflow_tracking import build_run_params
+from src.snapshot import lifecycle, registry
+from src.snapshot.datasets.registry_dataset import register_dataset
+from src.snapshot.datasets.resolver import LocalDatasetResolver
+from src.build.base_builder import BaseBuilder
 
 
 logger = logging.getLogger(__name__)

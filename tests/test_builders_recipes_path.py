@@ -3,10 +3,10 @@ import logging
 from pathlib import Path
 
 
-from src.rag.builder.dense_builder import DenseBuilder
-from src.rag.builder.hybrid_builder import HybridBuilder
-from src.rag.builder.base_builder import _log_dataset_identity
-from src.rag.core.snapshot.paths import SnapshotPaths
+from src.build.dense_builder import DenseBuilder
+from src.build.hybrid_builder import HybridBuilder
+from src.build.base_builder import _log_dataset_identity
+from src.snapshot.paths import SnapshotPaths
 
 
 def _paths_for(folder: Path) -> SnapshotPaths:
@@ -43,7 +43,7 @@ def test_dense_builder_chunk_takes_recipes_path(tmp_path: Path, monkeypatch, cap
         captured["recipes_path"] = recipes_path
         return []
 
-    monkeypatch.setattr("src.rag.builder.dense_builder.chunk_recipes", fake_chunk_recipes)
+    monkeypatch.setattr("src.build.dense_builder.chunk_recipes", fake_chunk_recipes)
 
     with caplog.at_level(logging.INFO):
         DenseBuilder().chunk(paths, recipes)
@@ -68,7 +68,7 @@ def test_hybrid_builder_chunk_takes_recipes_path(tmp_path: Path, monkeypatch, ca
         captured["recipes_path"] = recipes_path
         return []
 
-    monkeypatch.setattr("src.rag.builder.hybrid_builder.chunk_recipes", fake_chunk_recipes)
+    monkeypatch.setattr("src.build.hybrid_builder.chunk_recipes", fake_chunk_recipes)
 
     with caplog.at_level(logging.INFO):
         HybridBuilder().chunk(paths, recipes)
@@ -94,8 +94,8 @@ def test_log_dataset_identity_no_recipes_path_at_later_stages(tmp_path, caplog):
 
 def test_builders_no_longer_import_DATA_PATHS():
     """Direct module check: the builders must not reach for DATA_PATHS."""
-    import src.rag.builder.dense_builder as dense_mod
-    import src.rag.builder.hybrid_builder as hybrid_mod
+    import src.build.dense_builder as dense_mod
+    import src.build.hybrid_builder as hybrid_mod
 
     # If either module imports DATA_PATHS it would show up as a bound
     # name in the module's namespace.

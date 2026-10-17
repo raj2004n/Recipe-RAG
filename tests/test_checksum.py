@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 
-from src.rag.core.checksum import file_checksum
+from src.core.checksum import file_checksum
 
 
 def test_file_checksum_matches_a_plain_sha256(tmp_path: Path):

@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.rag.retrieval.dense.encoder import EncodedChunk, EncodedChunkSet
-from src.rag.retrieval.dense.indexer import Indexer
+from src.build.encoder import EncodedChunk, EncodedChunkSet
+from src.build.indexer import Indexer
 
 
 def _make_encoded_chunk(chunk_id: int, recipe_id: int, text: str, vector: np.ndarray) -> EncodedChunk:

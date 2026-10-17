@@ -77,7 +77,7 @@ python -m scripts.build_rag --run finalise_build # seal the staging tree into a 
 
 ```bash
 export RECIPE_RAG_API_KEYS='{"dev-admin-key":"admin","dev-public-key":"public"}'
-uvicorn src.rag.serve.app:create_app --factory
+uvicorn src.serve.app:create_app --factory
 ```
 
 ```bash

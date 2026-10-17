@@ -1,6 +1,6 @@
-from src.rag.retrieval.chunker import Chunk
-from src.rag.retrieval.sparse.bm25indexer import BM25Indexer
-from src.rag.retrieval.sparse.tokenizer import Tokenizer, TokenizedChunk, TokenizedChunkSet
+from src.domain.chunker import Chunk
+from src.build.bm25indexer import BM25Indexer
+from src.build.tokenizer import Tokenizer, TokenizedChunk, TokenizedChunkSet
 
 
 def _chunk(chunk_id: int, text: str) -> Chunk:

@@ -3,7 +3,7 @@ import json
 from html import escape
 from pathlib import Path
 
-from src.rag.core.config import DATA_PATHS
+from src.core.config import DATA_PATHS
 
 BATCH_SIZE = 10
 HTML_TEMPLATE_HEAD = """<!doctype html>

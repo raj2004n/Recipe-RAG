@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.rag.retrieval.chunker import chunk_recipes
+from src.domain.chunker import chunk_recipes
 
 
 def _make_recipe(recipe_id: int, name: str = "Test") -> dict:

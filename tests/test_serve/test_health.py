@@ -13,7 +13,7 @@ async def test_health_503_when_no_snapshot(monkeypatch, stub_snapshot):
     catches the failure. Drive the lifespan manually with a stub that
     returns None from _build_pipeline (and bypass eager-load)."""
     import httpx
-    from src.rag.serve import app as app_module
+    from src.serve import app as app_module
 
     monkeypatch.setattr(app_module, "_build_pipeline", lambda s, r=None: None)
     monkeypatch.setattr(app_module, "_load_snapshot_or_exit", lambda: stub_snapshot)

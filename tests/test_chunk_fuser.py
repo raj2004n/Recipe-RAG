@@ -1,8 +1,8 @@
 import pytest
 
-from src.rag.retrieval.chunker import Chunk
-from src.rag.retrieval.dense.retriever import RetrievalResult
-from src.rag.retrieval.hybrid.fuser import ChunkFuser
+from src.domain.chunker import Chunk
+from src.runtime.retriever import RetrievalResult
+from src.runtime.fuser import ChunkFuser
 
 
 def _rr(chunk_id: int, score: float) -> RetrievalResult:

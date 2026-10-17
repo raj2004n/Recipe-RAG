@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
 
-from src.rag.core.logging import configure_logging
-from src.rag.training import train_student
-from src.rag.training.student import ARTIFACTS_DIR, EPOCHS, SEED
+from src.core.logging import configure_logging
+from src.pairs import train_student
+from src.pairs.student import ARTIFACTS_DIR, EPOCHS, SEED
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

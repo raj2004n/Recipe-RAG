@@ -1,11 +1,11 @@
 import torch
 from unittest.mock import patch
 
-from src.rag.generation.generator import Generator
-from src.rag.retrieval.hybrid.reranker import CrossEncoderReranker
+from src.runtime.generator import Generator
+from src.runtime.reranker import CrossEncoderReranker
 
 
-@patch("src.rag.generation.generator.AutoModelForCausalLM.from_pretrained")
+@patch("src.runtime.generator.AutoModelForCausalLM.from_pretrained")
 def test_generator_loads_in_bfloat16(mock_from_pretrained):
     """The generator must load the base model with bf16 weights."""
     Generator(
@@ -19,7 +19,7 @@ def test_generator_loads_in_bfloat16(mock_from_pretrained):
     assert mock_from_pretrained.call_args.kwargs["torch_dtype"] is torch.bfloat16
 
 
-@patch("src.rag.retrieval.hybrid.reranker.CrossEncoder")
+@patch("src.runtime.reranker.CrossEncoder")
 def test_reranker_loads_in_bfloat16(mock_cross_encoder):
     """The cross-encoder must receive bf16 via model_kwargs."""
     reranker = CrossEncoderReranker(model_id="test/reranker", max_length=128)
